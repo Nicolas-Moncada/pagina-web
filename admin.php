@@ -289,22 +289,22 @@ require_once __DIR__ . '/includes/header.php';
   <div class="container-fluid px-3 px-md-4">
     <ul class="nav nav-pills gap-2 flex-wrap" id="pills-tab" role="tablist">
       <li class="nav-item">
-        <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'planilla') ? 'active bg-success text-white' : ''; ?> fw-bold" href="admin.php?tab=planilla&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>">
+        <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'planilla') ? 'active text-white' : ''; ?> fw-bold" style="<?php echo ($pestañaActiva === 'planilla') ? 'background-color: var(--primary) !important;' : ''; ?>" href="admin.php?tab=planilla&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>">
           <i class="bi bi-grid-3x3-gap-fill me-1"></i> Planilla Matricial de Pesajes
         </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'ganaderos') ? 'active bg-success text-white' : ''; ?> fw-bold" href="admin.php?tab=ganaderos">
+        <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'ganaderos') ? 'active text-white' : ''; ?> fw-bold" style="<?php echo ($pestañaActiva === 'ganaderos') ? 'background-color: var(--primary) !important;' : ''; ?>" href="admin.php?tab=ganaderos">
           <i class="bi bi-people-fill me-1"></i> Gestión de Asociados (<?php echo count($listaTodosGanaderos); ?>)
         </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'quincenas') ? 'active bg-success text-white' : ''; ?> fw-bold" href="admin.php?tab=quincenas&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>">
+        <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'quincenas') ? 'active text-white' : ''; ?> fw-bold" style="<?php echo ($pestañaActiva === 'quincenas') ? 'background-color: var(--primary) !important;' : ''; ?>" href="admin.php?tab=quincenas&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>">
           <i class="bi bi-cash-coin me-1"></i> Precios de Quincena
         </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'buzon') ? 'active bg-success text-white' : ''; ?> fw-bold position-relative" href="admin.php?tab=buzon">
+        <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'buzon') ? 'active text-white' : ''; ?> fw-bold position-relative" style="<?php echo ($pestañaActiva === 'buzon') ? 'background-color: var(--primary) !important;' : ''; ?>" href="admin.php?tab=buzon">
           <i class="bi bi-inbox-fill me-1"></i> Buzón de Inconformidades y Consultas
           <?php if (count($listaAlertas) > 0): ?>
             <span class="badge rounded-pill bg-danger ms-1"><?php echo count($listaAlertas); ?></span>
@@ -325,9 +325,9 @@ require_once __DIR__ . '/includes/header.php';
     <!-- TARJETAS DE RESUMEN SUPERIORES -->
     <div class="row g-3 mb-4">
       <div class="col-md-3 col-6">
-        <div class="card card-rural p-3 text-center border-start border-4 border-success">
+        <div class="card card-rural p-3 text-center border-start border-4 border-primary">
           <small class="text-muted fw-bold text-uppercase">Litros Recolectados</small>
-          <div class="display-6 fw-extrabold text-success my-1" id="kpi-gran-total">
+          <div class="display-6 fw-extrabold text-primary my-1" id="kpi-gran-total">
             <?php echo number_format($granTotalMatriz, 1, ',', '.'); ?> L
           </div>
           <small class="text-muted">Total quincena en acopio</small>
@@ -398,21 +398,21 @@ require_once __DIR__ . '/includes/header.php';
             Siguiente <i class="bi bi-chevron-right"></i>
           </a>
 
-          <span class="badge <?php echo $quincenaEstaCerrada ? 'bg-secondary' : 'bg-success'; ?> px-3 py-2 rounded-pill ms-lg-2">
-            <?php echo $quincenaEstaCerrada ? '🔒 Cerrada' : '🟢 Abierta para edición'; ?>
+          <span class="badge <?php echo $quincenaEstaCerrada ? 'bg-secondary' : 'bg-primary'; ?> px-3 py-2 rounded-pill ms-lg-2">
+            <?php echo $quincenaEstaCerrada ? '🔒 Cerrada' : '🔵 Abierta para edición'; ?>
           </span>
         </div>
 
         <!-- Buscador en tiempo real de ganaderos y exportación -->
         <div class="d-flex flex-wrap align-items-center gap-2">
           <div class="input-group input-group-sm" style="min-width: 240px;">
-            <span class="input-group-text bg-transparent border-2 text-success">
+            <span class="input-group-text bg-transparent border-2 text-primary">
               <i class="bi bi-search"></i>
             </span>
             <input type="text" id="filtro-matriz" class="form-control form-control-touch form-control-sm border-start-0" placeholder="Buscar por nombre o cédula...">
           </div>
 
-          <button type="button" id="btn-exportar-csv" class="btn btn-touch btn-outline-success btn-sm rounded-pill">
+          <button type="button" id="btn-exportar-csv" class="btn btn-touch btn-outline-primary btn-sm rounded-pill">
             <i class="bi bi-file-earmark-excel-fill me-1"></i> Descargar CSV
           </button>
         </div>
@@ -426,7 +426,7 @@ require_once __DIR__ . '/includes/header.php';
           <span class="me-3">⌨️ <strong>Enter:</strong> Baja celda &bull; <strong>Tab / Flechas:</strong> Navega &bull; <strong>Esc:</strong> Cancela</span>
           <span>📋 <strong>Pegar desde Excel:</strong> Selecciona una celda y presiona Ctrl + V para pegar en bloque</span>
         </div>
-        <div id="contador-filas-visibles" class="fw-bold text-success">
+        <div id="contador-filas-visibles" class="fw-bold text-primary">
           <?php echo $totalGanaderosActivos; ?> asociados visibles
         </div>
       </div>

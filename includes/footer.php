@@ -8,24 +8,24 @@
  */
 ?>
   <!-- Pie de Página Institucional y Legal -->
-  <footer class="py-5 mt-auto" style="background: #0b2914; color: #e2ede6;">
+  <footer class="footer-corporate py-5 mt-auto">
     <div class="container py-3">
       <div class="row g-4 align-items-center">
         <div class="col-lg-7 text-center text-lg-start">
           <div class="d-flex align-items-center gap-3 justify-content-center justify-content-lg-start mb-2">
-            <img src="assets/img/logo.png" alt="Logo <?php echo e(EMPRESA_SIGLA); ?>" style="max-height: 42px;">
-            <h5 class="fw-bold mb-0 text-white"><?php echo e(EMPRESA_SIGLA); ?></h5>
+            <img src="assets/img/logo.png" alt="Logo <?php echo e(EMPRESA_SIGLA); ?>" style="max-height: 48px;">
+            <h4 class="fw-bold mb-0 text-white"><?php echo e(EMPRESA_SIGLA); ?></h4>
           </div>
-          <p class="small opacity-75 mb-1">
+          <p class="small text-white-50 mb-1">
             <?php echo e(EMPRESA_NOMBRE); ?>
           </p>
-          <p class="small mb-1">
+          <p class="small mb-1 text-white">
             <span class="text-warning fw-bold">NIT: <?php echo e(EMPRESA_NIT); ?></span> &bull; 
-            <span>Inscripción ante la Cámara de Comercio de Bogotá / Cundinamarca</span>
+            <span>Inscripción ante la Cámara de Comercio</span>
           </p>
-          <p class="small opacity-75 mb-0">
+          <p class="small text-white-50 mb-0">
             <i class="bi bi-geo-alt-fill text-warning me-1"></i> <?php echo e(EMPRESA_UBICACION); ?> &bull; 
-            <i class="bi bi-telephone-fill text-success me-1"></i> Teléfono Oficial: <?php echo e(EMPRESA_TELEFONO); ?>
+            <i class="bi bi-telephone-fill text-white me-1"></i> Teléfono Oficial: <?php echo e(EMPRESA_TELEFONO); ?>
           </p>
         </div>
 
@@ -43,8 +43,8 @@
               Subir ↑
             </a>
           </div>
-          <p class="small opacity-50 mb-0">
-            Plataforma de Control Lechero Campesino &copy; <?php echo date('Y'); ?>. Todos los derechos reservados.
+          <p class="small text-white-50 mb-0">
+            Plataforma de Control Lechero &copy; <?php echo date('Y'); ?>. Todos los derechos reservados.
           </p>
         </div>
       </div>
@@ -55,13 +55,13 @@
   <div class="modal fade" id="modalPoliticaDatos" tabindex="-1" aria-labelledby="modalDatosLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable modal-lg">
       <div class="modal-content rounded-4 border-0 shadow-lg">
-        <div class="modal-header bg-success text-white p-3 p-md-4">
-          <h5 class="modal-title fw-bold" id="modalDatosLabel">
+        <div class="modal-header text-white p-3 p-md-4" style="background-color: var(--primary);">
+          <h5 class="modal-title fw-bold text-white" id="modalDatosLabel">
             <i class="bi bi-shield-check me-2"></i> Política de Tratamiento de Datos Personales
           </h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
-        <div class="modal-body p-4 text-muted small" style="line-height: 1.8;">
+        <div class="modal-body p-4 text-dark" style="line-height: 1.8;">
           <div class="alert alert-warning py-2 px-3 small fw-bold mb-3">
             ⚠️ <em>BORRADOR – validar con asesor legal</em>
           </div>
@@ -74,8 +74,8 @@
           <h6 class="fw-bold text-dark">3. Derechos del Titular</h6>
           <p>Como titular de los datos personales, le asiste el derecho a conocer, actualizar, rectificar y suprimir su información, así como a revocar la autorización otorgada mediante solicitud escrita remitida al correo electrónico oficial: <?php echo e(EMPRESA_CORREO); ?>.</p>
         </div>
-        <div class="modal-footer p-3 bg-body-tertiary">
-          <button type="button" class="btn btn-touch btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Entendido</button>
+        <div class="modal-footer p-3 bg-light">
+          <button type="button" class="btn btn-touch btn-aso-primary px-4" data-bs-dismiss="modal">Entendido</button>
         </div>
       </div>
     </div>
@@ -85,18 +85,25 @@
   <div class="modal fade" id="modalTerminos" tabindex="-1" aria-labelledby="modalTerminosLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable modal-lg">
       <div class="modal-content rounded-4 border-0 shadow-lg">
-        <div class="modal-header bg-success text-white p-3 p-md-4">
-          <h5 class="modal-title fw-bold" id="modalTerminosLabel">
+        <div class="modal-header text-white p-3 p-md-4" style="background-color: var(--primary);">
+          <h5 class="modal-title fw-bold text-white" id="modalTerminosLabel">
             <i class="bi bi-file-earmark-text me-2"></i> Términos y Condiciones de Uso
           </h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
-        <div class="modal-body p-4 text-muted small" style="line-height: 1.8;">
+        <div class="modal-body p-4 text-dark" style="line-height: 1.8;">
           <div class="alert alert-warning py-2 px-3 small fw-bold mb-3">
             ⚠️ <em>BORRADOR – validar con asesor legal</em>
           </div>
           <h6 class="fw-bold text-dark">1. Naturaleza del Sistema</h6>
           <p>La plataforma tecnológica de <strong><?php echo e(EMPRESA_SIGLA); ?></strong> es una herramienta interna de gestión asociativa destinada al registro de pesajes de leche, seguimiento de Buenas Prácticas de Ordeño (BPO) y liquidaciones quincenales para sus 32 asociados.</p>
+        </div>
+        <div class="modal-footer p-3 bg-light">
+          <button type="button" class="btn btn-touch btn-aso-primary px-4" data-bs-dismiss="modal">Entendido</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
           <h6 class="fw-bold text-dark">2. Uso de Credenciales y Reserva Operativa</h6>
           <p>El usuario y contraseña asignados a cada asociado son personales e intransferibles. Queda prohibida la divulgación de credenciales a terceros. Toda liquidación mostrada tiene carácter de planilla y liquidación interna de control lechero.</p>

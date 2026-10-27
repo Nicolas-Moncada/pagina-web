@@ -1,167 +1,220 @@
 /* ==========================================================================
    PLATAFORMA DE CONTROL LECHERO - ASOAGROALIZAL (CARMEN DE CARUPA)
    Archivo: assets/css/theme.css
-   Estilo: Sistema de Diseño Institucional Unificado con Tokens Semánticos
-   Validado con WCAG 2.1 AA (Contraste >= 4.5:1 texto, >= 3.0:1 UI)
+   Estilo: Sistema de Diseño Institucional Premium de Alta Accesibilidad
+   Enfocado en Adultos Mayores Rurales (Atkinson Hyperlegible, 20px base, 56px botones)
+   Un solo Modo Claro (color-scheme: light), WCAG AAA / AA (Contraste >= 7:1 texto)
+   Paleta: Azul Marino Profundo / Crema Cálido / Blanco Sólido / Dorado Ocre (Sin Verdes)
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,400&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap');
 
 /* --------------------------------------------------------------------------
-   1. TOKENS DE DISEÑO - TEMA CLARO (:root)
+   1. FORZADO DE MODO CLARO Y VARIABLES GLOBALES
    -------------------------------------------------------------------------- */
-:root {
-  /* Paleta Extraída del Logo Oficial (Verde Dominante Bosque #084d05 / #11501e) */
-  --bg: #f4f7f4;
-  --surface: #ffffff;
-  --surface-2: #eaf1ec;
-  --text: #122216;
-  --text-muted: #435848;
-  --border: #8fa993;
-  --border-subtle: #d6e2d8;
+:root,
+[data-bs-theme="light"],
+html {
+  color-scheme: light !important;
+  --font-scale: 1;
 
-  --primary: #11501e;
-  --primary-hover: #0c3d16;
-  --on-primary: #ffffff;
+  /* Paleta Institucional Premium */
+  --bg: #f7f4ee;              /* Crema / Blanco Hueso Cálido */
+  --surface: #ffffff;         /* Blanco Puro Sólido (Cero Glassmorphism) */
+  --surface-2: #ede7dc;       /* Crema Piedra Cálido */
+  --text: #101c2b;            /* Azul Marino Profundo / Pizarra (Contraste 17:1) */
+  --text-muted: #3b4a5d;      /* Azul Pizarra Medio (Contraste 9:1, supera 7:1) */
+  --border: #647890;          /* Borde Pizarra Nítido (Contraste 4.5:1) */
+  --border-subtle: #d6ccbe;   /* Divisores Suaves */
 
-  --accent: #b46b00;
-  --accent-hover: #8f5400;
+  --primary: #153250;         /* Azul Marino Corporativo Sólido */
+  --primary-hover: #0c1f33;   /* Azul Marino Más Profundo */
+  --on-primary: #ffffff;      /* Blanco Puro */
+
+  --accent: #b56f10;          /* Dorado Ocre / Ámbar Tierra */
+  --accent-hover: #8f5407;    /* Dorado Profundo */
   --on-accent: #ffffff;
 
   --input-bg: #ffffff;
-  --input-text: #122216;
-  --input-border: #65826b;
-  --placeholder: #4f6655;
+  --input-text: #101c2b;
+  --input-border: #647890;
+  --placeholder: #4b5d72;
 
-  --table-head-bg: #0a4217;
+  --table-head-bg: #153250;
   --table-head-text: #ffffff;
-  --table-border: #cad8cc;
-  --row-hover: #ebf4ed;
-  --cell-edit-bg: #e2f3e5;
-  --cell-readonly-bg: #f2f6f3;
-  --cell-weekend-bg: rgba(0, 0, 0, 0.02);
-  --cell-today-bg: rgba(17, 80, 30, 0.08);
+  --table-border: #cdc4b5;
+  --row-hover: #f1ecde;
+  --cell-edit-bg: #e6eff7;
+  --cell-readonly-bg: #f3eee5;
+  --cell-weekend-bg: rgba(21, 50, 80, 0.04);
+  --cell-today-bg: rgba(181, 111, 16, 0.12);
 
-  --focus-ring: rgba(17, 80, 30, 0.25);
-  --success: #116124;
-  --warning: #874f00;
-  --danger: #b91c1c;
+  --focus-ring: rgba(21, 50, 80, 0.35);
+  --success: #153250;
+  --warning: #9a5806;
+  --danger: #a82020;
 
-  /* Mapeo para Bootstrap 5.3 */
-  --bs-body-font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --bs-heading-font-family: 'Fraunces', Georgia, serif;
+  /* Mapeo Tipográfico Bootstrap 5.3 */
+  --bs-body-font-family: 'Atkinson Hyperlegible', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --bs-heading-font-family: 'Atkinson Hyperlegible', Georgia, sans-serif;
   --bs-body-bg: var(--bg);
   --bs-body-color: var(--text);
   --bs-border-color: var(--border-subtle);
 
-  /* Sombras y Radios Táctiles */
+  /* Sombras Difuminadas Elegantes sobre Blanco */
+  --shadow-sm: 0 2px 8px rgba(16, 28, 43, 0.06);
+  --shadow-md: 0 8px 24px rgba(16, 28, 43, 0.08);
+  --shadow-lg: 0 16px 40px rgba(16, 28, 43, 0.12);
+
+  /* Radios Táctiles Suaves */
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 20px;
   --radius-pill: 50rem;
-  --shadow-sm: 0 2px 8px rgba(18, 34, 22, 0.06);
-  --shadow-md: 0 8px 20px rgba(18, 34, 22, 0.09);
-  --shadow-lg: 0 16px 36px rgba(18, 34, 22, 0.12);
+}
+
+/* Forzado estricto contra inversiones automáticas de navegador en celulares */
+@media (prefers-color-scheme: dark) {
+  :root, html, body {
+    color-scheme: light !important;
+    background-color: var(--bg) !important;
+    color: var(--text) !important;
+  }
+}
+
+/* Escalas Dinámicas de Tamaño de Fuente Accesible */
+html.font-size-normal { --font-scale: 1; }
+html.font-size-large { --font-scale: 1.15; }
+html.font-size-xlarge { --font-scale: 1.30; }
+
+html {
+  font-size: calc(20px * var(--font-scale, 1));
 }
 
 /* --------------------------------------------------------------------------
-   2. TOKENS DE DISEÑO - TEMA OSCURO ([data-bs-theme="dark"])
-   -------------------------------------------------------------------------- */
-[data-bs-theme="dark"] {
-  --bg: #111813;
-  --surface: #17221a;
-  --surface-2: #202e24;
-  --text: #e5eee7;
-  --text-muted: #9cb3a0;
-  --border: #3c5242;
-  --border-subtle: #29382d;
-
-  --primary: #3dd676;
-  --primary-hover: #53df87;
-  --on-primary: #08230f;
-
-  --accent: #fbbf24;
-  --accent-hover: #fcd34d;
-  --on-accent: #17221a;
-
-  --input-bg: #131d15;
-  --input-text: #e5eee7;
-  --input-border: #5c8066;
-  --placeholder: #95ad9a;
-
-  --table-head-bg: #0b3915;
-  --table-head-text: #ffffff;
-  --table-border: #2c3e30;
-  --row-hover: #1e2d22;
-  --cell-edit-bg: #1f3825;
-  --cell-readonly-bg: #121a14;
-  --cell-weekend-bg: rgba(255, 255, 255, 0.02);
-  --cell-today-bg: rgba(61, 214, 118, 0.10);
-
-  --focus-ring: rgba(61, 214, 118, 0.35);
-  --success: #4ade80;
-  --warning: #fbbf24;
-  --danger: #f87171;
-
-  --bs-body-bg: var(--bg);
-  --bs-body-color: var(--text);
-  --bs-border-color: var(--border-subtle);
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
-  --shadow-md: 0 8px 20px rgba(0, 0, 0, 0.45);
-  --shadow-lg: 0 16px 36px rgba(0, 0, 0, 0.60);
-}
-
-/* --------------------------------------------------------------------------
-   3. ELEMENTOS BASE Y TIPOGRAFÍA
+   2. ELEMENTOS BASE Y TIPOGRAFÍA DE ALTA LEGIBILIDAD
    -------------------------------------------------------------------------- */
 body {
   font-family: var(--bs-body-font-family);
+  font-size: 1rem; /* 20px base */
   background-color: var(--bg);
   color: var(--text);
   line-height: 1.6;
-  transition: background-color 0.25s ease, color 0.25s ease;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--bs-heading-font-family);
   font-weight: 700;
-  letter-spacing: -0.02em;
   color: var(--text);
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+}
+
+h1 { font-size: 2.3rem; }
+h2 { font-size: 1.85rem; }
+h3 { font-size: 1.5rem; }
+h4 { font-size: 1.3rem; }
+
+p, li, span, label {
+  color: var(--text);
+}
+
+.text-muted {
+  color: var(--text-muted) !important;
 }
 
 a {
   color: var(--primary);
-  text-decoration: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  font-weight: 700;
 }
+
 a:hover {
-  color: var(--primary-hover);
+  color: var(--accent);
 }
 
 /* --------------------------------------------------------------------------
-   4. NAVBAR GLASSMORFICO Y NAVEGACIÓN
+   3. BARRA SUPERIOR ACCESIBLE (CONTROL TAMAÑO DE LETRA: A  A+  A++)
+   -------------------------------------------------------------------------- */
+.top-accessibility-bar {
+  background-color: var(--surface-2);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0.4rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.font-size-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background-color: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 0.2rem 0.5rem;
+}
+
+.btn-font-size {
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-weight: 800;
+  padding: 0.2rem 0.55rem;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  line-height: 1;
+  transition: all 0.15s ease;
+}
+
+.btn-font-size:hover {
+  background-color: var(--surface-2);
+}
+
+.btn-font-size.active {
+  background-color: var(--primary);
+  color: #ffffff;
+}
+
+/* --------------------------------------------------------------------------
+   4. NAVBAR INSTITUCIONAL CLARO Y LIMPIO
    -------------------------------------------------------------------------- */
 .navbar-asoagro {
-  background: var(--surface);
-  border-bottom: 1px solid var(--border-subtle);
+  background-color: var(--surface) !important;
+  border-bottom: 2px solid var(--border-subtle);
   box-shadow: var(--shadow-sm);
-  transition: all 0.25s ease;
+  padding: 0.75rem 0;
 }
 
 .brand-logo-img {
-  max-height: 46px;
+  max-height: 52px;
   width: auto;
   object-fit: contain;
 }
 
+.brand-text-title {
+  color: var(--primary) !important;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.brand-text-sub {
+  color: var(--text-muted) !important;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
 .nav-link-custom {
-  font-family: var(--bs-heading-font-family);
-  font-weight: 600;
-  font-size: 0.92rem;
+  font-family: var(--bs-body-font-family);
+  font-weight: 700;
+  font-size: 0.95rem;
   color: var(--text) !important;
-  padding: 0.45rem 0.9rem !important;
-  border-radius: var(--radius-sm);
-  transition: all 0.2s ease;
+  padding: 0.5rem 0.9rem !important;
+  border-radius: var(--radius-md);
+  text-decoration: none !important;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .nav-link-custom:hover {
@@ -171,155 +224,166 @@ a:hover {
 
 .nav-link-custom.active {
   background-color: var(--primary) !important;
-  color: var(--on-primary) !important;
+  color: #ffffff !important;
 }
 
 /* --------------------------------------------------------------------------
-   5. BOTONES Y CONTROLES TÁCTILES RURALES
+   5. BOTONES GRANDES TÁCTILES RURALES (MIN 56PX)
    -------------------------------------------------------------------------- */
-.btn-touch {
-  min-height: 44px;
+.btn-touch,
+.btn-aso-primary,
+.btn-aso-accent {
+  min-height: 56px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  font-family: var(--bs-heading-font-family);
+  gap: 0.65rem;
+  font-family: var(--bs-body-font-family);
   font-weight: 700;
-  font-size: 0.95rem;
-  padding: 0.65rem 1.4rem;
+  font-size: 1.05rem;
+  padding: 0.85rem 1.6rem;
   border-radius: var(--radius-md);
-  transition: all 0.2s ease;
+  border: 2px solid transparent;
   cursor: pointer;
-  border: 1px solid transparent;
+  text-decoration: none !important;
+  box-shadow: var(--shadow-sm);
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.btn-touch:hover {
-  transform: translateY(-1px);
+.btn-touch:hover,
+.btn-aso-primary:hover,
+.btn-aso-accent:hover {
   box-shadow: var(--shadow-md);
-}
-
-.btn-touch:active {
-  transform: translateY(0);
 }
 
 .btn-aso-primary {
   background-color: var(--primary);
-  color: var(--on-primary) !important;
+  color: #ffffff !important;
   border-color: var(--primary);
 }
 
 .btn-aso-primary:hover {
   background-color: var(--primary-hover);
   border-color: var(--primary-hover);
-  color: var(--on-primary) !important;
 }
 
 .btn-aso-accent {
   background-color: var(--accent);
-  color: var(--on-accent) !important;
+  color: #ffffff !important;
   border-color: var(--accent);
 }
 
 .btn-aso-accent:hover {
   background-color: var(--accent-hover);
   border-color: var(--accent-hover);
-  color: var(--on-accent) !important;
 }
 
-/* --------------------------------------------------------------------------
-   6. FORMULARIOS, INPUTS Y AUTORRELLENADO
-   -------------------------------------------------------------------------- */
-.form-control-touch,
-.form-select-touch,
-.form-control,
-.form-select {
-  background-color: var(--input-bg);
-  color: var(--input-text);
-  border: 1.5px solid var(--input-border);
-  border-radius: var(--radius-md);
-  padding: 0.65rem 1rem;
-  font-size: 0.95rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.form-control-touch:focus,
-.form-select-touch:focus,
-.form-control:focus,
-.form-select:focus {
-  background-color: var(--input-bg);
-  color: var(--input-text);
-  border-color: var(--primary);
-  box-shadow: 0 0 0 0.25rem var(--focus-ring);
-  outline: none;
-}
-
-.form-control::placeholder,
-.form-control-touch::placeholder {
-  color: var(--placeholder);
-  opacity: 1;
-}
-
-.form-control:disabled,
-.form-control[readonly],
-.form-select:disabled {
-  background-color: var(--cell-readonly-bg);
-  color: var(--text-muted);
-  border-color: var(--border-subtle);
-  cursor: not-allowed;
-}
-
-/* Autofill estilizado para navegadores WebKit */
-input:-webkit-autofill,
-input:-webkit-autofill:hover, 
-input:-webkit-autofill:focus,
-textarea:-webkit-autofill,
-select:-webkit-autofill {
-  -webkit-text-fill-color: var(--input-text);
-  -webkit-box-shadow: 0 0 0px 1000px var(--input-bg) inset;
-  transition: background-color 5000s ease-in-out 0s;
-}
-
-/* Floating labels */
-.form-floating > .form-control,
-.form-floating > .form-control-touch {
-  height: calc(3.5rem + 2px);
-  padding: 1rem 0.85rem;
-}
-
-.form-floating > label {
-  color: var(--placeholder);
-  padding: 1rem 0.85rem;
-}
-
-.form-floating > .form-control:focus ~ label,
-.form-floating > .form-control:not(:placeholder-shown) ~ label {
-  color: var(--primary);
-  opacity: 0.9;
-}
-
-/* --------------------------------------------------------------------------
-   7. TARJETAS Y CONTENEDORES
-   -------------------------------------------------------------------------- */
-.card-rural {
+.btn-outline-primary {
   background-color: var(--surface);
-  border: 1px solid var(--border-subtle);
+  color: var(--primary) !important;
+  border: 2px solid var(--primary);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--primary);
+  color: #ffffff !important;
+}
+
+/* --------------------------------------------------------------------------
+   6. FORMULARIOS CON ETIQUETAS SIEMPRE VISIBLES (MIN 56PX INPUTS)
+   -------------------------------------------------------------------------- */
+.form-label,
+label {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text);
+  margin-bottom: 0.45rem;
+  display: block;
+}
+
+.form-control,
+.form-select,
+.form-control-touch {
+  min-height: 56px;
+  background-color: var(--input-bg);
+  color: var(--input-text);
+  border: 2px solid var(--input-border);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1.1rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-control:focus,
+.form-select:focus,
+.form-control-touch:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--focus-ring);
+  outline: none;
+  background-color: #ffffff;
+  color: var(--text);
+}
+
+textarea.form-control {
+  min-height: 130px;
+}
+
+/* --------------------------------------------------------------------------
+   7. TARJETAS BLANCAS SÓLIDAS (CERO GLASSMORPHISM, SOMBRAS SUAVES)
+   -------------------------------------------------------------------------- */
+.card-rural,
+.card-feature-col,
+.card-solid {
+  background-color: var(--surface) !important;
+  border: 1.5px solid var(--border-subtle) !important;
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
-  transition: all 0.2s ease;
+  padding: 1.85rem;
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-.card-rural:hover {
+.card-rural:hover,
+.card-feature-col:hover {
   box-shadow: var(--shadow-md);
+  border-color: var(--border) !important;
 }
 
 /* --------------------------------------------------------------------------
-   8. PLANILLA MATRICIAL HORIZONTAL (EXCEL STYLE SIN DATATABLES)
+   8. BARRAS DE PROGRESO DE ALTO CONTRASTE (PANEL GANADERO)
+   -------------------------------------------------------------------------- */
+.progress-milk-container {
+  background-color: var(--surface-2);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-pill);
+  height: 32px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.progress-bar-milk {
+  height: 100%;
+  background-color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 0.75rem;
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.85rem;
+  transition: width 0.6s ease;
+}
+
+/* --------------------------------------------------------------------------
+   9. PLANILLA MATRICIAL HORIZONTAL EXCEL (ADMIN.PHP)
    -------------------------------------------------------------------------- */
 .matrix-container {
   background-color: var(--surface);
-  border: 1px solid var(--border-subtle);
+  border: 2px solid var(--border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md);
   overflow: hidden;
   position: relative;
 }
@@ -329,45 +393,45 @@ select:-webkit-autofill {
   overflow-y: auto;
   max-height: 72vh;
   position: relative;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) var(--surface-2);
+  -webkit-overflow-scrolling: touch;
 }
 
 .matrix-table {
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 0.82rem;
+  font-size: 0.95rem;
   margin-bottom: 0;
+  background-color: var(--surface);
 }
 
-/* Encabezados Fijos (Sticky Header de 2 niveles) */
+/* Encabezados Fijos (Sticky Header) */
 .matrix-table thead tr:first-child th {
   position: sticky;
   top: 0;
   z-index: 30;
   background-color: var(--table-head-bg);
   color: var(--table-head-text);
-  border-bottom: 1px solid var(--border);
-  padding: 0.6rem 0.4rem;
-  font-weight: 700;
+  border-bottom: 2px solid #0c1f33;
+  padding: 0.75rem 0.5rem;
+  font-weight: 800;
   text-align: center;
 }
 
 .matrix-table thead tr:last-child th {
   position: sticky;
-  top: 36px;
+  top: 48px;
   z-index: 29;
   background-color: var(--surface-2);
   color: var(--text);
   border-bottom: 2px solid var(--border);
-  padding: 0.35rem 0.3rem;
-  font-size: 0.72rem;
-  font-weight: 700;
+  padding: 0.45rem 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 800;
   text-align: center;
 }
 
-/* Columna de Nombres Fija a la Izquierda (Sticky Left) */
+/* Columna de Nombres Fija a la Izquierda */
 .matrix-table th.col-sticky-name,
 .matrix-table td.col-sticky-name {
   position: sticky;
@@ -375,19 +439,19 @@ select:-webkit-autofill {
   z-index: 20;
   background-color: var(--surface);
   border-right: 2px solid var(--border);
-  min-width: 210px;
-  max-width: 250px;
-  padding: 0.55rem 0.8rem;
-  box-shadow: 3px 0 6px -2px rgba(0, 0, 0, 0.12);
+  min-width: 230px;
+  max-width: 280px;
+  padding: 0.75rem 0.9rem;
+  box-shadow: 4px 0 8px rgba(0, 0, 0, 0.08);
 }
 
 .matrix-table thead th.col-sticky-name {
   z-index: 35 !important;
   background-color: var(--table-head-bg) !important;
-  color: var(--table-head-text) !important;
+  color: #ffffff !important;
 }
 
-/* Columna Total Quincena Fija a la Derecha (Sticky Right) */
+/* Columna Total Fija a la Derecha */
 .matrix-table th.col-sticky-total,
 .matrix-table td.col-sticky-total {
   position: sticky;
@@ -395,22 +459,22 @@ select:-webkit-autofill {
   z-index: 20;
   background-color: var(--surface-2);
   border-left: 2px solid var(--border);
-  min-width: 120px;
-  max-width: 130px;
-  padding: 0.55rem 0.75rem;
+  min-width: 135px;
+  max-width: 150px;
+  padding: 0.75rem 0.85rem;
   text-align: right;
   font-weight: 800;
   color: var(--primary);
-  box-shadow: -3px 0 6px -2px rgba(0, 0, 0, 0.12);
+  box-shadow: -4px 0 8px rgba(0, 0, 0, 0.08);
 }
 
 .matrix-table thead th.col-sticky-total {
   z-index: 35 !important;
   background-color: var(--table-head-bg) !important;
-  color: var(--table-head-text) !important;
+  color: #ffffff !important;
 }
 
-/* Fila de Totales Final Fija Abajo (Sticky Bottom Footer) */
+/* Fila de Totales Fija Abajo */
 .matrix-table tfoot td {
   position: sticky;
   bottom: 0;
@@ -418,10 +482,9 @@ select:-webkit-autofill {
   background-color: var(--surface-2);
   color: var(--text);
   border-top: 2px solid var(--border);
-  padding: 0.65rem 0.3rem;
+  padding: 0.85rem 0.4rem;
   font-weight: 800;
   text-align: center;
-  font-size: 0.82rem;
 }
 
 .matrix-table tfoot td.col-sticky-name {
@@ -433,25 +496,8 @@ select:-webkit-autofill {
 .matrix-table tfoot td.col-sticky-total {
   z-index: 36 !important;
   background-color: var(--table-head-bg) !important;
-  color: var(--table-head-text) !important;
-  font-size: 0.95rem;
-}
-
-/* Filas y Celdas de la Matriz */
-.matrix-table tbody tr {
-  transition: background-color 0.15s ease;
-}
-
-.matrix-table tbody tr:hover {
-  background-color: var(--row-hover);
-}
-
-.matrix-table tbody tr:hover td.col-sticky-name {
-  background-color: var(--row-hover);
-}
-
-.matrix-table tbody tr:hover td.col-sticky-total {
-  background-color: var(--surface-2);
+  color: #ffffff !important;
+  font-size: 1.1rem;
 }
 
 .matrix-cell {
@@ -459,9 +505,8 @@ select:-webkit-autofill {
   text-align: center;
   border-bottom: 1px solid var(--border-subtle);
   border-right: 1px solid var(--border-subtle);
-  min-width: 58px;
+  min-width: 65px;
   position: relative;
-  transition: background-color 0.15s ease;
 }
 
 .matrix-cell.col-border-day {
@@ -476,17 +521,17 @@ select:-webkit-autofill {
   background-color: var(--cell-today-bg);
 }
 
-/* Input Inline Editable dentro de la Celda */
+/* Input Inline Editable con Foco Prominente Marcado */
 .matrix-input {
   width: 100%;
-  border: 1px solid transparent;
+  border: 1.5px solid transparent;
   background: transparent;
   color: var(--text);
-  font-weight: 700;
+  font-weight: 800;
   text-align: center;
-  font-size: 0.85rem;
-  padding: 0.25rem 0.1rem;
-  border-radius: 4px;
+  font-size: 1rem;
+  padding: 0.35rem 0.15rem;
+  border-radius: 6px;
   outline: none;
   transition: all 0.15s ease;
 }
@@ -497,9 +542,12 @@ select:-webkit-autofill {
 }
 
 .matrix-input:focus {
-  border-color: var(--primary);
-  background-color: var(--cell-edit-bg);
-  box-shadow: 0 0 0 2px var(--focus-ring);
+  border: 2.5px solid var(--primary) !important;
+  background-color: #ffffff !important;
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 1px;
+  box-shadow: 0 0 0 3px rgba(21, 50, 80, 0.25) !important;
+  z-index: 10;
 }
 
 .matrix-input:disabled {
@@ -508,450 +556,37 @@ select:-webkit-autofill {
   cursor: not-allowed;
 }
 
-/* Distinción entre Celda Vacía y Cero */
 .matrix-input.is-empty {
   color: var(--text-muted);
-  opacity: 0.55;
+  opacity: 0.6;
 }
 
 .matrix-input.is-zero {
   color: var(--text-muted);
-  font-weight: 500;
 }
 
-/* Feedback de Guardado en Celdas */
-.matrix-cell.is-saving {
-  background-color: rgba(251, 191, 36, 0.25) !important;
+/* Feedback Visual por Celda */
+.matrix-cell.cell-saving .matrix-input {
+  background-color: #fff8e6 !important;
+  border-color: var(--accent) !important;
 }
 
-.matrix-cell.is-saved {
-  background-color: rgba(61, 214, 118, 0.35) !important;
-  animation: fadeSaved 1.5s ease-out forwards;
+.matrix-cell.cell-saved .matrix-input {
+  background-color: #e9f7ef !important;
+  border-color: #1b5e20 !important;
 }
 
-.matrix-cell.is-error {
-  background-color: rgba(239, 68, 68, 0.35) !important;
-  border: 1px solid var(--danger) !important;
-}
-
-@keyframes fadeSaved {
-  0% { background-color: rgba(61, 214, 118, 0.45); }
-  100% { background-color: transparent; }
+.matrix-cell.cell-error .matrix-input {
+  background-color: #fde8e8 !important;
+  border-color: var(--danger) !important;
 }
 
 /* --------------------------------------------------------------------------
-   9. DATATABLES EN MODO CLARO Y OSCURO (SOLO PARA LISTAS)
+   10. TARJETA SPLIT DE LOGIN (FONDO AZUL MARINO Y FORMULARIO SÓLIDO)
    -------------------------------------------------------------------------- */
-.dataTables_wrapper {
-  color: var(--text);
-  padding: 0.5rem 0;
-}
-
-.dataTables_wrapper .dataTables_length select,
-.dataTables_wrapper .dataTables_filter input {
-  background-color: var(--input-bg);
-  color: var(--input-text);
-  border: 1.5px solid var(--input-border);
-  border-radius: var(--radius-sm);
-  padding: 0.35rem 0.65rem;
-  outline: none;
-}
-
-.dataTables_wrapper .dataTables_filter input:focus,
-.dataTables_wrapper .dataTables_length select:focus {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 2px var(--focus-ring);
-}
-
-.dataTables_wrapper .dataTables_info,
-.dataTables_wrapper .dataTables_paginate {
-  color: var(--text-muted) !important;
-  padding-top: 0.75rem;
-  font-size: 0.88rem;
-}
-
-.dataTables_wrapper .paginate_button {
-  border-radius: var(--radius-sm) !important;
-  color: var(--text) !important;
-}
-
-.dataTables_wrapper .paginate_button.current {
-  background: var(--primary) !important;
-  color: var(--on-primary) !important;
-  border-color: var(--primary) !important;
-}
-
-/* --------------------------------------------------------------------------
-   10. MODALES, ALERTAS Y SWEETALERT2
-   -------------------------------------------------------------------------- */
-.modal-content {
-  background-color: var(--surface);
-  color: var(--text);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-}
-
-.modal-header {
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.modal-footer {
-  border-top: 1px solid var(--border-subtle);
-  background-color: var(--surface-2);
-}
-
-/* SweetAlert2 Modo Oscuro y Adaptable */
-.swal2-popup {
-  background-color: var(--surface) !important;
-  color: var(--text) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: var(--radius-lg) !important;
-}
-
-.swal2-title,
-.swal2-html-container {
-  color: var(--text) !important;
-}
-
-/* --------------------------------------------------------------------------
-   11. BADGES Y ESTADOS SEMÁNTICOS
-   -------------------------------------------------------------------------- */
-.badge-turno-manana {
-  background-color: #fef3c7;
-  color: #78350f;
-  font-weight: 700;
-  border-radius: var(--radius-pill);
-  padding: 0.3rem 0.7rem;
-  font-size: 0.78rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-
-.badge-turno-tarde {
-  background-color: #ffedd5;
-  color: #9a3412;
-  font-weight: 700;
-  border-radius: var(--radius-pill);
-  padding: 0.3rem 0.7rem;
-  font-size: 0.78rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-
-[data-bs-theme="dark"] .badge-turno-manana {
-  background-color: #451a03;
-  color: #fde68a;
-}
-
-[data-bs-theme="dark"] .badge-turno-tarde {
-  background-color: #431407;
-  color: #fdba74;
-}
-
-/* --------------------------------------------------------------------------
-   12. SCROLLBARS PERSONALIZADAS
-   -------------------------------------------------------------------------- */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--surface-2);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--primary);
-}
-
-/* --------------------------------------------------------------------------
-   13. COMPONENTES CORPORATIVOS Y LANDING (ESTÉTICA AGRI-TECH INSPIRADA)
-   -------------------------------------------------------------------------- */
-.section-eyebrow {
-  display: inline-block;
-  font-family: var(--bs-body-font-family);
-  font-size: 0.82rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--primary);
-  margin-bottom: 0.6rem;
-}
-
-[data-bs-theme="dark"] .section-eyebrow {
-  color: #5fb343;
-}
-
-.section-title {
-  font-family: var(--bs-heading-font-family);
-  font-size: clamp(2rem, 3.5vw, 2.75rem);
-  font-weight: 700;
-  line-height: 1.2;
-  color: var(--text);
-  margin-bottom: 1rem;
-}
-
-.section-lead {
-  font-size: 1.05rem;
-  color: var(--text-muted);
-  max-width: 680px;
-  line-height: 1.7;
-}
-
-/* Navbar Adaptable (Transparente sobre Hero y Sólido en Scroll) */
-.navbar-asoagro {
-  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, backdrop-filter 0.3s ease;
-}
-
-.navbar-asoagro.navbar-transparent {
-  background: transparent !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
-  box-shadow: none !important;
-}
-
-.navbar-asoagro.navbar-transparent .brand-text-title {
-  color: #ffffff !important;
-}
-
-.navbar-asoagro.navbar-transparent .brand-text-sub {
-  color: rgba(255, 255, 255, 0.8) !important;
-}
-
-.navbar-asoagro.navbar-transparent .nav-link-custom {
-  color: rgba(255, 255, 255, 0.9) !important;
-}
-
-.navbar-asoagro.navbar-transparent .nav-link-custom:hover {
-  color: #ffffff !important;
-  background-color: rgba(255, 255, 255, 0.15) !important;
-}
-
-.navbar-asoagro.navbar-transparent .theme-toggle-btn {
-  color: #ffffff !important;
-  border-color: rgba(255, 255, 255, 0.4) !important;
-}
-
-.navbar-asoagro.navbar-scrolled {
-  background: var(--surface) !important;
-  border-bottom: 1px solid var(--border-subtle) !important;
-  box-shadow: var(--shadow-sm) !important;
-  backdrop-filter: blur(12px) !important;
-}
-
-/* Hero A Ancho Completo */
-.hero-fullwidth {
-  position: relative;
-  min-height: 90vh;
-  display: flex;
-  align-items: center;
-  background-color: #084d05;
-  background-image: url('../img/hero-vereda.svg');
-  background-size: cover;
-  background-position: center;
-  padding: 8rem 0 5rem 0;
-  overflow: hidden;
-}
-
-.hero-overlay {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(8, 77, 5, 0.92) 0%, rgba(17, 80, 30, 0.88) 60%, rgba(6, 40, 15, 0.94) 100%);
-  z-index: 1;
-}
-
-.hero-inner {
-  position: relative;
-  z-index: 2;
-}
-
-.hero-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.45rem 1.1rem;
-  border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, 0.14);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: #ffffff;
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.hero-title {
-  font-family: var(--bs-heading-font-family);
-  font-size: clamp(2.2rem, 5vw, 3.6rem);
-  font-weight: 800;
-  line-height: 1.15;
-  color: #ffffff;
-  margin-top: 1.25rem;
-  margin-bottom: 1.25rem;
-  letter-spacing: -0.02em;
-}
-
-.hero-support {
-  font-size: 1.15rem;
-  color: rgba(255, 255, 255, 0.92);
-  line-height: 1.7;
-  max-width: 720px;
-  margin-bottom: 2rem;
-}
-
-/* Tarjetas de Vidrio (Misión y Visión) */
-.glass-card-hero {
-  background: rgba(255, 255, 255, 0.10);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: var(--radius-lg);
-  padding: 2rem;
-  color: #ffffff;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
-  height: 100%;
-}
-
-.glass-card-hero:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.35);
-}
-
-.glass-card-tag {
-  font-size: 0.75rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: #fef08a;
-  display: block;
-  margin-bottom: 0.5rem;
-}
-
-.glass-card-title {
-  font-family: var(--bs-heading-font-family);
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: #ffffff;
-  margin-bottom: 0.85rem;
-}
-
-.glass-card-text {
-  font-size: 0.95rem;
-  line-height: 1.7;
-  color: rgba(255, 255, 255, 0.92);
-  margin-bottom: 0;
-}
-
-/* Bloques Alternados Imagen + Texto */
-.feature-media-wrapper {
-  position: relative;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--border-subtle);
-  background-color: var(--surface-2);
-}
-
-.feature-media-img {
-  width: 100%;
-  height: 380px;
-  object-fit: cover;
-  transition: transform 0.5s ease;
-}
-
-.feature-media-wrapper:hover .feature-media-img {
-  transform: scale(1.03);
-}
-
-/* Tarjetas de Tres Columnas */
-.card-feature-col {
-  background-color: var(--surface);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 2.2rem 1.85rem;
-  height: 100%;
-  box-shadow: var(--shadow-sm);
-  transition: all 0.25s ease;
-  display: flex;
-  flex-direction: column;
-}
-
-.card-feature-col:hover {
-  transform: translateY(-5px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--primary);
-}
-
-.card-feature-icon {
-  width: 54px;
-  height: 54px;
-  border-radius: var(--radius-md);
-  background-color: var(--surface-2);
-  color: var(--primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.6rem;
-  margin-bottom: 1.25rem;
-}
-
-[data-bs-theme="dark"] .card-feature-icon {
-  background-color: rgba(61, 214, 118, 0.12);
-  color: var(--primary);
-}
-
-/* Chips de Infraestructura */
-.infra-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  border-radius: var(--radius-pill);
-  background-color: var(--surface-2);
-  border: 1px solid var(--border-subtle);
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--text);
-  margin-right: 0.4rem;
-  margin-bottom: 0.5rem;
-  transition: all 0.2s ease;
-}
-
-.infra-chip:hover {
-  background-color: var(--cell-edit-bg);
-  border-color: var(--primary);
-}
-
-/* Footer Corporativo Sobrio */
-.footer-corporate {
-  background-color: #082811;
-  color: #d1ded4;
-  border-top: 1px solid #144722;
-  font-size: 0.92rem;
-  line-height: 1.7;
-}
-
-.footer-corporate a {
-  color: #e5eee7;
-  transition: color 0.2s ease;
-}
-
-.footer-corporate a:hover {
-  color: #5fb343;
-}
-
-/* Portal de Login Dividido */
 .login-split-card {
   background-color: var(--surface);
-  border: 1px solid var(--border-subtle);
+  border: 2px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
   overflow: hidden;
@@ -961,7 +596,7 @@ select:-webkit-autofill {
 
 .login-brand-panel,
 .login-brand-side {
-  background: linear-gradient(145deg, #084d05 0%, #11501e 50%, #06280e 100%);
+  background-color: var(--primary);
   color: #ffffff;
   padding: 3rem 2.5rem;
   display: flex;
@@ -975,21 +610,53 @@ select:-webkit-autofill {
   background-color: var(--surface);
 }
 
-/* Captcha Nativo GD */
-.captcha-container {
-  background-color: var(--surface-2);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 0.75rem 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+/* --------------------------------------------------------------------------
+   11. FOOTER SOBRIO EN AZUL MARINO NOCHE
+   -------------------------------------------------------------------------- */
+.footer-corporate {
+  background-color: #0d1e30;
+  color: #dbe3ed;
+  border-top: 3px solid var(--primary);
+  font-size: 0.95rem;
+  line-height: 1.7;
 }
 
-.captcha-img {
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  height: 46px;
+.footer-corporate a {
+  color: #ffffff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
+.footer-corporate a:hover {
+  color: var(--accent);
+}
+
+/* --------------------------------------------------------------------------
+   12. RESPONSIVIDAD TOTAL (1 COLUMNA EN MÓVILES)
+   -------------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  html {
+    font-size: calc(18px * var(--font-scale, 1));
+  }
+
+  .login-split-card {
+    margin: 1rem auto;
+  }
+
+  .login-brand-panel,
+  .login-brand-side,
+  .login-form-panel,
+  .login-form-side {
+    padding: 2rem 1.5rem;
+  }
+
+  .btn-touch,
+  .btn-aso-primary,
+  .btn-aso-accent {
+    width: 100%;
+  }
+
+  .top-accessibility-bar {
+    text-align: center;
+  }
+}

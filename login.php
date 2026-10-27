@@ -162,17 +162,8 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
   <title>Acceso Seguro | <?php echo e(EMPRESA_SIGLA); ?></title>
-
-  <!-- Script Anti-Parpadeo (Anti-FOUC) -->
-  <script>
-    (function() {
-      const savedTheme = localStorage.getItem('asoagro_theme');
-      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const theme = savedTheme ? savedTheme : (systemDark ? 'dark' : 'light');
-      document.documentElement.setAttribute('data-bs-theme', theme);
-    })();
-  </script>
 
   <!-- Favicon Oficial -->
   <link rel="icon" type="image/png" href="assets/img/logo.png">
@@ -183,7 +174,7 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
   <!-- Bootstrap Icons 1.11.3 -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   
-  <!-- Estilos Globales de Marca AsoagroAlisal -->
+  <!-- Estilos Globales Premium de Alta Accesibilidad (Azul Marino / Crema / Atkinson) -->
   <link rel="stylesheet" href="assets/css/theme.css">
 
   <?php if (USE_RECAPTCHA_V2 && !empty(RECAPTCHA_SITE_KEY)): ?>
@@ -192,66 +183,71 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
 </head>
 <body class="d-flex flex-column min-vh-100 justify-content-between">
 
-  <!-- Cabecera mínima con botón de volver y alternador de modo oscuro -->
-  <header class="py-3 px-4">
+  <!-- Barra Superior Accesible -->
+  <aside class="top-accessibility-bar py-2">
     <div class="container d-flex justify-content-between align-items-center">
-      <a href="index.php" class="btn btn-touch btn-outline-success border-2 rounded-pill px-3 py-2 text-decoration-none small">
+      <a href="index.php" class="btn btn-touch btn-outline-primary" style="min-height: 44px; padding: 0.4rem 1rem;">
         <i class="bi bi-arrow-left"></i>
         <span>Volver al Inicio</span>
       </a>
 
-      <button type="button" class="btn btn-touch btn-outline-success border-2 rounded-circle p-0 theme-toggle-btn" style="width: 44px; height: 44px;" aria-label="Alternar modo oscuro">
-        <i class="bi bi-moon-stars-fill fs-5"></i>
-      </button>
+      <div class="d-flex align-items-center gap-2">
+        <span class="small fw-bold text-dark d-none d-sm-inline">Tamaño de letra:</span>
+        <div class="font-size-controls" role="group" aria-label="Ajuste de tamaño de fuente">
+          <button type="button" class="btn-font-size active" data-size="normal" title="Tamaño normal (20px)" aria-pressed="true">A</button>
+          <button type="button" class="btn-font-size" data-size="large" title="Tamaño grande (23px)" aria-pressed="false">A+</button>
+          <button type="button" class="btn-font-size" data-size="xlarge" title="Tamaño muy grande (26px)" aria-pressed="false">A++</button>
+        </div>
+      </div>
     </div>
-  </header>
+  </aside>
 
-  <!-- Contenedor Central con Tarjeta Flotante Dividida (Split-Card) -->
+  <!-- Contenedor Central con Tarjeta Dividida Sólida (Split-Card) -->
   <main class="container my-auto py-4">
     <div class="row justify-content-center">
       <div class="col-12 d-flex justify-content-center">
 
-        <div class="card login-split-card border-0">
+        <div class="card login-split-card border-2">
           <div class="row g-0">
 
-            <!-- LADO IZQUIERDO: BRANDING, LOGO Y MENSAJE INSTITUCIONAL -->
+            <!-- LADO IZQUIERDO: BRANDING INSTITUCIONAL AZUL MARINO -->
             <div class="col-md-5 login-brand-side">
               <div>
                 <div class="d-flex align-items-center gap-3 mb-4">
-                  <img src="assets/img/logo.png" alt="Logo Oficial <?php echo e(EMPRESA_SIGLA); ?>" style="max-height: 64px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));">
+                  <img src="assets/img/logo.png" alt="Logo Oficial <?php echo e(EMPRESA_SIGLA); ?>" style="max-height: 70px; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));">
                   <div>
                     <h3 class="fw-bold mb-0 text-white"><?php echo e(EMPRESA_SIGLA); ?></h3>
-                    <small class="opacity-75">Carmen de Carupa</small>
+                    <small class="text-white-50">Carmen de Carupa</small>
                   </div>
                 </div>
 
                 <h4 class="fw-bold mb-3 text-warning">Plataforma de Control Lechero</h4>
-                <p class="small opacity-90 mb-4" style="line-height: 1.7;">
-                  Bienvenido al portal seguro de asociados. Registra tus pesajes diarios por turnos (mañana y tarde), consulta tus planillas quincenales y mantén la trazabilidad de tu producción lechera.
+                <p class="small mb-4 text-white" style="line-height: 1.7; opacity: 0.95;">
+                  Bienvenido al portal institucional de asociados. Registra tus pesajes diarios por turnos (☀️ Mañana y 🌅 Tarde), consulta tus planillas quincenales y mantén la trazabilidad de tu producción lechera.
                 </p>
 
-                <div class="d-flex flex-column gap-2 small opacity-75">
+                <div class="d-flex flex-column gap-2 small text-white">
                   <div><i class="bi bi-check-circle-fill text-warning me-2"></i>32 Ganaderos Vinculados</div>
-                  <div><i class="bi bi-check-circle-fill text-warning me-2"></i>Monitoreo en Tiempo Real</div>
+                  <div><i class="bi bi-check-circle-fill text-warning me-2"></i>Monitoreo y Pesaje Diario</div>
                   <div><i class="bi bi-check-circle-fill text-warning me-2"></i>Liquidaciones Transparentes</div>
                 </div>
               </div>
 
-              <div class="mt-4 pt-3 border-top border-white border-opacity-25 small opacity-75">
+              <div class="mt-4 pt-3 border-top border-white border-opacity-25 small text-white opacity-75">
                 <?php echo e(EMPRESA_NOMBRE); ?><br>
                 <strong>NIT: <?php echo e(EMPRESA_NIT); ?></strong>
               </div>
             </div>
 
-            <!-- LADO DERECHO: FORMULARIO DE ACCESO TÁCTIL -->
+            <!-- LADO DERECHO: FORMULARIO DE ACCESO TÁCTIL CLARO -->
             <div class="col-md-7 login-form-side">
               <div class="mb-4">
-                <h3 class="fw-extrabold text-success mb-1">Iniciar Sesión</h3>
-                <p class="text-muted small">Digita tu número de cédula y contraseña para acceder.</p>
+                <h3 class="fw-bold text-dark mb-1">Iniciar Sesión</h3>
+                <p class="text-muted small">Digita tu número de cédula y contraseña para ingresar.</p>
               </div>
 
               <?php if (!empty($errorMsg)): ?>
-                <div class="alert alert-danger rounded-4 py-3 small fw-bold mb-4" role="alert">
+                <div class="alert alert-danger rounded-4 py-3 small fw-bold mb-4" role="alert" style="border: 2px solid var(--danger);">
                   <i class="bi bi-exclamation-triangle-fill me-2 fs-5 align-middle"></i>
                   <?php echo e($errorMsg); ?>
                 </div>
@@ -266,40 +262,40 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
               <form action="login.php" method="POST" id="form-login" class="needs-validation" novalidate>
                 <?php echo campoCsrf(); ?>
 
-                <!-- Campo Cédula -->
-                <div class="mb-3">
-                  <label for="cedula" class="form-label fw-bold small text-muted">Número de Cédula de Ciudadanía *</label>
+                <!-- Campo Cédula: Etiqueta Siempre Visible Encima -->
+                <div class="mb-4">
+                  <label for="cedula" class="form-label">Número de Cédula de Ciudadanía *</label>
                   <div class="input-group">
-                    <span class="input-group-text border-2 bg-transparent text-success" style="border-radius: var(--radius-md) 0 0 var(--radius-md); border-right: none;">
-                      <i class="bi bi-person-vcard fs-5"></i>
+                    <span class="input-group-text border-2 bg-light text-primary" style="border-radius: var(--radius-md) 0 0 var(--radius-md); border-right: none;">
+                      <i class="bi bi-person-vcard fs-4"></i>
                     </span>
-                    <input type="text" class="form-control form-control-touch border-start-0" id="cedula" name="cedula" inputmode="numeric" required placeholder="Ej: 10123456" value="<?php echo e($cedulaRecordada); ?>" style="border-radius: 0 var(--radius-md) var(--radius-md) 0;">
+                    <input type="text" class="form-control form-control-touch border-start-0" id="cedula" name="cedula" inputmode="numeric" required placeholder="Número de cédula" value="<?php echo e($cedulaRecordada); ?>" style="border-radius: 0 var(--radius-md) var(--radius-md) 0;">
                   </div>
                 </div>
 
                 <!-- Campo Contraseña con Botón Mostrar/Ocultar -->
-                <div class="mb-3">
-                  <label for="password" class="form-label fw-bold small text-muted">Contraseña Personal *</label>
+                <div class="mb-4">
+                  <label for="password" class="form-label">Contraseña Personal *</label>
                   <div class="input-group">
-                    <span class="input-group-text border-2 bg-transparent text-success" style="border-radius: var(--radius-md) 0 0 var(--radius-md); border-right: none;">
-                      <i class="bi bi-key-fill fs-5"></i>
+                    <span class="input-group-text border-2 bg-light text-primary" style="border-radius: var(--radius-md) 0 0 var(--radius-md); border-right: none;">
+                      <i class="bi bi-key-fill fs-4"></i>
                     </span>
                     <input type="password" class="form-control form-control-touch border-start-0 border-end-0" id="password" name="password" required placeholder="Tu contraseña" style="border-radius: 0;">
-                    <button class="btn btn-outline-secondary border-2 border-start-0" type="button" id="btn-toggle-pass" style="border-radius: 0 var(--radius-md) var(--radius-md) 0;" title="Mostrar contraseña">
-                      <i class="bi bi-eye-fill"></i>
+                    <button class="btn btn-outline-secondary border-2 border-start-0" type="button" id="btn-toggle-pass" style="border-radius: 0 var(--radius-md) var(--radius-md) 0; min-width: 56px;" title="Mostrar contraseña">
+                      <i class="bi bi-eye-fill fs-5"></i>
                     </button>
                   </div>
                 </div>
 
-                <!-- CAPTCHA GD NATIVO / Google reCAPTCHA v2 -->
-                <div class="mb-3 p-3 rounded-4" style="background: var(--aso-secondary-light); border: 1px solid var(--card-border);">
+                <!-- CAPTCHA GD NATIVO -->
+                <div class="mb-4 p-3 rounded-4" style="background-color: var(--surface-2); border: 2px solid var(--border);">
                   <div class="d-flex justify-content-between align-items-center mb-2">
-                    <label for="captcha-input" class="form-label fw-bold small mb-0 text-success">
-                      <i class="bi bi-shield-check me-1"></i> Verificación de Seguridad *
+                    <label for="captcha-input" class="form-label mb-0 text-dark">
+                      <i class="bi bi-shield-check me-1 text-primary"></i> Código de Seguridad *
                     </label>
                     <?php if (!USE_RECAPTCHA_V2): ?>
-                      <button type="button" id="btn-recargar-captcha" class="btn btn-sm btn-link text-success fw-bold text-decoration-none p-0" title="Obtener otro código">
-                        <i class="bi bi-arrow-clockwise"></i> Cambiar
+                      <button type="button" id="btn-recargar-captcha" class="btn btn-sm btn-link text-primary fw-bold text-decoration-underline p-0" title="Obtener otra imagen de verificación">
+                        <i class="bi bi-arrow-clockwise"></i> Cambiar imagen
                       </button>
                     <?php endif; ?>
                   </div>
@@ -308,37 +304,37 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
                     <div class="g-recaptcha" data-sitekey="<?php echo e(RECAPTCHA_SITE_KEY); ?>"></div>
                   <?php else: ?>
                     <div class="d-flex align-items-center gap-3">
-                      <img src="includes/captcha_gd.php?t=<?php echo time(); ?>" alt="Código de seguridad CAPTCHA" id="captcha-img" class="rounded-3 shadow-sm" style="height: 44px; width: 140px; object-fit: contain;">
-                      <input type="text" class="form-control form-control-touch text-center fw-bold text-uppercase fs-5" id="captcha-input" name="captcha" maxlength="5" required placeholder="Código" autocomplete="off">
+                      <img src="includes/captcha_gd.php?t=<?php echo time(); ?>" alt="Código de seguridad CAPTCHA" id="captcha-img" class="rounded-3 shadow-sm border border-2 border-secondary" style="height: 52px; width: 150px; object-fit: contain;">
+                      <input type="text" class="form-control form-control-touch text-center fw-bold text-uppercase fs-4" id="captcha-input" name="captcha" maxlength="5" required placeholder="Código" autocomplete="off">
                     </div>
-                    <small class="text-muted d-block mt-2" style="font-size: 0.76rem;">Escribe los 5 caracteres distorsionados (no distingue mayúsculas/minúsculas).</small>
+                    <small class="text-muted d-block mt-2" style="font-size: 0.82rem;">Escribe los 5 caracteres que ves en la imagen (no distingue mayúsculas/minúsculas).</small>
                   <?php endif; ?>
                 </div>
 
                 <!-- Checkbox Recordarme y Enlace Olvidé Clave -->
                 <div class="d-flex justify-content-between align-items-center mb-4">
                   <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="recordarme" name="recordarme" <?php echo !empty($cedulaRecordada) ? 'checked' : ''; ?>>
-                    <label class="form-check-label small text-muted" for="recordarme">
+                    <input class="form-check-input" type="checkbox" id="recordarme" name="recordarme" style="width: 24px; height: 24px;" <?php echo !empty($cedulaRecordada) ? 'checked' : ''; ?>>
+                    <label class="form-check-label ms-2 fw-bold text-muted" for="recordarme">
                       Recordar mi cédula
                     </label>
                   </div>
-                  <a href="olvide_password.php" class="small text-success text-decoration-none fw-bold hover-underline">
+                  <a href="olvide_password.php" class="small fw-bold text-primary hover-underline">
                     ¿Olvidaste tu clave?
                   </a>
                 </div>
 
-                <!-- Botón de Ingreso Táctil -->
-                <button type="submit" id="btn-submit" class="btn btn-touch btn-aso-primary w-100 shadow mb-3">
+                <!-- Botón de Ingreso Enorme de 56px -->
+                <button type="submit" id="btn-submit" class="btn btn-touch btn-aso-primary w-100 mb-3 fs-5">
                   <span>Ingresar a la Plataforma</span>
-                  <i class="bi bi-arrow-right"></i>
+                  <i class="bi bi-arrow-right fs-4"></i>
                 </button>
               </form>
 
               <!-- Enlace de Afiliación / Registro -->
               <div class="text-center pt-3 border-top border-secondary-subtle">
                 <small class="text-muted d-block mb-2">¿Eres ganadero de la Vereda Alizal y no tienes usuario?</small>
-                <a href="registro.php" class="btn btn-touch btn-outline-success border-2 rounded-pill w-100 small fw-bold">
+                <a href="registro.php" class="btn btn-touch btn-outline-primary w-100 fw-bold">
                   <i class="bi bi-person-plus-fill me-1"></i> Solicitar Registro de Asociado
                 </a>
               </div>

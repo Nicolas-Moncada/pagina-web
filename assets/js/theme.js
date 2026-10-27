@@ -2,140 +2,82 @@
  * =========================================================================================
  * PLATAFORMA DE CONTROL LECHERO - ASOAGROALIZAL (CARMEN DE CARUPA)
  * Archivo: assets/js/theme.js
- * Propósito: Modo oscuro anti-parpadeo, SweetAlert2 helpers, DataTables español y utilidades.
+ * Propósito: Sistema accesible para adultos mayores rurales:
+ *            - Control de tamaño de letra (A, A+, A++) persistente en localStorage.
+ *            - Modo claro forzado (color-scheme: light).
+ *            - SweetAlert2 adaptado a la paleta azul marino/crema.
+ *            - Helpers de formato COP y Litros.
+ *            - Diccionario en español para DataTables.
  * =========================================================================================
  */
 
 (function () {
   'use strict';
 
-  // 1. SISTEMA DE MODO OSCURO PERSISTENTE (Bootstrap 5.3 + LocalStorage)
-  const THEME_STORAGE_KEY = 'asoagro_theme';
+  // 1. FORZADO DE TEMA CLARO ÚNICO (PREVIENE MODO OSCURO DE CELULARES)
+  document.documentElement.setAttribute('data-bs-theme', 'light');
+  document.documentElement.style.colorScheme = 'light';
 
-  function getPreferredTheme() {
-    const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
-    if (storedTheme) {
-      return storedTheme;
+  // 2. CONTROL ACCESIBLE DE TAMAÑO DE FUENTE: A  A+  A++
+  const FONT_STORAGE_KEY = 'asoagro_font_size';
+
+  function applyFontSize(size) {
+    document.documentElement.classList.remove('font-size-normal', 'font-size-large', 'font-size-xlarge');
+    
+    if (size === 'large') {
+      document.documentElement.classList.add('font-size-large');
+    } else if (size === 'xlarge') {
+      document.documentElement.classList.add('font-size-xlarge');
+    } else {
+      document.documentElement.classList.add('font-size-normal');
+      size = 'normal';
     }
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  }
 
-  function setTheme(theme) {
-    document.documentElement.setAttribute('data-bs-theme', theme);
-    localStorage.setItem(THEME_STORAGE_KEY, theme);
-    updateThemeToggleIcons(theme);
-  }
+    try {
+      localStorage.setItem(FONT_STORAGE_KEY, size);
+    } catch (e) {}
 
-  function updateThemeToggleIcons(theme) {
-    const toggleBtns = document.querySelectorAll('.theme-toggle-btn');
-    toggleBtns.forEach((btn) => {
-      const icon = btn.querySelector('i');
-      if (icon) {
-        if (theme === 'dark') {
-          icon.className = 'bi bi-sun-fill text-warning';
-          btn.setAttribute('title', 'Cambiar a modo claro');
-        } else {
-          icon.className = 'bi bi-moon-stars-fill text-success';
-          btn.setAttribute('title', 'Cambiar a modo oscuro');
-        }
+    // Actualizar botones en la interfaz
+    document.querySelectorAll('.btn-font-size').forEach((btn) => {
+      const btnSize = btn.getAttribute('data-size');
+      if (btnSize === size) {
+        btn.classList.add('active');
+        btn.setAttribute('aria-pressed', 'true');
+      } else {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-pressed', 'false');
       }
     });
   }
 
-  // Inicializar tema al cargar el DOM
+  // Inicializar al cargar el DOM
   document.addEventListener('DOMContentLoaded', () => {
-    const currentTheme = getPreferredTheme();
-    setTheme(currentTheme);
+    // Leer preferencia guardada (por defecto 'normal' que ya es 20px)
+    let savedSize = 'normal';
+    try {
+      savedSize = localStorage.getItem(FONT_STORAGE_KEY) || 'normal';
+    } catch (e) {}
+    applyFontSize(savedSize);
 
-    // Event listeners para los botones de alternar tema
-    const toggleBtns = document.querySelectorAll('.theme-toggle-btn');
-    toggleBtns.forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const activeTheme = document.documentElement.getAttribute('data-bs-theme');
-        const nextTheme = activeTheme === 'dark' ? 'light' : 'dark';
-        setTheme(nextTheme);
+    // Asignar listeners a los botones de tamaño de fuente
+    document.querySelectorAll('.btn-font-size').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const targetSize = btn.getAttribute('data-size');
+        applyFontSize(targetSize);
       });
     });
 
-    // Escuchar cambios automáticos del sistema operativo si el usuario no tiene preferencia manual
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-      if (!localStorage.getItem(THEME_STORAGE_KEY)) {
-        setTheme(getPreferredTheme());
-      }
-    });
-
-    // 2. ANIMACIÓN SUAVE POR INTERSECTION OBSERVER (Scroll Reveal)
-    const revealElements = document.querySelectorAll('.reveal-on-scroll');
-    if ('IntersectionObserver' in window && revealElements.length > 0) {
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('is-visible');
-            observer.unobserve(entry.target);
-          }
-        });
-      }, { threshold: 0.12 });
-
-      revealElements.forEach((el) => observer.observe(el));
-    } else {
-      revealElements.forEach((el) => el.classList.add('is-visible'));
-    }
-
-    // 3. CONTADOR ANIMADO (Nuestra Familia: 32 Asociados)
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Contador animado accesible
     const counters = document.querySelectorAll('.counter-animated');
     if (counters.length > 0) {
-      if (prefersReducedMotion || !('IntersectionObserver' in window)) {
-        counters.forEach((c) => {
-          c.textContent = c.getAttribute('data-target') || '32';
-        });
-      } else {
-        const counterObserver = new IntersectionObserver((entries) => {
-          entries.forEach((entry) => {
-            if (entry.isIntersecting) {
-              const target = parseInt(entry.target.getAttribute('data-target') || '32', 10);
-              animateCounter(entry.target, target, 1600);
-              counterObserver.unobserve(entry.target);
-            }
-          });
-        }, { threshold: 0.3 });
-
-        counters.forEach((c) => counterObserver.observe(c));
-      }
-    }
-
-    // 4. NAVBAR TRANSPARENTE SOBRE HERO Y SÓLIDO EN SCROLL
-    const nav = document.querySelector('.navbar-asoagro');
-    const heroFull = document.querySelector('.hero-fullwidth');
-    if (nav && heroFull) {
-      const handleNavScroll = () => {
-        if (window.scrollY > 40) {
-          nav.classList.add('navbar-scrolled');
-          nav.classList.remove('navbar-transparent');
-        } else {
-          nav.classList.add('navbar-transparent');
-          nav.classList.remove('navbar-scrolled');
-        }
-      };
-      window.addEventListener('scroll', handleNavScroll, { passive: true });
-      handleNavScroll();
+      counters.forEach((c) => {
+        c.textContent = c.getAttribute('data-target') || '32';
+      });
     }
   });
 
-  function animateCounter(element, target, duration) {
-    let start = 0;
-    const stepTime = Math.max(10, Math.floor(duration / target));
-    const timer = setInterval(() => {
-      start += 1;
-      element.textContent = start;
-      if (start >= target) {
-        element.textContent = target;
-        clearInterval(timer);
-      }
-    }, stepTime);
-  }
-
-  // 4. HELPERS GLOBALES EXPUESTOS EN WINDOW (AsoagroUI)
+  // 3. HELPERS GLOBALES EXPUESTOS EN WINDOW (AsoagroUI)
   window.AsoagroUI = {
     // Formato de moneda colombiana COP
     formatCOP: function (val) {
@@ -156,16 +98,16 @@
       }).format(val) + ' L';
     },
 
-    // Notificaciones SweetAlert2
+    // Notificaciones SweetAlert2 Adaptadas a Paleta Azul Marino / Oro
     showSuccess: function (title, text = '') {
       if (typeof Swal !== 'undefined') {
         return Swal.fire({
           icon: 'success',
           title: title,
           text: text,
-          confirmButtonColor: '#144722',
+          confirmButtonColor: '#153250',
           confirmButtonText: 'Aceptar',
-          customClass: { popup: 'rounded-4 shadow-lg' }
+          customClass: { popup: 'rounded-4 shadow-lg border border-2' }
         });
       }
       alert(title + (text ? "\n" + text : ''));
@@ -177,9 +119,9 @@
           icon: 'error',
           title: title,
           text: text,
-          confirmButtonColor: '#144722',
+          confirmButtonColor: '#153250',
           confirmButtonText: 'Entendido',
-          customClass: { popup: 'rounded-4 shadow-lg' }
+          customClass: { popup: 'rounded-4 shadow-lg border border-2' }
         });
       }
       alert(title + (text ? "\n" + text : ''));
@@ -191,9 +133,9 @@
           icon: 'warning',
           title: title,
           text: text,
-          confirmButtonColor: '#f59e0b',
+          confirmButtonColor: '#b56f10',
           confirmButtonText: 'Aceptar',
-          customClass: { popup: 'rounded-4 shadow-lg' }
+          customClass: { popup: 'rounded-4 shadow-lg border border-2' }
         });
       }
       alert(title + (text ? "\n" + text : ''));
@@ -206,11 +148,11 @@
           text: text,
           icon: 'question',
           showCancelButton: true,
-          confirmButtonColor: '#144722',
+          confirmButtonColor: '#153250',
           cancelButtonColor: '#6c757d',
           confirmButtonText: confirmBtnText,
           cancelButtonText: 'Cancelar',
-          customClass: { popup: 'rounded-4 shadow-lg' }
+          customClass: { popup: 'rounded-4 shadow-lg border border-2' }
         });
         return result.isConfirmed;
       }
@@ -248,37 +190,23 @@
       }
     },
 
-    // Diccionario español nativo para DataTables sin dependencias externas
+    // Diccionario en español para DataTables
     dataTablesSpanish: {
       processing: "Procesando registros...",
       search: "Buscar en tabla:",
-      lengthMenu: "Mostrar _MENU_ por página",
+      lengthMenu: "Mostrar _MENU_ registros",
       info: "Mostrando de _START_ a _END_ de _TOTAL_ registros",
-      infoEmpty: "Mostrando 0 de 0 registros",
-      infoFiltered: "(filtrado de un total de _MAX_)",
-      infoPostFix: "",
+      infoEmpty: "Mostrando 0 registros",
+      infoFiltered: "(filtrado de _MAX_ totales)",
       loadingRecords: "Cargando datos...",
-      zeroRecords: "No se encontraron registros coincidentes",
+      zeroRecords: "No se encontraron registros",
       emptyTable: "No hay registros disponibles",
       paginate: {
         first: "«",
-        previous: "‹",
-        next: "›",
+        previous: "‹ Anterior",
+        next: "Siguiente ›",
         last: "»"
-      },
-      aria: {
-        sortAscending: ": activar para ordenar columna ascendente",
-        sortDescending: ": activar para ordenar columna descendente"
-      },
-      buttons: {
-        copy: "Copiar",
-        colvis: "Columnas",
-        csv: "CSV",
-        excel: "Excel",
-        pdf: "PDF",
-        print: "Imprimir"
       }
     }
   };
 })();
-

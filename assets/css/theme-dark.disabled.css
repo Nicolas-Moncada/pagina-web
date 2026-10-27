@@ -1,0 +1,19 @@
+/* ==========================================================================
+   MODO OSCURO DESACTIVADO - ASOAGROALIZAL
+   Archivo: assets/css/theme-dark.disabled.css
+   Motivo: Desactivado por requisito de accesibilidad para adultos mayores
+           (un solo modo claro de alto contraste para evitar textos invisibles
+           por inversión automática en navegadores móviles).
+   ========================================================================== */
+
+/* 
+[data-bs-theme="dark"] {
+  --bg: #111813;
+  --surface: #17221a;
+  --surface-2: #202e24;
+  --text: #e5eee7;
+  --text-muted: #9cb3a0;
+  --border: #3c5242;
+  --primary: #3dd676;
+}
+*/

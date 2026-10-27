@@ -156,21 +156,21 @@ require_once __DIR__ . '/includes/header.php';
 
 <main class="container-fluid px-3 px-md-4 py-4 flex-grow-1">
 
-  <!-- BIENVENIDA Y RESUMEN DEL GANADERO -->
+  <!-- BIENVENIDA Y RESUMEN DEL GANADERO EN AZUL MARINO SÓLIDO -->
   <div class="row mb-4">
     <div class="col-12">
-      <div class="card card-rural p-3 p-md-4 bg-success text-white border-0 shadow position-relative overflow-hidden" style="background: linear-gradient(135deg, #144722 0%, #2e7d32 100%);">
+      <div class="card card-rural p-4 border-0 shadow text-white" style="background-color: var(--primary);">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
           <div>
-            <span class="badge bg-warning text-dark px-3 py-1 rounded-pill fw-bold mb-2">Asociado Oficial</span>
-            <h2 class="display-6 fw-bold mb-1">¡Hola, <?php echo e($usuario['nombre']); ?>!</h2>
-            <p class="mb-0 opacity-90">
-              <i class="bi bi-geo-alt-fill text-warning me-1"></i> Finca: <strong><?php echo e($usuario['finca'] ?? 'Vereda Alizal'); ?></strong> &bull; Cédula: <strong><?php echo e($usuario['cedula']); ?></strong>
+            <span class="badge px-3 py-1.5 rounded-pill fw-bold mb-2" style="background-color: var(--accent); color: #ffffff;">Asociado Oficial</span>
+            <h2 class="display-6 fw-bold mb-1 text-white">¡Hola, <?php echo e($usuario['nombre']); ?>!</h2>
+            <p class="mb-0 text-white-50" style="font-size: 1.05rem;">
+              <i class="bi bi-geo-alt-fill text-warning me-1"></i> Finca: <strong class="text-white"><?php echo e($usuario['finca'] ?? 'Vereda Alizal'); ?></strong> &bull; Cédula: <strong class="text-white"><?php echo e($usuario['cedula']); ?></strong>
             </p>
           </div>
           <div class="text-md-end">
-            <span class="badge bg-white text-dark px-3 py-2 rounded-4 fw-bold shadow-sm">
-              <i class="bi bi-calendar3 me-1 text-success"></i> <?php echo formatoFechaEspanol($hoyStr); ?>
+            <span class="badge bg-white text-dark px-3 py-2.5 rounded-4 fw-bold shadow-sm" style="font-size: 0.95rem; border: 1.5px solid var(--border);">
+              <i class="bi bi-calendar3 me-1 text-primary"></i> <?php echo formatoFechaEspanol($hoyStr); ?>
             </span>
           </div>
         </div>
@@ -178,28 +178,34 @@ require_once __DIR__ . '/includes/header.php';
     </div>
   </div>
 
-  <!-- TARJETAS DE PESAJE DE HOY (MAÑANA / TARDE / TOTAL DÍA) -->
+  <!-- TARJETAS DE PESAJE DE HOY (MAÑANA / TARDE / TOTAL DÍA) CON BARRAS DE COMPARACIÓN -->
   <div class="row g-3 mb-4">
     <div class="col-12">
-      <h4 class="fw-bold text-success mb-2">
-        <i class="bi bi-sun-fill text-warning me-1"></i> Pesaje de Hoy (<?php echo date('d/m/Y'); ?>)
-      </h4>
+      <h3 class="fw-bold text-dark mb-2">
+        <i class="bi bi-sun-fill text-warning me-2"></i> Pesaje de Hoy (<?php echo date('d/m/Y'); ?>)
+      </h3>
     </div>
 
     <!-- Turno Mañana -->
     <div class="col-md-4">
       <div class="card card-rural p-4 border-start border-4 border-warning h-100">
         <div class="d-flex justify-content-between align-items-center mb-2">
-          <span class="badge-turno-manana">
-            <i class="bi bi-brightness-high-fill"></i> Turno Mañana
+          <span class="badge px-3 py-1.5 rounded-pill fw-bold" style="background-color: #fef3c7; color: #78350f;">
+            <i class="bi bi-brightness-high-fill me-1"></i> Turno Mañana
           </span>
-          <small class="text-muted fw-bold">☀️ Mañana</small>
+          <span class="fw-bold text-muted">☀️ Mañana</span>
         </div>
-        <div class="d-flex align-items-baseline gap-2">
-          <span class="display-5 fw-extrabold text-warning-emphasis"><?php echo number_format($litrosMananaHoy, 1, ',', '.'); ?></span>
+        <div class="d-flex align-items-baseline gap-2 my-2">
+          <span class="display-5 fw-bold text-dark"><?php echo number_format($litrosMananaHoy, 1, ',', '.'); ?></span>
           <span class="fs-5 fw-bold text-muted">Litros</span>
         </div>
-        <small class="text-muted mt-2 d-block">Registrado en centro de acopio</small>
+        <div class="progress-milk-container mt-2">
+          <?php $pctM = ($totalHoy > 0) ? min(100, round(($litrosMananaHoy / $totalHoy) * 100)) : 0; ?>
+          <div class="progress-bar-milk" style="width: <?php echo $pctM; ?>%; background-color: var(--accent);">
+            <?php echo $pctM > 15 ? $pctM . '%' : ''; ?>
+          </div>
+        </div>
+        <small class="text-muted mt-2 d-block">Registrado en acopio</small>
       </div>
     </div>
 
@@ -207,51 +213,62 @@ require_once __DIR__ . '/includes/header.php';
     <div class="col-md-4">
       <div class="card card-rural p-4 border-start border-4 border-danger h-100">
         <div class="d-flex justify-content-between align-items-center mb-2">
-          <span class="badge-turno-tarde">
-            <i class="bi bi-sunset-fill"></i> Turno Tarde
+          <span class="badge px-3 py-1.5 rounded-pill fw-bold" style="background-color: #fee2e2; color: #991b1b;">
+            <i class="bi bi-sunset-fill me-1"></i> Turno Tarde
           </span>
-          <small class="text-muted fw-bold">🌅 Tarde</small>
+          <span class="fw-bold text-muted">🌅 Tarde</span>
         </div>
-        <div class="d-flex align-items-baseline gap-2">
-          <span class="display-5 fw-extrabold text-danger-emphasis"><?php echo number_format($litrosTardeHoy, 1, ',', '.'); ?></span>
+        <div class="d-flex align-items-baseline gap-2 my-2">
+          <span class="display-5 fw-bold text-dark"><?php echo number_format($litrosTardeHoy, 1, ',', '.'); ?></span>
           <span class="fs-5 fw-bold text-muted">Litros</span>
         </div>
-        <small class="text-muted mt-2 d-block">Registrado en centro de acopio</small>
+        <div class="progress-milk-container mt-2">
+          <?php $pctT = ($totalHoy > 0) ? min(100, round(($litrosTardeHoy / $totalHoy) * 100)) : 0; ?>
+          <div class="progress-bar-milk" style="width: <?php echo $pctT; ?>%; background-color: var(--danger);">
+            <?php echo $pctT > 15 ? $pctT . '%' : ''; ?>
+          </div>
+        </div>
+        <small class="text-muted mt-2 d-block">Registrado en acopio</small>
       </div>
     </div>
 
     <!-- Total del Día -->
     <div class="col-md-4">
-      <div class="card card-rural p-4 border-start border-4 border-success h-100" style="background: var(--aso-secondary-light);">
+      <div class="card card-rural p-4 border-start border-4 border-primary h-100" style="background-color: var(--surface-2);">
         <div class="d-flex justify-content-between align-items-center mb-2">
-          <span class="badge bg-success text-white px-3 py-1 rounded-pill fw-bold">
+          <span class="badge px-3 py-1.5 rounded-pill fw-bold text-white" style="background-color: var(--primary);">
             <i class="bi bi-droplet-fill me-1"></i> Total Entregado Hoy
           </span>
-          <small class="text-success fw-bold">Suma del Día</small>
+          <span class="fw-bold text-primary">Suma del Día</span>
         </div>
-        <div class="d-flex align-items-baseline gap-2">
-          <span class="display-5 fw-extrabold text-success"><?php echo number_format($totalHoy, 1, ',', '.'); ?></span>
-          <span class="fs-5 fw-bold text-success">Litros</span>
+        <div class="d-flex align-items-baseline gap-2 my-2">
+          <span class="display-5 fw-bold text-primary"><?php echo number_format($totalHoy, 1, ',', '.'); ?></span>
+          <span class="fs-5 fw-bold text-primary">Litros</span>
         </div>
-        <small class="text-muted mt-2 d-block">Cadena de frío veredal activa</small>
+        <div class="progress-milk-container mt-2">
+          <div class="progress-bar-milk" style="width: <?php echo $totalHoy > 0 ? '100%' : '0%'; ?>; background-color: var(--primary);">
+            <?php echo $totalHoy > 0 ? '100% REGISTRADO' : 'SIN REGISTRO'; ?>
+          </div>
+        </div>
+        <small class="text-muted mt-2 d-block">Cadena de frío activa</small>
       </div>
     </div>
   </div>
 
-  <!-- TARJETAS RESUMEN DE LA QUINCENA -->
+  <!-- TARJETAS RESUMEN DE LA QUINCENA CON BARRAS DE PROGRESO DE ALTO CONTRASTE -->
   <div class="row g-3 mb-4">
     <div class="col-12 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
       <div>
-        <h4 class="fw-bold text-success mb-0">
-          <i class="bi bi-bar-chart-line-fill me-1"></i> Resumen de la Quincena Seleccionada
-        </h4>
-        <small class="text-muted">Periodo: <strong><?php echo formatoFechaEspanol($fechaInicioSel); ?></strong> al <strong><?php echo formatoFechaEspanol($fechaFinSel); ?></strong></small>
+        <h3 class="fw-bold text-dark mb-0">
+          <i class="bi bi-bar-chart-line-fill me-2 text-primary"></i> Resumen de la Quincena Seleccionada
+        </h3>
+        <span class="text-muted" style="font-size: 1.05rem;">Periodo: <strong><?php echo formatoFechaEspanol($fechaInicioSel); ?></strong> al <strong><?php echo formatoFechaEspanol($fechaFinSel); ?></strong></span>
       </div>
 
       <!-- Selector de Quincena -->
       <form action="panel.php" method="GET" class="d-flex align-items-center gap-2">
-        <label for="filtro-quincena" class="fw-bold small text-muted text-nowrap">Periodo:</label>
-        <select id="filtro-quincena" class="form-select form-select-touch form-select-sm" onchange="const p = this.value.split('|'); location.href='panel.php?fechaInicio=' + p[0] + '&fechaFin=' + p[1];">
+        <label for="filtro-quincena" class="fw-bold text-dark text-nowrap mb-0">Periodo:</label>
+        <select id="filtro-quincena" class="form-select form-select-touch" onchange="const p = this.value.split('|'); location.href='panel.php?fechaInicio=' + p[0] + '&fechaFin=' + p[1];">
           <?php foreach ($quincenasDisponibles as $q): ?>
             <?php $sel = ($q['fechaInicio'] === $fechaInicioSel && $q['fechaFin'] === $fechaFinSel) ? 'selected' : ''; ?>
             <option value="<?php echo e($q['fechaInicio'] . '|' . $q['fechaFin']); ?>" <?php echo $sel; ?>>
@@ -263,11 +280,34 @@ require_once __DIR__ . '/includes/header.php';
       </form>
     </div>
 
+    <!-- Barra de Progreso Quincenal de Alto Contraste -->
+    <div class="col-12">
+      <div class="card card-rural p-3 p-md-4">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="fw-bold text-dark">
+            <i class="bi bi-speedometer2 text-primary me-2"></i> Avance de Entregas en la Quincena (Días con Registro):
+          </span>
+          <span class="badge px-3 py-1 rounded-pill fw-bold text-white fs-6" style="background-color: var(--primary);">
+            <?php echo $cantidadDiasConEntrega; ?> de <?php echo count($diasQuincena); ?> días
+          </span>
+        </div>
+        <div class="progress-milk-container" style="height: 34px;">
+          <?php 
+            $totalDiasPeriodo = max(1, count($diasQuincena));
+            $pctAvanceQuincena = min(100, round(($cantidadDiasConEntrega / $totalDiasPeriodo) * 100));
+          ?>
+          <div class="progress-bar-milk" style="width: <?php echo $pctAvanceQuincena; ?>%;">
+            <?php echo $pctAvanceQuincena; ?>% COMPLETADO
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Tarjeta 1: Total Litros Quincena -->
     <div class="col-md-3 col-6">
-      <div class="card card-rural p-3 p-md-4 text-center">
+      <div class="card card-rural p-4 text-center h-100">
         <small class="text-muted fw-bold text-uppercase">Litros Acumulados</small>
-        <div class="display-6 fw-extrabold text-success my-2">
+        <div class="display-6 fw-bold text-primary my-2">
           <?php echo number_format($totalLitrosQuincena, 1, ',', '.'); ?> L
         </div>
         <small class="text-muted">Total de tus pesajes</small>
@@ -276,20 +316,20 @@ require_once __DIR__ . '/includes/header.php';
 
     <!-- Tarjeta 2: Promedio Diario -->
     <div class="col-md-3 col-6">
-      <div class="card card-rural p-3 p-md-4 text-center">
+      <div class="card card-rural p-4 text-center h-100">
         <small class="text-muted fw-bold text-uppercase">Promedio Diario</small>
-        <div class="display-6 fw-extrabold text-primary my-2">
+        <div class="display-6 fw-bold text-dark my-2">
           <?php echo number_format($promedioDiario, 1, ',', '.'); ?> L
         </div>
-        <small class="text-muted">Litros/día con entrega</small>
+        <small class="text-muted">Litros por día con entrega</small>
       </div>
     </div>
 
     <!-- Tarjeta 3: Precio Oficial por Litro -->
     <div class="col-md-3 col-6">
-      <div class="card card-rural p-3 p-md-4 text-center">
+      <div class="card card-rural p-4 text-center h-100">
         <small class="text-muted fw-bold text-uppercase">Precio Oficial Litro</small>
-        <div class="display-6 fw-extrabold text-warning-emphasis my-2">
+        <div class="display-6 fw-bold my-2" style="color: var(--accent);">
           <?php echo $precioLitro > 0 ? formatoMonedaCOP($precioLitro) : '<span class="fs-5 text-muted">Por Fijar</span>'; ?>
         </div>
         <small class="text-muted"><?php echo $quincenaCerrada ? 'Tarifa Liquidada' : 'Tarifa Vigente'; ?></small>
@@ -298,9 +338,9 @@ require_once __DIR__ . '/includes/header.php';
 
     <!-- Tarjeta 4: Pago Estimado -->
     <div class="col-md-3 col-6">
-      <div class="card card-rural p-3 p-md-4 text-center border-2 border-success">
+      <div class="card card-rural p-4 text-center h-100 border-2" style="border-color: var(--primary) !important;">
         <small class="text-muted fw-bold text-uppercase">Pago Estimado</small>
-        <div class="display-6 fw-extrabold text-success my-2">
+        <div class="display-6 fw-bold text-primary my-2">
           <?php echo formatoMonedaCOP($totalPagarEstimado); ?>
         </div>
         <small class="text-muted"><?php echo $quincenaCerrada ? 'Valor Final Liquidado' : 'Sujeto al cierre quincenal'; ?></small>
@@ -308,23 +348,23 @@ require_once __DIR__ . '/includes/header.php';
     </div>
   </div>
 
-  <!-- SECCIÓN: TABLA DETALLADA DE PESAJES DÍA A DÍA (DATATABLES BS5 EN ESPAÑOL) -->
+  <!-- SECCIÓN: TABLA DETALLADA DE PESAJES DÍA A DÍA -->
   <div class="row mb-4">
     <div class="col-12">
-      <div class="card card-rural border-0 shadow overflow-hidden">
-        <div class="card-header bg-success text-white p-3 p-md-4 d-flex justify-content-between align-items-center">
+      <div class="card card-rural border-0 shadow overflow-hidden p-0">
+        <div class="p-4 d-flex justify-content-between align-items-center text-white" style="background-color: var(--primary);">
           <div>
-            <h5 class="fw-bold mb-0">
+            <h4 class="fw-bold mb-0 text-white">
               <i class="bi bi-calendar2-range me-2"></i> Planilla Detallada de Pesajes de la Quincena
-            </h5>
-            <small class="opacity-75">Tus pesajes registrados día a día en la Finca El Recuerdo</small>
+            </h4>
+            <small class="text-white-50">Tus pesajes registrados día a día en la Finca El Recuerdo</small>
           </div>
-          <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold">
+          <span class="badge px-3 py-2 rounded-pill fw-bold text-white fs-6" style="background-color: var(--accent);">
             <?php echo count($entregasQuincena); ?> Registros en el Periodo
           </span>
         </div>
 
-        <div class="card-body p-3 p-md-4">
+        <div class="card-body p-4">
           <?php if (empty($diasQuincena)): ?>
             <div class="text-center py-5">
               <i class="bi bi-inbox display-1 text-muted"></i>
@@ -333,14 +373,14 @@ require_once __DIR__ . '/includes/header.php';
             </div>
           <?php else: ?>
             <div class="table-responsive">
-              <table id="tabla-ganadero-pesajes" class="table table-rural table-hover align-middle w-100">
-                <thead>
+              <table id="tabla-ganadero-pesajes" class="table table-hover align-middle w-100" style="font-size: 1rem;">
+                <thead style="background-color: var(--table-head-bg); color: #ffffff;">
                   <tr>
-                    <th>Fecha de Entrega</th>
-                    <th>Día</th>
-                    <th class="text-center">☀️ Turno Mañana</th>
-                    <th class="text-center">🌅 Turno Tarde</th>
-                    <th class="text-end">🥛 Total del Día</th>
+                    <th style="background-color: var(--primary); color: #ffffff; padding: 1rem;">Fecha de Entrega</th>
+                    <th style="background-color: var(--primary); color: #ffffff; padding: 1rem;">Día</th>
+                    <th class="text-center" style="background-color: var(--primary); color: #ffffff; padding: 1rem;">☀️ Turno Mañana</th>
+                    <th class="text-center" style="background-color: var(--primary); color: #ffffff; padding: 1rem;">🌅 Turno Tarde</th>
+                    <th class="text-end" style="background-color: var(--primary); color: #ffffff; padding: 1rem;">🥛 Total del Día</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -357,43 +397,43 @@ require_once __DIR__ . '/includes/header.php';
                       $esHoy = ($fStr === $hoyStr);
                   ?>
                     <tr class="<?php echo $esHoy ? 'table-warning fw-bold' : ''; ?>">
-                      <td>
+                      <td style="padding: 1rem;">
                         <strong><?php echo formatoFechaEspanol($fStr); ?></strong>
                         <?php if ($esHoy): ?>
                           <span class="badge bg-warning text-dark ms-2">HOY</span>
                         <?php endif; ?>
                       </td>
-                      <td><?php echo e($diaObj['diaSemana']); ?></td>
-                      <td class="text-center">
+                      <td style="padding: 1rem;"><?php echo e($diaObj['diaSemana']); ?></td>
+                      <td class="text-center" style="padding: 1rem;">
                         <?php if ($mVal > 0): ?>
-                          <span class="badge-turno-manana fs-6"><?php echo number_format($mVal, 1, ',', '.'); ?> L</span>
+                          <span class="badge px-3 py-1.5 rounded-pill fw-bold fs-6" style="background-color: #fef3c7; color: #78350f;"><?php echo number_format($mVal, 1, ',', '.'); ?> L</span>
                         <?php else: ?>
-                          <span class="text-muted opacity-50">-</span>
+                          <span class="text-muted">-</span>
                         <?php endif; ?>
                       </td>
-                      <td class="text-center">
+                      <td class="text-center" style="padding: 1rem;">
                         <?php if ($tVal > 0): ?>
-                          <span class="badge-turno-tarde fs-6"><?php echo number_format($tVal, 1, ',', '.'); ?> L</span>
+                          <span class="badge px-3 py-1.5 rounded-pill fw-bold fs-6" style="background-color: #fee2e2; color: #991b1b;"><?php echo number_format($tVal, 1, ',', '.'); ?> L</span>
                         <?php else: ?>
-                          <span class="text-muted opacity-50">-</span>
+                          <span class="text-muted">-</span>
                         <?php endif; ?>
                       </td>
-                      <td class="text-end fw-extrabold text-success fs-6">
-                        <?php echo ($diaTotal > 0) ? number_format($diaTotal, 1, ',', '.') . ' L' : '<span class="text-muted opacity-50">-</span>'; ?>
+                      <td class="text-end fw-bold text-primary fs-5" style="padding: 1rem;">
+                        <?php echo ($diaTotal > 0) ? number_format($diaTotal, 1, ',', '.') . ' L' : '<span class="text-muted">-</span>'; ?>
                       </td>
                     </tr>
                   <?php endforeach; ?>
                 </tbody>
-                <tfoot>
+                <tfoot style="background-color: var(--surface-2); border-top: 3px solid var(--border);">
                   <tr>
-                    <th colspan="2" class="text-end text-uppercase">Totales de la Quincena:</th>
-                    <th class="text-center text-warning-emphasis fs-5">
+                    <th colspan="2" class="text-end text-uppercase" style="padding: 1.2rem;">Totales de la Quincena:</th>
+                    <th class="text-center fs-5" style="padding: 1.2rem; color: var(--accent);">
                       <?php echo number_format($sumaTotalMañana, 1, ',', '.'); ?> L
                     </th>
-                    <th class="text-center text-danger-emphasis fs-5">
+                    <th class="text-center fs-5 text-danger" style="padding: 1.2rem;">
                       <?php echo number_format($sumaTotalTarde, 1, ',', '.'); ?> L
                     </th>
-                    <th class="text-end text-success fs-4">
+                    <th class="text-end text-primary fs-4 fw-bold" style="padding: 1.2rem;">
                       <?php echo number_format($totalLitrosQuincena, 1, ',', '.'); ?> L
                     </th>
                   </tr>
@@ -409,15 +449,15 @@ require_once __DIR__ . '/includes/header.php';
   <!-- SECCIÓN DE INCONFORMIDAD / RECLAMOS (LÍMITE 1 POR QUINCENA) -->
   <div class="row">
     <div class="col-12">
-      <div class="card card-rural p-4 border-2 border-warning shadow-sm">
+      <div class="card card-rural p-4 border-2 shadow-sm" style="border-color: var(--accent) !important;">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
           <div>
-            <h5 class="fw-bold text-success mb-1">
+            <h4 class="fw-bold text-dark mb-1">
               <i class="bi bi-shield-exclamation text-warning me-2"></i> ¿Tienes alguna inconformidad con tus litros en este periodo?
-            </h5>
-            <small class="text-muted">
+            </h4>
+            <span class="text-muted">
               Por políticas de control lechero, solo se permite registrar <strong>UNA (1) inconformidad formal</strong> por cada quincena.
-            </small>
+            </span>
           </div>
 
           <div>
@@ -427,7 +467,7 @@ require_once __DIR__ . '/includes/header.php';
                 Estado: <span class="badge bg-primary"><?php echo e($alertaExistente['estado']); ?></span>
               </div>
             <?php else: ?>
-              <button type="button" class="btn btn-touch btn-warning text-dark fw-bold rounded-pill px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalReclamo">
+              <button type="button" class="btn btn-touch btn-aso-accent rounded-pill px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalReclamo">
                 <i class="bi bi-chat-left-dots-fill me-1"></i> Radicar Inconformidad
               </button>
             <?php endif; ?>
@@ -435,10 +475,10 @@ require_once __DIR__ . '/includes/header.php';
         </div>
 
         <?php if ($alertaExistente): ?>
-          <div class="mt-3 p-3 bg-body-tertiary rounded-3 border small">
-            <strong class="text-success d-block mb-1">Detalle del reclamo presentado:</strong>
-            <p class="mb-0 text-muted fst-italic">"<?php echo e($alertaExistente['mensaje']); ?>"</p>
-            <small class="opacity-75 mt-1 d-block">Litros registrados al momento del reclamo: <?php echo formatoLitros($alertaExistente['litrosAlMomento']); ?></small>
+          <div class="mt-3 p-3 bg-light rounded-3 border small">
+            <strong class="text-primary d-block mb-1">Detalle del reclamo presentado:</strong>
+            <p class="mb-0 text-dark fst-italic">"<?php echo e($alertaExistente['mensaje']); ?>"</p>
+            <small class="text-muted mt-1 d-block">Litros registrados al momento del reclamo: <?php echo formatoLitros($alertaExistente['litrosAlMomento']); ?></small>
           </div>
         <?php endif; ?>
 
@@ -458,8 +498,8 @@ require_once __DIR__ . '/includes/header.php';
   <div class="modal fade" id="modalReclamo" tabindex="-1" aria-labelledby="modalReclamoLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content rounded-4 border-0 shadow-lg">
-        <div class="modal-header bg-success text-white p-4">
-          <h5 class="modal-title fw-bold" id="modalReclamoLabel">
+        <div class="modal-header text-white p-4" style="background-color: var(--primary);">
+          <h5 class="modal-title fw-bold text-white" id="modalReclamoLabel">
             <i class="bi bi-shield-exclamation text-warning me-2"></i> Radicar Inconformidad Quincenal
           </h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
@@ -469,12 +509,12 @@ require_once __DIR__ . '/includes/header.php';
           <input type="hidden" name="accion_reclamo" value="1">
 
           <div class="modal-body p-4">
-            <p class="small text-muted mb-3">
+            <p class="text-muted mb-3">
               Escribe detalladamente las fechas, turnos o diferencias que consideres que deben ser revisadas por el administrador de la asociación.
             </p>
 
             <div class="mb-3">
-              <label for="mensaje_reclamo" class="form-label fw-bold small text-muted">Detalle de la Inconformidad *</label>
+              <label for="mensaje_reclamo" class="form-label">Detalle de la Inconformidad *</label>
               <textarea class="form-control form-control-touch" id="mensaje_reclamo" name="mensaje_reclamo" rows="4" required placeholder="Describe las fechas y litros que requieres verificar..."></textarea>
               <small class="text-muted d-block mt-1">Mínimo 10 caracteres.</small>
             </div>
