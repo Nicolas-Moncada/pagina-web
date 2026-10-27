@@ -2,30 +2,30 @@
 /**
  * =========================================================================================
  * PLATAFORMA DE CONTROL LECHERO - ASOCIACIÓN DE GANADEROS (ASOAGROALIZAL)
- * Archivo: index.php (Landing Page Corporativa)
+ * Archivo: index.php (Landing Page Agri-Tech & Corporativa Premium)
  * Entorno: XAMPP (Apache + PHP 8 + MySQL)
  * 
- * PUENTE CON EL BACKEND (PHP):
- * 1. Inclusión de api/db.php para inicializar la conexión PDO y helpers de autenticación.
- * 2. Consulta de sesión activa para alternar dinámicamente el botón del Navbar
- *    (muestra "Acceso al Sistema" o "Ir a mi Panel" según corresponda).
- * 3. Formulario integrado con api/consultas.php para recepción y guardado de mensajes.
- * 4. Copyright con año dinámico date('Y').
+ * PUENTES CLAVE CON EL BACKEND (PHP):
+ * 1. require_once api/db.php: Inicialización de PDO, seguridad y control de sesiones.
+ * 2. getCurrentUser(): Detección de sesión activa (ADMIN o GANADERO) para adaptar
+ *    la barra de navegación dinámicamente.
+ * 3. api/consultas.php: Endpoint receptor por método POST para consultas y mensajes.
+ * 4. date('Y'): Copyright automatizado con el año en curso.
  * =========================================================================================
  */
 
-// [BACKEND] 1. Cargar capa de base de datos, sesiones seguras y funciones auxiliares
+// [BACKEND PUENTE 1] Conexión a la base de datos y utilidades de sesión segura
 require_once __DIR__ . '/api/db.php';
 
-// [BACKEND] 2. Verificar si existe una sesión de usuario activa (ADMIN o GANADERO)
+// [BACKEND PUENTE 2] Consulta de usuario en sesión
 $usuarioActual = getCurrentUser();
 
-// Definición de metadatos corporativos constantes
+// Datos Corporativos Oficiales y Legales
 $razonSocial = "ASOCIACION CAMPESINA NO NACIONAL DE TRABAJADORES DE LA VEREDA ALIZAL MUNICIPIO DE CARMEN DE CARUPA DEPARTAMENTO DE CUNDINAMARCA";
 $sigla = "ASOAGROALIZAL";
 $nit = "832006127-2";
-$direccion = "Vereda Alizal Finca El Recuerdo, Carmen De Carupa, Cundinamarca";
-$telefono = "3185235690";
+$ubicacion = "Vereda Alizal Finca El Recuerdo, Carmen De Carupa, Cundinamarca";
+$telefono = "3143820926";
 $correo = "asoagroalizal@gmail.com";
 ?>
 <!DOCTYPE html>
@@ -33,10 +33,9 @@ $correo = "asoagroalizal@gmail.com";
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title><?php echo $sigla; ?> | Plataforma de Control Lechero y Desarrollo Campesino</title>
+  <title><?php echo $sigla; ?> | Plataforma de Control Lechero e Innovación Agropecuaria</title>
   
-  <!-- SEO y Metadatos Corporativos -->
-  <meta name="description" content="Plataforma de Control Lechero de ASOAGROALIZAL. Unión campesina, buenas prácticas de ordeño, tanques de enfriamiento y desarrollo sostenible en Carmen de Carupa, Cundinamarca.">
+  <meta name="description" content="Plataforma tecnológica de control lechero, buenas prácticas de ordeño (BPO), tanques de enfriamiento y desarrollo sostenible de ASOAGROALIZAL en Carmen de Carupa, Cundinamarca.">
   <meta name="author" content="<?php echo $sigla; ?>">
 
   <!-- Bootstrap 5.3 CSS -->
@@ -45,434 +44,626 @@ $correo = "asoagroalizal@gmail.com";
   <!-- Bootstrap Icons -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   
-  <!-- Google Fonts: Plus Jakarta Sans & Playfair Display -->
+  <!-- Tipografía Google Fonts: Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap" rel="stylesheet">
 
   <style>
+    /* ==========================================================================
+       SISTEMA DE DISEÑO AGRI-TECH PREMIUM (VARIABLES Y ESTILOS BASE)
+       ========================================================================== */
     :root {
-      --color-primario: #1c5229;
-      --color-primario-hover: #143d1e;
-      --color-secundario: #c59b27;
-      --color-tierra: #5d4037;
-      --color-crema: #fdfbf7;
-      --color-campo-soft: #f1f8f3;
-      --color-texto-oscuro: #1d251e;
+      --agri-dark: #06150b;
+      --agri-forest: #0b2914;
+      --agri-pine: #144722;
+      --agri-emerald: #10b981;
+      --agri-neon: #22c55e;
+      --agri-gold: #f59e0b;
+      --agri-gold-light: #fef3c7;
+      --agri-cream: #fbfbf9;
+      --agri-card-bg: rgba(255, 255, 255, 0.94);
+      --agri-border: rgba(16, 185, 129, 0.16);
+      --agri-shadow: 0 20px 45px -15px rgba(6, 21, 11, 0.10);
+      --agri-shadow-hover: 0 30px 60px -15px rgba(16, 185, 129, 0.22);
     }
 
     body {
       font-family: 'Plus Jakarta Sans', sans-serif;
-      color: var(--color-texto-oscuro);
-      background-color: var(--color-crema);
+      background-color: var(--agri-cream);
+      color: #1a2e22;
       overflow-x: hidden;
       scroll-behavior: smooth;
     }
 
-    h1, h2, h3, .font-serif {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-weight: 700;
+    /* ==========================================================================
+       NAVBAR FLOTANTE CON GLASSMORFISM
+       ========================================================================== */
+    .navbar-glass-wrapper {
+      position: fixed;
+      top: 16px;
+      left: 0;
+      right: 0;
+      z-index: 1040;
+      pointer-events: none;
     }
 
-    /* Navbar Estilizado */
-    .navbar-corporativo {
-      background-color: rgba(255, 255, 255, 0.96);
-      backdrop-filter: blur(12px);
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-      transition: all 0.3s ease;
+    .navbar-glass {
+      pointer-events: auto;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      border-radius: 24px;
+      box-shadow: 0 10px 30px rgba(6, 21, 11, 0.08);
+      padding: 0.65rem 1.4rem;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .navbar-brand-logo {
-      width: 48px;
-      height: 48px;
-      background: linear-gradient(135deg, var(--color-primario), #2e7d32);
-      color: #fff;
+    .navbar-glass.scrolled {
+      background: rgba(255, 255, 255, 0.95);
+      box-shadow: 0 14px 40px rgba(6, 21, 11, 0.12);
+      transform: translateY(-4px);
+    }
+
+    .brand-emblem {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #0b2914 0%, #10b981 100%);
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 14px;
-      font-size: 1.5rem;
-      box-shadow: 0 4px 12px rgba(28, 82, 41, 0.25);
+      color: #ffffff;
+      font-size: 1.35rem;
+      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
     }
 
-    .nav-link {
+    .nav-link-custom {
       font-weight: 600;
-      color: #374151;
-      padding: 0.5rem 1rem !important;
-      transition: color 0.2s ease;
-    }
-
-    .nav-link:hover {
-      color: var(--color-primario);
-    }
-
-    /* Botones personalizados */
-    .btn-campo {
-      background: linear-gradient(135deg, var(--color-primario), #2e7d32);
-      color: #ffffff;
-      font-weight: 700;
-      border: none;
-      padding: 0.75rem 1.6rem;
+      font-size: 0.92rem;
+      color: #2c4234 !important;
+      padding: 0.5rem 0.9rem !important;
       border-radius: 12px;
-      box-shadow: 0 6px 18px rgba(28, 82, 41, 0.22);
       transition: all 0.25s ease;
     }
 
-    .btn-campo:hover {
-      background: linear-gradient(135deg, var(--color-primario-hover), #236527);
-      color: #ffffff;
-      transform: translateY(-2px);
-      box-shadow: 0 8px 22px rgba(28, 82, 41, 0.32);
+    .nav-link-custom:hover {
+      color: #10b981 !important;
+      background: rgba(16, 185, 129, 0.08);
     }
 
-    .btn-outline-campo {
-      color: var(--color-primario);
-      border: 2px solid var(--color-primario);
+    .btn-agri-glow {
+      background: linear-gradient(135deg, #0b2914 0%, #144722 60%, #10b981 100%);
+      color: #ffffff !important;
       font-weight: 700;
-      padding: 0.75rem 1.6rem;
-      border-radius: 12px;
-      background: transparent;
-      transition: all 0.25s ease;
-    }
-
-    .btn-outline-campo:hover {
-      background-color: var(--color-campo-soft);
-      color: var(--color-primario-hover);
-      border-color: var(--color-primario-hover);
-      transform: translateY(-2px);
-    }
-
-    /* Hero Section */
-    .hero-section {
+      font-size: 0.9rem;
+      padding: 0.65rem 1.5rem;
+      border-radius: 16px;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.32);
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
       position: relative;
-      background: linear-gradient(180deg, #eaf4ed 0%, #fbfdfc 60%, var(--color-crema) 100%);
-      padding: 5rem 0 6rem 0;
-      border-bottom: 1px solid #e1eee4;
+      overflow: hidden;
     }
 
-    .badge-campo {
-      background-color: #e2f2e5;
-      color: var(--color-primario);
-      font-weight: 700;
-      font-size: 0.85rem;
-      padding: 0.45rem 1rem;
-      border-radius: 50rem;
-      border: 1px solid #c7e5ce;
+    .btn-agri-glow:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(16, 185, 129, 0.45);
+      border-color: #34d399;
+    }
+
+    /* ==========================================================================
+       HERO SECTION AGRI-TECH (SUPERPOSICIÓN & LAYOUT DIVIDIDO)
+       ========================================================================== */
+    .hero-agri {
+      position: relative;
+      padding-top: 150px;
+      padding-bottom: 90px;
+      background: radial-gradient(circle at 85% 20%, rgba(16, 185, 129, 0.12) 0%, transparent 50%),
+                  radial-gradient(circle at 10% 80%, rgba(245, 158, 11, 0.08) 0%, transparent 45%),
+                  linear-gradient(180deg, #f4f9f5 0%, var(--agri-cream) 100%);
+      overflow: hidden;
+    }
+
+    .pill-status {
       display: inline-flex;
       align-items: center;
-      gap: 0.4rem;
+      gap: 0.6rem;
+      padding: 0.4rem 1.1rem;
+      background: rgba(16, 185, 129, 0.10);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      border-radius: 50rem;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #0b2914;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
 
-    .hero-title {
-      font-size: clamp(2.3rem, 4.5vw, 3.6rem);
-      line-height: 1.18;
-      color: #112817;
+    .pulsing-dot {
+      width: 9px;
+      height: 9px;
+      background-color: var(--agri-neon);
+      border-radius: 50%;
+      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+      animation: pulseGreen 2s infinite;
+    }
+
+    @keyframes pulseGreen {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+      70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+    }
+
+    .hero-headline {
+      font-size: clamp(2.6rem, 5.2vw, 4.2rem);
+      font-weight: 800;
+      line-height: 1.12;
+      color: var(--agri-dark);
+      letter-spacing: -0.03em;
+    }
+
+    .text-gradient-emerald {
+      background: linear-gradient(135deg, #0b2914 20%, #10b981 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Composición Visual Superpuesta (Overlap Graphics) */
+    .hero-composition {
+      position: relative;
+      min-height: 520px;
+    }
+
+    .hero-main-img-card {
+      position: relative;
+      width: 92%;
+      height: 480px;
+      border-radius: 36px;
+      overflow: hidden;
+      box-shadow: 0 30px 60px rgba(6, 21, 11, 0.18);
+      border: 6px solid #ffffff;
+    }
+
+    .hero-main-img-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scale(1.02);
+      transition: transform 0.8s ease;
+    }
+
+    .hero-main-img-card:hover img {
+      transform: scale(1.06);
+    }
+
+    /* Chips flotantes superpuestos */
+    .hero-float-chip {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-radius: 20px;
+      padding: 1rem 1.3rem;
+      box-shadow: 0 18px 38px rgba(6, 21, 11, 0.14);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      z-index: 10;
+      transition: transform 0.3s ease;
+    }
+
+    .hero-float-chip:hover {
+      transform: translateY(-4px);
+    }
+
+    .chip-left {
+      bottom: 25px;
+      left: -15px;
+    }
+
+    .chip-right {
+      top: 30px;
+      right: 0;
+    }
+
+    /* ==========================================================================
+       SECCIÓN: NUESTRA IDENTIDAD (TARJETAS ASIMÉTRICAS & 32 ASOCIADOS)
+       ========================================================================== */
+    .section-identidad {
+      padding: 100px 0;
+      background: #ffffff;
+      position: relative;
+    }
+
+    .card-identidad-asimetrica {
+      border-radius: 30px;
+      padding: 2.8rem 2.4rem;
+      border: 1px solid rgba(16, 185, 129, 0.14);
+      background: #ffffff;
+      box-shadow: var(--agri-shadow);
+      position: relative;
+      height: 100%;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .card-identidad-asimetrica:hover {
+      transform: translateY(-8px);
+      box-shadow: var(--agri-shadow-hover);
+      border-color: rgba(16, 185, 129, 0.35);
+    }
+
+    .card-identidad-mision {
+      background: linear-gradient(180deg, #f7fbf8 0%, #ffffff 100%);
+      border-top: 5px solid #10b981;
+    }
+
+    .card-identidad-vision {
+      background: linear-gradient(180deg, #fefcf7 0%, #ffffff 100%);
+      border-top: 5px solid var(--agri-gold);
+    }
+
+    .icon-badge-box {
+      width: 68px;
+      height: 68px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin-bottom: 1.8rem;
+    }
+
+    .box-emerald {
+      background: rgba(16, 185, 129, 0.12);
+      color: #10b981;
+    }
+
+    .box-gold {
+      background: rgba(245, 158, 11, 0.12);
+      color: var(--agri-gold);
+    }
+
+    /* Tarjeta Monumental: 32 Asociados */
+    .banner-asociados-monumental {
+      background: radial-gradient(circle at 100% 0%, rgba(16, 185, 129, 0.22) 0%, transparent 60%),
+                  linear-gradient(135deg, #07170c 0%, #0d3018 100%);
+      color: #ffffff;
+      border-radius: 36px;
+      padding: 3.5rem 3rem;
+      box-shadow: 0 25px 60px rgba(6, 21, 11, 0.25);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* ==========================================================================
+       SECCIÓN: INFRAESTRUCTURA Y BPO (BENTO BOX GRID MODERNO)
+       ========================================================================== */
+    .section-bento {
+      padding: 110px 0;
+      background: var(--agri-dark);
+      color: #ffffff;
+      position: relative;
+    }
+
+    .bento-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 30px;
+      padding: 2.5rem;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .bento-card:hover {
+      background: rgba(255, 255, 255, 0.07);
+      border-color: rgba(16, 185, 129, 0.4);
+      transform: translateY(-6px);
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+    }
+
+    .bento-tag {
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 0.35rem 0.9rem;
+      border-radius: 50rem;
+      display: inline-block;
+      margin-bottom: 1.2rem;
+    }
+
+    .bento-tag-green { background: rgba(34, 197, 94, 0.16); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); }
+    .bento-tag-blue { background: rgba(56, 189, 248, 0.16); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+    .bento-tag-gold { background: rgba(251, 191, 36, 0.16); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); }
+
+    .bento-metric {
+      font-size: 2.8rem;
+      font-weight: 800;
+      color: #ffffff;
+      line-height: 1;
       letter-spacing: -0.02em;
     }
 
-    .hero-title .destacado {
-      color: var(--color-primario);
-      position: relative;
-      display: inline-block;
+    /* ==========================================================================
+       SECCIÓN: GALERÍA VISUAL AGRI-TECH
+       ========================================================================== */
+    .section-galeria {
+      padding: 100px 0;
+      background: #f8faf8;
     }
 
-    .hero-card-img {
-      border-radius: 28px;
+    .galeria-bento-item {
+      position: relative;
+      border-radius: 26px;
       overflow: hidden;
-      box-shadow: 0 20px 45px rgba(20, 60, 30, 0.15);
-      border: 6px solid #ffffff;
-      position: relative;
+      height: 300px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.07);
     }
 
-    .hero-card-img img {
-      width: 100%;
-      height: 440px;
-      object-fit: cover;
-      display: block;
-      transition: transform 0.6s ease;
-    }
-
-    .hero-card-img:hover img {
-      transform: scale(1.03);
-    }
-
-    .floating-stats-card {
-      position: absolute;
-      bottom: 24px;
-      left: 24px;
-      right: 24px;
-      background: rgba(255, 255, 255, 0.94);
-      backdrop-filter: blur(10px);
-      padding: 1.25rem 1.5rem;
-      border-radius: 18px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
-      border: 1px solid rgba(255, 255, 255, 0.8);
-    }
-
-    /* Cards de Información y Servicios */
-    .card-corporativa {
-      background: #ffffff;
-      border: 1px solid #e5ede7;
-      border-radius: 20px;
-      padding: 2.2rem 1.8rem;
-      transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
-      height: 100%;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .card-corporativa:hover {
-      transform: translateY(-6px);
-      box-shadow: 0 16px 36px rgba(24, 70, 35, 0.10);
-      border-color: #b8dac1;
-    }
-
-    .card-icon-wrapper {
-      width: 60px;
-      height: 60px;
-      border-radius: 16px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.75rem;
-      margin-bottom: 1.4rem;
-    }
-
-    .icon-verde {
-      background-color: #e7f5eb;
-      color: var(--color-primario);
-    }
-
-    .icon-dorado {
-      background-color: #fdf5e2;
-      color: #b5830e;
-    }
-
-    .icon-azul {
-      background-color: #e5f3fc;
-      color: #0b72b9;
-    }
-
-    /* Galería */
-    .galeria-item {
-      position: relative;
-      border-radius: 18px;
-      overflow: hidden;
-      height: 270px;
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-    }
-
-    .galeria-item img {
+    .galeria-bento-item img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transition: transform 0.5s ease;
+      transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .galeria-item:hover img {
+    .galeria-bento-item:hover img {
       transform: scale(1.08);
     }
 
-    .galeria-overlay {
+    .galeria-caption {
       position: absolute;
       inset: 0;
-      background: linear-gradient(180deg, transparent 40%, rgba(10, 33, 16, 0.88) 100%);
-      color: #fff;
+      background: linear-gradient(180deg, transparent 40%, rgba(6, 21, 11, 0.90) 100%);
+      color: #ffffff;
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
-      padding: 1.25rem;
+      padding: 1.5rem;
     }
 
-    /* Sección Contacto */
-    .seccion-contacto {
-      background-color: #ffffff;
-      border-radius: 28px;
-      border: 1px solid #e1ebe3;
-      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.04);
+    /* ==========================================================================
+       SECCIÓN CONTACTO (SPLIT SCREEN CON FLOATING LABELS)
+       ========================================================================== */
+    .section-contacto {
+      padding: 110px 0;
+      background: #ffffff;
+    }
+
+    .split-contacto-box {
+      border-radius: 36px;
+      background: #ffffff;
+      border: 1px solid rgba(16, 185, 129, 0.15);
+      box-shadow: 0 25px 60px rgba(6, 21, 11, 0.06);
       overflow: hidden;
     }
 
-    .info-contacto-card {
-      background: linear-gradient(145deg, var(--color-primario), #133a1c);
+    .form-floating > .form-control {
+      border-radius: 16px;
+      border: 1.5px solid #dbe6de;
+      padding: 1.1rem 1rem;
+      background-color: #fafdfa;
+      font-weight: 500;
+      transition: all 0.25s ease;
+    }
+
+    .form-floating > .form-control:focus {
+      border-color: #10b981;
+      box-shadow: 0 0 0 0.25rem rgba(16, 185, 129, 0.16);
+      background-color: #ffffff;
+    }
+
+    .contacto-dark-panel {
+      background: linear-gradient(145deg, #07170c 0%, #0d2c16 100%);
       color: #ffffff;
-      padding: 3rem 2.5rem;
+      padding: 3.5rem 3rem;
       height: 100%;
-      border-radius: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
 
-    .form-control, .form-select {
-      padding: 0.8rem 1.1rem;
-      border-radius: 12px;
-      border: 1.5px solid #d2ded5;
-      font-size: 0.95rem;
+    .contacto-item-row {
+      display: flex;
+      gap: 1.2rem;
+      align-items: flex-start;
+      margin-bottom: 2rem;
     }
 
-    .form-control:focus {
-      border-color: var(--color-primario);
-      box-shadow: 0 0 0 0.25rem rgba(28, 82, 41, 0.15);
+    .contacto-icon-pill {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      flex-shrink: 0;
+      border: 1px solid rgba(16, 185, 129, 0.25);
     }
 
-    /* Footer Legal Institucional */
-    .footer-institucional {
-      background-color: #0b1c10;
-      color: #d1ded5;
-      font-size: 0.9rem;
-      border-top: 4px solid var(--color-secundario);
+    /* ==========================================================================
+       FOOTER LEGAL ULTRA-PROFESIONAL
+       ========================================================================== */
+    .footer-ultra {
+      background-color: #030a05;
+      color: #94a398;
+      font-size: 0.92rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding: 80px 0 40px 0;
     }
 
-    .footer-institucional a {
-      color: #a8cfb3;
+    .footer-ultra h6 {
+      color: #ffffff;
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 1.4rem;
+    }
+
+    .footer-ultra a {
+      color: #a7bcad;
       text-decoration: none;
       transition: color 0.2s ease;
     }
 
-    .footer-institucional a:hover {
-      color: #ffffff;
-      text-decoration: underline;
+    .footer-ultra a:hover {
+      color: #34d399;
     }
   </style>
 </head>
 <body>
 
   <!-- ===================================================================================== -->
-  <!-- BARRA DE NAVEGACIÓN (NAVBAR)                                                          -->
+  <!-- 1. NAVBAR FLOTANTE CON EFECTO GLASSMORFISM                                            -->
   <!-- ===================================================================================== -->
-  <header class="sticky-top">
-    <nav class="navbar navbar-expand-lg navbar-corporativo py-3">
-      <div class="container">
-        <!-- Logotipo / Identidad Corporativa -->
-        <a class="navbar-brand d-flex align-items-center gap-3" href="./index.php">
-          <div class="navbar-brand-logo">
-            <i class="bi bi-droplet-fill"></i>
+  <div class="navbar-glass-wrapper">
+    <div class="container">
+      <nav class="navbar navbar-expand-lg navbar-glass" id="mainNavbar">
+        <!-- Logotipo / Emblema Agri-Tech -->
+        <a class="navbar-brand d-flex align-items-center gap-3 p-0" href="./index.php">
+          <div class="brand-emblem">
+            <i class="bi bi-droplet-half"></i>
           </div>
           <div>
-            <span class="d-block fw-bold text-dark lh-sm" style="font-size: 1.25rem; letter-spacing: -0.01em;">
+            <span class="d-block fw-bold lh-1 text-dark" style="font-size: 1.25rem; letter-spacing: -0.02em;">
               <?php echo $sigla; ?>
             </span>
-            <small class="d-block text-muted text-uppercase fw-semibold" style="font-size: 0.7rem; letter-spacing: 0.08em;">
-              Carmen de Carupa · Cundinamarca
+            <small class="text-muted fw-semibold" style="font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase;">
+              Control Lechero · Carmen de Carupa
             </small>
           </div>
         </a>
 
-        <!-- Botón Toggle Responsive para Móviles -->
-        <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContenido" aria-controls="navbarContenido" aria-expanded="false" aria-label="Abrir navegación">
-          <span class="navbar-toggler-icon"></span>
+        <!-- Botón Menú Móvil -->
+        <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#menuPrincipal" aria-controls="menuPrincipal" aria-expanded="false" aria-label="Abrir Menú">
+          <i class="bi bi-list fs-2 text-dark"></i>
         </button>
 
-        <!-- Enlaces Ancla y Acciones -->
-        <div class="collapse navbar-collapse" id="navbarContenido">
-          <ul class="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center gap-lg-1">
-            <li class="nav-item">
-              <a class="nav-link" href="#inicio">Inicio</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#quienes-somos">¿Quiénes Somos?</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#labor-infraestructura">Labor e Infraestructura</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#galeria">Galería</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#contacto">Contacto</a>
-            </li>
+        <!-- Enlaces Ancla -->
+        <div class="collapse navbar-collapse" id="menuPrincipal">
+          <ul class="navbar-nav ms-auto align-items-lg-center gap-1 mb-3 mb-lg-0">
+            <li class="nav-item"><a class="nav-link nav-link-custom" href="#inicio">Inicio</a></li>
+            <li class="nav-item"><a class="nav-link nav-link-custom" href="#identidad">Nuestra Identidad</a></li>
+            <li class="nav-item"><a class="nav-link nav-link-custom" href="#infraestructura">Infraestructura & BPO</a></li>
+            <li class="nav-item"><a class="nav-link nav-link-custom" href="#galeria">Galería</a></li>
+            <li class="nav-item"><a class="nav-link nav-link-custom" href="#contacto">Contacto</a></li>
           </ul>
 
-          <!-- [BACKEND] Renderizado condicional según estado de autenticación de PHP -->
-          <div class="d-flex align-items-center gap-2 ms-lg-3 mt-3 mt-lg-0">
+          <!-- [BACKEND PUENTE] Botón de Acción según sesión activa de PHP -->
+          <div class="d-flex align-items-center gap-2 ms-lg-3">
             <?php if ($usuarioActual): ?>
-              <!-- Usuario con sesión activa: Muestra acceso directo a su panel -->
-              <a href="<?php echo ($usuarioActual['rol'] === 'ADMIN') ? './admin.php' : './panel.php'; ?>" class="btn btn-campo d-flex align-items-center gap-2">
-                <i class="bi bi-speedometer2"></i>
+              <!-- Usuario con sesión: Acceso a panel de control -->
+              <a href="<?php echo ($usuarioActual['rol'] === 'ADMIN') ? './admin.php' : './panel.php'; ?>" class="btn btn-agri-glow d-flex align-items-center gap-2">
+                <i class="bi bi-person-check-fill"></i>
                 <span>Mi Panel (<?php echo htmlspecialchars($usuarioActual['nombre']); ?>)</span>
               </a>
-              <a href="./logout.php" class="btn btn-outline-danger btn-sm rounded-pill px-3" title="Cerrar Sesión">
-                <i class="bi bi-box-arrow-right"></i> Salir
+              <a href="./logout.php" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-2 fw-bold" title="Cerrar Sesión">
+                <i class="bi bi-box-arrow-right"></i>
               </a>
             <?php else: ?>
-              <!-- Visitante / Asociado no autenticado: Botón estricto requerido -->
-              <a href="./login.php" class="btn btn-campo d-flex align-items-center gap-2 shadow-sm">
+              <!-- Botón Requerido de Alto Contraste con Glow -->
+              <a href="./login.php" class="btn btn-agri-glow d-flex align-items-center gap-2">
                 <i class="bi bi-shield-lock-fill"></i>
                 <span>Acceso al Sistema</span>
+                <i class="bi bi-arrow-right-short fs-5"></i>
               </a>
             <?php endif; ?>
           </div>
         </div>
-      </div>
-    </nav>
-  </header>
+      </nav>
+    </div>
+  </div>
 
   <main>
     <!-- ===================================================================================== -->
-    <!-- HERO SECTION                                                                          -->
+    <!-- 2. HERO SECTION IMPACTANTE (LAYOUT DIVIDIDO ASIMÉTRICO & OVERLAPPING CHIPS)           -->
     <!-- ===================================================================================== -->
-    <section id="inicio" class="hero-section">
+    <section id="inicio" class="hero-agri">
       <div class="container">
         <div class="row align-items-center g-5">
-          <!-- Columna Copywriting Hero -->
-          <div class="col-lg-7 text-center text-lg-start">
-            <div class="badge-campo mb-3 shadow-sm">
-              <i class="bi bi-patch-check-fill text-success"></i>
-              <span>32 Familias Campesinas Unidas por el Desarrollo Rural</span>
+          <!-- Columna Izquierda: Mensaje Persuasivo Bold -->
+          <div class="col-lg-6">
+            <div class="pill-status mb-4">
+              <span class="pulsing-dot"></span>
+              <span>Plataforma Oficial de Control y Liquidación</span>
             </div>
 
-            <h1 class="hero-title mb-3">
-              Fuerza Campesina, <span class="destacado">Pureza y Transparencia</span> en Cada Litro
+            <h1 class="hero-headline mb-4">
+              Revolución Campesina: <span class="text-gradient-emerald">Transparencia, Frío y Calidad</span> en Cada Pesaje.
             </h1>
 
-            <p class="lead text-muted mb-4 pe-lg-4" style="line-height: 1.65; font-size: 1.15rem;">
-              En <strong><?php echo $sigla; ?></strong> dignificamos la labor de la vereda Alizal. Garantizamos pesajes exactos en los turnos de mañana y tarde, conservación en frío con tecnología propia y liquidaciones quincenales transparentes para todos nuestros asociados.
+            <p class="lead text-muted mb-4 pe-lg-3" style="line-height: 1.7; font-size: 1.15rem;">
+              En <strong><?php echo $sigla; ?></strong> transformamos el esfuerzo de las madrugadas en la vereda Alizal. Monitoreamos cada turno (Mañana y Tarde), garantizamos refrigeración rápida a 4°C y liquidamos quincenas con exactitud milimétrica para el bienestar de nuestras familias.
             </p>
 
-            <!-- Call To Action Dual (Requerido) -->
-            <div class="d-flex flex-column flex-sm-row gap-3 justify-content-center justify-content-lg-start mb-4">
-              <a href="./login.php" class="btn btn-campo btn-lg d-flex align-items-center justify-content-center gap-2">
-                <i class="bi bi-door-open-fill"></i>
-                <span>Acceso al Sistema de Control</span>
-                <i class="bi bi-arrow-right"></i>
+            <!-- CTA Dual Requerido -->
+            <div class="d-flex flex-column flex-sm-row gap-3 mb-5">
+              <a href="./login.php" class="btn btn-agri-glow btn-lg px-4 py-3 d-flex align-items-center justify-content-center gap-2">
+                <i class="bi bi-fingerprint"></i>
+                <span>Ingresar al Portal de Asociados</span>
               </a>
-              <a href="#quienes-somos" class="btn btn-outline-campo btn-lg d-flex align-items-center justify-content-center gap-2">
+              <a href="#identidad" class="btn btn-outline-dark btn-lg px-4 py-3 rounded-4 fw-bold border-2 d-flex align-items-center justify-content-center gap-2">
                 <i class="bi bi-compass"></i>
-                <span>Conocer Más de Nuestra Labor</span>
+                <span>Explorar la Asociación</span>
               </a>
             </div>
 
-            <!-- Métricas Clave de la Organización -->
-            <div class="row g-3 pt-4 border-top border-2 mt-2 text-center text-sm-start">
+            <!-- Métricas Rápidas -->
+            <div class="row g-3 pt-3 border-top border-2">
               <div class="col-4">
-                <h3 class="fw-bold text-success mb-0" style="font-size: 1.9rem;">32</h3>
+                <div class="fw-bold fs-2 text-dark lh-1">32</div>
                 <small class="text-muted fw-semibold">Asociados Activos</small>
               </div>
               <div class="col-4 border-start border-end">
-                <h3 class="fw-bold text-success mb-0" style="font-size: 1.9rem;">2 Turnos</h3>
-                <small class="text-muted fw-semibold">Mañana ☀️ / Tarde 🌅</small>
+                <div class="fw-bold fs-2 text-success lh-1">4°C</div>
+                <small class="text-muted fw-semibold">Cadena de Frío</small>
               </div>
               <div class="col-4">
-                <h3 class="fw-bold text-success mb-0" style="font-size: 1.9rem;">100%</h3>
-                <small class="text-muted fw-semibold">Pago Justo y Oportuno</small>
+                <div class="fw-bold fs-2 text-dark lh-1">2 Turnos</div>
+                <small class="text-muted fw-semibold">Mañana & Tarde</small>
               </div>
             </div>
           </div>
 
-          <!-- Columna Imagen / Visual Showcase -->
-          <div class="col-lg-5">
-            <div class="hero-card-img">
-              <img src="https://images.unsplash.com/photo-1527153857715-3908f2ae5e81?auto=format&fit=crop&w=900&q=80" 
-                   alt="Paisaje de pasturas verdes y ganado lechero en Carmen de Carupa, Cundinamarca" 
-                   class="img-fluid">
-              
-              <!-- Tarjeta Flotante Informativa -->
-              <div class="floating-stats-card">
+          <!-- Columna Derecha: Superposición Asimétrica de Tarjetas e Imágenes -->
+          <div class="col-lg-6">
+            <div class="hero-composition">
+              <!-- Tarjeta de Imagen Principal -->
+              <div class="hero-main-img-card ms-auto">
+                <img src="https://images.unsplash.com/photo-1500595046743-cd271d694d30?auto=format&fit=crop&w=1000&q=80" 
+                     alt="Ganado lechero y praderas en Carmen de Carupa, Cundinamarca">
+              </div>
+
+              <!-- Chip Flotante Superior: BPO y Calidad -->
+              <div class="hero-float-chip chip-right">
                 <div class="d-flex align-items-center gap-3">
-                  <div class="p-2 bg-success text-white rounded-3 fs-4 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                    <i class="bi bi-award-fill"></i>
+                  <div class="rounded-3 bg-success text-white p-2 d-flex align-items-center justify-content-center fs-4" style="width: 48px; height: 48px;">
+                    <i class="bi bi-shield-fill-check"></i>
                   </div>
                   <div>
-                    <h6 class="mb-0 fw-bold text-dark">Calidad Certificada en Finca</h6>
-                    <small class="text-muted">Buenas Prácticas de Ordeño (BPO) en Carmen de Carupa</small>
+                    <h6 class="mb-0 fw-bold text-dark">Buenas Prácticas (BPO)</h6>
+                    <small class="text-muted">Ordeño higiénico certificado</small>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Chip Flotante Inferior: 32 Familias Campesinas -->
+              <div class="hero-float-chip chip-left">
+                <div class="d-flex align-items-center gap-3">
+                  <div class="rounded-3 bg-warning text-dark p-2 d-flex align-items-center justify-content-center fs-4" style="width: 48px; height: 48px;">
+                    <i class="bi bi-people-fill"></i>
+                  </div>
+                  <div>
+                    <h6 class="mb-0 fw-bold text-dark">32 Productores Comprometidos</h6>
+                    <small class="text-muted">Vereda Alizal · Finca El Recuerdo</small>
                   </div>
                 </div>
               </div>
@@ -483,65 +674,73 @@ $correo = "asoagroalizal@gmail.com";
     </section>
 
     <!-- ===================================================================================== -->
-    <!-- SECCIÓN: ¿QUIÉNES SOMOS?                                                              -->
+    <!-- 3. SECCIÓN: NUESTRA IDENTIDAD (MISIÓN, VISIÓN 2030 Y 32 ASOCIADOS)                    -->
     <!-- ===================================================================================== -->
-    <section id="quienes-somos" class="py-5" style="background-color: #ffffff;">
-      <div class="container py-lg-4">
-        <div class="text-center max-w-700 mx-auto mb-5">
-          <span class="badge-campo mb-2">Nuestra Esencia Campesina</span>
-          <h2 class="display-6 fw-bold mb-3 text-dark">¿Quiénes Somos?</h2>
-          <p class="text-muted lead fs-6">
-            Nacidos en el corazón de Carmen de Carupa, somos una organización comunitaria y gremial que agrupa a <strong>32 asociados activos y comprometidos con el campo</strong>. Transformamos el esfuerzo de cada madrugada en bienestar digno para nuestras familias rurales.
-          </p>
+    <section id="identidad" class="section-identidad">
+      <div class="container">
+        <div class="row justify-content-center text-center mb-5">
+          <div class="col-lg-8">
+            <span class="pill-status mb-3">ADN Asociativo</span>
+            <h2 class="display-5 fw-bold text-dark mb-3">Nuestra Identidad y Visión de Futuro</h2>
+            <p class="lead text-muted">
+              Unidos bajo el principio de solidaridad campesina para generar progreso duradero en las tierras fértiles de Carmen de Carupa.
+            </p>
+          </div>
         </div>
 
-        <!-- Misión y Visión a 2030 -->
-        <div class="row g-4 align-items-stretch">
+        <!-- Tarjetas Asimétricas Misión & Visión -->
+        <div class="row g-4 align-items-stretch mb-5">
           <!-- Tarjeta Misión -->
           <div class="col-md-6">
-            <div class="card-corporativa h-100 border-start border-4 border-success">
-              <div class="card-icon-wrapper icon-verde">
+            <div class="card-identidad-asimetrica card-identidad-mision">
+              <div class="icon-badge-box box-emerald">
                 <i class="bi bi-bullseye"></i>
               </div>
-              <h3 class="h4 fw-bold text-dark mb-3">Nuestra Misión</h3>
-              <p class="text-muted leading-relaxed mb-0">
-                Unir esfuerzos para la <strong>producción sostenible de alimentos</strong> que permita el mejoramiento integral y continuo de la <strong>calidad de vida de las familias de la vereda de Alizal</strong>, fomentando el trabajo cooperativo, la honestidad gremial y la protección de nuestro entorno andino.
+              <h3 class="h3 fw-bold text-dark mb-3">Nuestra Misión</h3>
+              <p class="text-muted fs-5 mb-0" style="line-height: 1.7;">
+                Unir esfuerzos para la <strong>producción sostenible de alimentos</strong> que permita el <strong>mejoramiento de la calidad de vida de las familias de la vereda de Alizal</strong>, protegiendo nuestro ecosistema y afianzando la dignidad del productor lácteo y agrícola.
               </p>
             </div>
           </div>
 
           <!-- Tarjeta Visión 2030 -->
           <div class="col-md-6">
-            <div class="card-corporativa h-100 border-start border-4 border-warning">
-              <div class="card-icon-wrapper icon-dorado">
-                <i class="bi bi-binoculars-fill"></i>
+            <div class="card-identidad-asimetrica card-identidad-vision">
+              <div class="icon-badge-box box-gold">
+                <i class="bi bi-rocket-takeoff-fill"></i>
               </div>
-              <div class="d-flex align-items-center justify-content-between mb-2">
-                <h3 class="h4 fw-bold text-dark mb-0">Visión a 2030</h3>
-                <span class="badge bg-warning text-dark fw-bold px-3 py-1 rounded-pill">Meta Estratégica</span>
+              <div class="d-flex align-items-center justify-content-between mb-3">
+                <h3 class="h3 fw-bold text-dark mb-0">Visión a 2030</h3>
+                <span class="badge bg-warning text-dark fw-bold px-3 py-1 rounded-pill">Horizonte Estratégico</span>
               </div>
-              <p class="text-muted leading-relaxed mb-0 mt-3">
-                Para el año 2030, seremos una organización consolidada capaz de <strong>transformar el 50% de nuestra producción láctea</strong>, dar un alto <strong>valor agregado a la papa y los tubérculos andinos</strong> propios de nuestra región, y <strong>expandirnos competitivamente a nuevos mercados departamentales y nacionales</strong>.
+              <p class="text-muted fs-5 mb-0" style="line-height: 1.7;">
+                <strong>Transformar el 50% de nuestra producción láctea</strong>, dar <strong>valor agregado a la papa y tubérculos andinos</strong> propios de nuestra montaña, y <strong>expandirnos a nuevos mercados</strong> con productos diferenciados por su origen y pureza.
               </p>
             </div>
           </div>
         </div>
 
-        <!-- Franja de Valores de la Comunidad (32 Asociados) -->
-        <div class="mt-5 p-4 p-lg-5 rounded-4" style="background: linear-gradient(135deg, #f0f7f2, #ffffff); border: 1.5px solid #d4e7d9;">
+        <!-- Banner Monumental: El Factor Humano (32 Asociados Activos) -->
+        <div class="banner-asociados-monumental">
           <div class="row align-items-center g-4">
             <div class="col-lg-8">
-              <h4 class="fw-bold text-success mb-2">
-                <i class="bi bi-people-fill me-2"></i> Una Familia de 32 Familias Campesinas
-              </h4>
-              <p class="text-muted mb-0">
-                Cada gota de leche entregada en nuestros centros de acopio representa la honestidad, el sudor y la esperanza de 32 hogares de la vereda Alizal. Creemos firmemente que el cooperativismo campesino es el motor que transforma el territorio.
+              <div class="d-flex align-items-center gap-3 mb-3">
+                <span class="badge bg-success text-white fw-bold px-3 py-2 rounded-pill">Comunidad & Dignidad</span>
+                <span class="text-white-50"><i class="bi bi-geo-alt-fill text-warning me-1"></i> Finca El Recuerdo</span>
+              </div>
+              <h3 class="display-6 fw-bold text-white mb-3">
+                Una Familia de 32 Asociados Comprometidos con el Campo
+              </h3>
+              <p class="text-light opacity-75 fs-5 mb-0" style="line-height: 1.65;">
+                No somos una corporación lejana: somos 32 familias campesinas de la vereda Alizal que decidieron asociarse para proteger el fruto de su trabajo, asegurar pesajes justos y garantizar el relevo generacional en la ganadería lechera colombiana.
               </p>
             </div>
             <div class="col-lg-4 text-lg-end">
-              <a href="#contacto" class="btn btn-outline-campo">
-                <i class="bi bi-chat-heart me-1"></i> Contactar a la Junta
-              </a>
+              <div class="p-4 rounded-4 text-center" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15);">
+                <div class="display-4 fw-bold text-warning mb-0">100%</div>
+                <div class="text-white fw-bold">Compromiso Campesino</div>
+                <small class="text-white-50 d-block mt-1">Transparencia y Cooperación</small>
+              </div>
             </div>
           </div>
         </div>
@@ -549,70 +748,94 @@ $correo = "asoagroalizal@gmail.com";
     </section>
 
     <!-- ===================================================================================== -->
-    <!-- SECCIÓN: NUESTRA LABOR E INFRAESTRUCTURA                                              -->
+    <!-- 4. INFRAESTRUCTURA Y BPO (BENTO BOX GRID CREATIVO EN FONDO OSCURO)                     -->
     <!-- ===================================================================================== -->
-    <section id="labor-infraestructura" class="py-5" style="background-color: var(--color-campo-soft);">
-      <div class="container py-lg-4">
-        <div class="text-center max-w-700 mx-auto mb-5">
-          <span class="badge-campo mb-2">Capacidad Técnica y Productiva</span>
-          <h2 class="display-6 fw-bold mb-3 text-dark">Nuestra Labor e Infraestructura</h2>
-          <p class="text-muted lead fs-6">
-            Combinamos la sabiduría tradicional de nuestras tierras con tecnología propia para garantizar alimentos sanos, inocuos y con trazabilidad desde el campo hasta la mesa.
-          </p>
+    <section id="infraestructura" class="section-bento">
+      <div class="container">
+        <div class="row justify-content-center text-center mb-5">
+          <div class="col-lg-8">
+            <span class="bento-tag bento-tag-green">Tecnología de Vanguardia</span>
+            <h2 class="display-5 fw-bold text-white mb-3">Infraestructura Propia y Buenas Prácticas</h2>
+            <p class="text-white-50 lead">
+              Integración de biotecnología, termografía y rigor higiénico para elevar los estándares del campo colombiano.
+            </p>
+          </div>
         </div>
 
+        <!-- Layout Bento Box Grid -->
         <div class="row g-4">
-          <!-- Card 1: Acopio Lechero y BPO -->
-          <div class="col-lg-4 col-md-6">
-            <div class="card-corporativa">
-              <div class="card-icon-wrapper icon-verde">
-                <i class="bi bi-shield-check"></i>
+          <!-- Bento 1: Tanques de Enfriamiento (Caja Grande 7 Columnas) -->
+          <div class="col-lg-7">
+            <div class="bento-card">
+              <span class="bento-tag bento-tag-blue">Cadena de Frío Ininterrumpida</span>
+              <div class="d-flex align-items-baseline gap-3 mb-2">
+                <span class="bento-metric">4°C</span>
+                <span class="text-white-50 fw-semibold">Refrigeración Inmediata</span>
               </div>
-              <h4 class="fw-bold text-dark mb-3">Acopio Lechero y BPO</h4>
-              <p class="text-muted mb-3">
-                Implementamos y vigilamos activamente las <strong>Buenas Prácticas de Ordeño (BPO)</strong> en cada una de las fincas asociadas. Mantenemos una rigurosa rutina de higiene de pezones, filtrado inmediato y control microbiológico continuo.
+              <h4 class="fw-bold text-white mb-3">Tanques de Enfriamiento Tecnificados</h4>
+              <p class="text-white-50 mb-4" style="line-height: 1.65;">
+                Disponemos de tanques de acero inoxidable de enfriamiento rápido que reciben la leche inmediatamente culminado el ordeño. Esto inhibe la acidificación bacteriana y preserva intactas las propiedades composicionales de grasa y proteína demandadas por la industria pasteurizadora.
               </p>
-              <ul class="list-unstyled text-muted small mb-0 d-flex flex-column gap-2">
-                <li><i class="bi bi-check-circle-fill text-success me-2"></i>Ordeño higiénico en doble turno</li>
-                <li><i class="bi bi-check-circle-fill text-success me-2"></i>Monitoreo de mastitis y acidez</li>
-                <li><i class="bi bi-check-circle-fill text-success me-2"></i>Pesajes digitales sistematizados</li>
-              </ul>
+              <div class="row g-3 pt-3 border-top border-white border-opacity-10 text-white-50 small">
+                <div class="col-sm-6"><i class="bi bi-thermometer-snow text-info me-2"></i>Monitoreo digital térmico</div>
+                <div class="col-sm-6"><i class="bi bi-shield-check text-info me-2"></i>Aislamiento de alto rendimiento</div>
+              </div>
             </div>
           </div>
 
-          <!-- Card 2: Tanques de Enfriamiento (Cadena de Frío) -->
-          <div class="col-lg-4 col-md-6">
-            <div class="card-corporativa">
-              <div class="card-icon-wrapper icon-azul">
-                <i class="bi bi-snow2"></i>
+          <!-- Bento 2: Buenas Prácticas de Ordeño BPO (Caja 5 Columnas) -->
+          <div class="col-lg-5">
+            <div class="bento-card">
+              <span class="bento-tag bento-tag-green">Rigor Higiénico</span>
+              <div class="d-flex align-items-baseline gap-3 mb-2">
+                <span class="bento-metric">BPO</span>
+                <span class="text-white-50 fw-semibold">Doble Turno Diario</span>
               </div>
-              <h4 class="fw-bold text-dark mb-3">Cadena de Frío Propia</h4>
-              <p class="text-muted mb-3">
-                Contamos con <strong>tanques de enfriamiento de acero inoxidable</strong> con tecnología propia de refrigeración rápida a 4°C, lo cual detiene la proliferación bacteriana y conserva intactas las propiedades nutricionales y grasas de la leche.
+              <h4 class="fw-bold text-white mb-3">Buenas Prácticas de Ordeño</h4>
+              <p class="text-white-50 mb-3" style="line-height: 1.65;">
+                Capacitación continua en desinfección de pezones, pre y post-sellado, filtración mecánica y bienestar animal para garantizar leche Grado A en los turnos de Mañana (☀️) y Tarde (🌅).
               </p>
-              <ul class="list-unstyled text-muted small mb-0 d-flex flex-column gap-2">
-                <li><i class="bi bi-check-circle-fill text-primary me-2"></i>Enfriamiento rápido post-ordeño</li>
-                <li><i class="bi bi-check-circle-fill text-primary me-2"></i>Monitoreo constante de temperatura</li>
-                <li><i class="bi bi-check-circle-fill text-primary me-2"></i>Conservación óptima para la industria</li>
-              </ul>
+              <div class="p-3 rounded-3 mt-auto" style="background: rgba(34, 197, 94, 0.08); border: 1px solid rgba(34, 197, 94, 0.2);">
+                <i class="bi bi-check-all text-success me-1"></i> Control de mastitis y acidez en cada lote
+              </div>
             </div>
           </div>
 
-          <!-- Card 3: Laboratorio de Tejidos e Invernaderos -->
-          <div class="col-lg-4 col-md-12">
-            <div class="card-corporativa">
-              <div class="card-icon-wrapper icon-dorado">
-                <i class="bi bi-flower1"></i>
+          <!-- Bento 3: Laboratorio de Tejidos Vegetales (Caja 6 Columnas) -->
+          <div class="col-lg-6">
+            <div class="bento-card">
+              <span class="bento-tag bento-tag-gold">Biotecnología Andina</span>
+              <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="rounded-3 p-2 bg-warning bg-opacity-25 text-warning fs-3">
+                  <i class="bi bi-flower3"></i>
+                </div>
+                <div>
+                  <h4 class="fw-bold text-white mb-0">Laboratorio de Tejidos</h4>
+                  <small class="text-warning">Propagación in-vitro y sanidad vegetal</small>
+                </div>
               </div>
-              <h4 class="fw-bold text-dark mb-3">Biotecnología e Invernaderos</h4>
-              <p class="text-muted mb-3">
-                Miramos al futuro agropecuario: disponemos de infraestructura con <strong>laboratorio de tejidos vegetales e invernaderos tecnificados</strong> para la reproducción de semillas limpias de papa y tubérculos andinos con alta resistencia.
+              <p class="text-white-50 mb-0" style="line-height: 1.65;">
+                Producimos <strong>semillas limpias de papa y tubérculos andinos</strong> libres de virus y plagas. Nuestro laboratorio permite multiplicar variedades de alto rendimiento para asegurar cosechas abundantes en Carmen de Carupa.
               </p>
-              <ul class="list-unstyled text-muted small mb-0 d-flex flex-column gap-2">
-                <li><i class="bi bi-check-circle-fill text-warning me-2"></i>Semilla limpia certificada de papa</li>
-                <li><i class="bi bi-check-circle-fill text-warning me-2"></i>Diversificación de cultivos andinos</li>
-                <li><i class="bi bi-check-circle-fill text-warning me-2"></i>Micropropagación in vitro sostenible</li>
-              </ul>
+            </div>
+          </div>
+
+          <!-- Bento 4: Invernaderos Tecnificados (Caja 6 Columnas) -->
+          <div class="col-lg-6">
+            <div class="bento-card">
+              <span class="bento-tag bento-tag-green">Protección y Clima</span>
+              <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="rounded-3 p-2 bg-success bg-opacity-25 text-success fs-3">
+                  <i class="bi bi-building-gear"></i>
+                </div>
+                <div>
+                  <h4 class="fw-bold text-white mb-0">Invernaderos Tecnificados</h4>
+                  <small class="text-success">Agricultura de precisión controlada</small>
+                </div>
+              </div>
+              <p class="text-white-50 mb-0" style="line-height: 1.65;">
+                Infraestructura moderna para la aclimatación de plántulas y producción protegida frente a heladas de páramo, fortaleciendo la seguridad alimentaria de nuestros 32 asociados y sus familias.
+              </p>
             </div>
           </div>
         </div>
@@ -620,71 +843,69 @@ $correo = "asoagroalizal@gmail.com";
     </section>
 
     <!-- ===================================================================================== -->
-    <!-- GALERÍA VISUAL DE NUESTRA LABOR                                                       -->
+    <!-- 5. GALERÍA VISUAL AGRI-TECH                                                           -->
     <!-- ===================================================================================== -->
-    <section id="galeria" class="py-5" style="background-color: #ffffff;">
-      <div class="container py-lg-4">
-        <div class="text-center max-w-700 mx-auto mb-5">
-          <span class="badge-campo mb-2">Testimonio Gráfico</span>
-          <h2 class="display-6 fw-bold mb-3 text-dark">Nuestra Tierra, Fincas y Ordeño</h2>
-          <p class="text-muted lead fs-6">
-            Un recorrido por las faenas diarias en Carmen de Carupa, donde el compromiso campesino se vive desde las cuatro de la mañana en cada potrero y establo.
-          </p>
+    <section id="galeria" class="section-galeria">
+      <div class="container">
+        <div class="row justify-content-center text-center mb-5">
+          <div class="col-lg-8">
+            <span class="pill-status mb-3">Faenas del Día a Día</span>
+            <h2 class="display-5 fw-bold text-dark mb-3">Nuestra Tierra, Ganado y Faenas</h2>
+            <p class="lead text-muted">
+              Postales auténticas de nuestras fincas en la vereda Alizal, donde la pasión por el campo se renueva cada mañana.
+            </p>
+          </div>
         </div>
 
         <div class="row g-4">
-          <!-- Foto 1: Ganado en Pastoreo -->
+          <!-- Foto 1 -->
           <div class="col-sm-6 col-lg-3">
-            <div class="galeria-item">
+            <div class="galeria-bento-item">
               <img src="https://images.unsplash.com/photo-1546445317-29f4545e9d53?auto=format&fit=crop&w=700&q=80" 
-                   alt="Bovinos lecheros alimentándose en pasturas naturales de la Vereda Alizal" 
-                   class="img-fluid">
-              <div class="galeria-overlay">
-                <span class="badge bg-success mb-1 w-auto align-self-start">Finca Campesina</span>
-                <h6 class="fw-bold mb-0">Pastoreo Libre y Sano</h6>
-                <small class="text-light opacity-75">Bienestar animal en alta montaña</small>
+                   alt="Ganado pastando libremente en las montañas de Carmen de Carupa">
+              <div class="galeria-caption">
+                <span class="badge bg-success mb-1 w-auto align-self-start">Pastoreo Libre</span>
+                <h6 class="fw-bold mb-0">Pastos Nutritivos</h6>
+                <small class="text-white-50">Bienestar y nutrición animal</small>
               </div>
             </div>
           </div>
 
-          <!-- Foto 2: Faena de Ordeño Limpio -->
+          <!-- Foto 2 -->
           <div class="col-sm-6 col-lg-3">
-            <div class="galeria-item">
-              <img src="https://images.unsplash.com/photo-1500595046743-cd271d694d30?auto=format&fit=crop&w=700&q=80" 
-                   alt="Productor campesino realizando faena de ordeño higiénico con canastilla esterilizada" 
-                   class="img-fluid">
-              <div class="galeria-overlay">
+            <div class="galeria-bento-item">
+              <img src="https://images.unsplash.com/photo-1527153857715-3908f2ae5e81?auto=format&fit=crop&w=700&q=80" 
+                   alt="Faena de ordeño limpio y riguroso en establo campesino">
+              <div class="galeria-caption">
                 <span class="badge bg-warning text-dark mb-1 w-auto align-self-start">Buenas Prácticas</span>
-                <h6 class="fw-bold mb-0">Faena de Ordeño Limpio</h6>
-                <small class="text-light opacity-75">Turnos de Mañana y Tarde</small>
+                <h6 class="fw-bold mb-0">Ordeño Higiénico</h6>
+                <small class="text-white-50">Doble turno: Mañana y Tarde</small>
               </div>
             </div>
           </div>
 
-          <!-- Foto 3: Recolección y Control de Frío -->
+          <!-- Foto 3 -->
           <div class="col-sm-6 col-lg-3">
-            <div class="galeria-item">
+            <div class="galeria-bento-item">
               <img src="https://images.unsplash.com/photo-1596733430284-f7437764b1a9?auto=format&fit=crop&w=700&q=80" 
-                   alt="Cantinas y tanques de almacenamiento de leche fresca de alta calidad" 
-                   class="img-fluid">
-              <div class="galeria-overlay">
-                <span class="badge bg-primary mb-1 w-auto align-self-start">Tecnología</span>
-                <h6 class="fw-bold mb-0">Tanques y Cadena de Frío</h6>
-                <small class="text-light opacity-75">Conservación a 4°C garantizada</small>
+                   alt="Tanques y canecas térmicas para el transporte seguro de leche">
+              <div class="galeria-caption">
+                <span class="badge bg-info text-dark mb-1 w-auto align-self-start">Cadena de Frío</span>
+                <h6 class="fw-bold mb-0">Acopio en Tanques</h6>
+                <small class="text-white-50">Temperatura constante a 4°C</small>
               </div>
             </div>
           </div>
 
-          <!-- Foto 4: Paisaje y Finca El Recuerdo -->
+          <!-- Foto 4 -->
           <div class="col-sm-6 col-lg-3">
-            <div class="galeria-item">
+            <div class="galeria-bento-item">
               <img src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=700&q=80" 
-                   alt="Amanecer en las montañas de Carmen de Carupa, Vereda Alizal" 
-                   class="img-fluid">
-              <div class="galeria-overlay">
-                <span class="badge bg-secondary mb-1 w-auto align-self-start">Territorio</span>
-                <h6 class="fw-bold mb-0">Finca El Recuerdo</h6>
-                <small class="text-light opacity-75">Cuna de ASOAGROALIZAL</small>
+                   alt="Paisaje campesino de la Finca El Recuerdo, Carmen de Carupa">
+              <div class="galeria-caption">
+                <span class="badge bg-secondary mb-1 w-auto align-self-start">Finca El Recuerdo</span>
+                <h6 class="fw-bold mb-0">Vereda Alizal</h6>
+                <small class="text-white-50">Cuna de nuestra asociación</small>
               </div>
             </div>
           </div>
@@ -693,104 +914,101 @@ $correo = "asoagroalizal@gmail.com";
     </section>
 
     <!-- ===================================================================================== -->
-    <!-- SECCIÓN: CONTACTO Y CANAL DE ATENCIÓN (2 COLUMNAS)                                    -->
+    <!-- 6. SECCIÓN CONTACTO (SPLIT SCREEN CON FLOATING LABELS & TARJETA CONTRASTE)           -->
     <!-- ===================================================================================== -->
-    <section id="contacto" class="py-5" style="background-color: var(--color-campo-soft);">
-      <div class="container py-lg-4">
-        <div class="text-center max-w-700 mx-auto mb-5">
-          <span class="badge-campo mb-2">Canal Oficial de Comunicación</span>
-          <h2 class="display-6 fw-bold mb-3 text-dark">Ponte en Contacto con Nosotros</h2>
-          <p class="text-muted lead fs-6">
-            ¿Deseas conocer más sobre el proceso de afiliación, comprar nuestra producción láctea o consultar a la administración? Déjanos tu mensaje.
-          </p>
+    <section id="contacto" class="section-contacto">
+      <div class="container">
+        <div class="row justify-content-center text-center mb-5">
+          <div class="col-lg-8">
+            <span class="pill-status mb-3">Atención y Enlace</span>
+            <h2 class="display-5 fw-bold text-dark mb-3">Comunícate con la Asociación</h2>
+            <p class="lead text-muted">
+              Estamos a tu disposición para solicitudes de afiliación, comercialización de leche o consultas a la Junta Directiva.
+            </p>
+          </div>
         </div>
 
-        <div class="seccion-contacto">
+        <div class="split-contacto-box">
           <div class="row g-0">
-            <!-- Columna Izquierda: Formulario (POST -> api/consultas.php) -->
+            <!-- Formulario a la Izquierda (Floating Labels de Bootstrap 5) -->
             <div class="col-lg-7 p-4 p-md-5">
-              <h4 class="fw-bold text-dark mb-2">Envíanos un Mensaje Directo</h4>
-              <p class="text-muted small mb-4">
-                Tus datos serán tratados bajo estricta reserva de conformidad con la Ley 1581 de 2012.
+              <h3 class="fw-bold text-dark mb-2">Envíanos un Mensaje</h3>
+              <p class="text-muted mb-4 small">
+                Tus datos están protegidos conforme a la Ley 1581 de 2012 de Protección de Datos Personales.
               </p>
 
               <!-- Alerta Dinámica AJAX -->
-              <div id="contacto-alert" class="alert d-none shadow-sm" role="alert"></div>
+              <div id="contacto-alert" class="alert d-none shadow-sm rounded-4" role="alert"></div>
 
-              <!-- [BACKEND] Formulario conectado a api/consultas.php mediante POST y AJAX -->
-              <form id="form-contacto-publico" action="./api/consultas.php" method="POST" class="needs-validation">
-                <div class="mb-3">
-                  <label for="nombre" class="form-label fw-bold text-dark small">Nombre Completo <span class="text-danger">*</span></label>
-                  <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-person"></i></span>
-                    <input type="text" class="form-control border-start-0" id="nombre" name="nombre" placeholder="Ej: Luis Hernando Moncada" required>
-                  </div>
+              <!-- [BACKEND PUENTE 3] Formulario con action a api/consultas.php -->
+              <form id="form-contacto-publico" action="./api/consultas.php" method="POST">
+                <!-- Nombre Completo (Floating Label) -->
+                <div class="form-floating mb-3">
+                  <input type="text" class="form-control" id="floatingNombre" name="nombre" placeholder="Nombre Completo" required>
+                  <label for="floatingNombre"><i class="bi bi-person me-2"></i>Nombre Completo *</label>
                 </div>
 
-                <div class="mb-3">
-                  <label for="contacto" class="form-label fw-bold text-dark small">Teléfono Móvil o Correo Electrónico <span class="text-danger">*</span></label>
-                  <div class="input-group">
-                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-envelope-at"></i></span>
-                    <input type="text" class="form-control border-start-0" id="contacto" name="contacto" placeholder="Ej: 3185235690 o correo@ejemplo.com" required>
-                  </div>
-                  <div class="form-text text-muted small">Te responderemos a la mayor brevedad a este medio.</div>
+                <!-- Contacto (Teléfono o Correo) -->
+                <div class="form-floating mb-3">
+                  <input type="text" class="form-control" id="floatingContacto" name="contacto" placeholder="Teléfono o Correo" required>
+                  <label for="floatingContacto"><i class="bi bi-envelope-at me-2"></i>Teléfono o Correo Electrónico *</label>
                 </div>
 
-                <div class="mb-4">
-                  <label for="mensaje" class="form-label fw-bold text-dark small">Mensaje o Inquietud <span class="text-danger">*</span></label>
-                  <textarea class="form-control" id="mensaje" name="mensaje" rows="4" placeholder="Cuéntanos sobre tu inquietud, consulta comercial o solicitud de afiliación a la asociación..." required></textarea>
+                <!-- Mensaje -->
+                <div class="form-floating mb-4">
+                  <textarea class="form-control" placeholder="Mensaje" id="floatingMensaje" name="mensaje" style="height: 140px" required></textarea>
+                  <label for="floatingMensaje"><i class="bi bi-chat-text me-2"></i>Cuéntanos tu inquietud o solicitud *</label>
                 </div>
 
-                <button type="submit" id="btn-enviar-contacto" class="btn btn-campo w-100 py-3 d-flex align-items-center justify-content-center gap-2">
+                <!-- Botón de Envío -->
+                <button type="submit" id="btn-enviar-contacto" class="btn btn-agri-glow w-100 py-3 fs-6 d-flex align-items-center justify-content-center gap-2">
                   <i class="bi bi-send-fill"></i>
-                  <span>Enviar Mensaje a la Administración</span>
+                  <span>Enviar Mensaje Directo a la Administración</span>
                 </button>
               </form>
             </div>
 
-            <!-- Columna Derecha: Información Oficial de la Asociación -->
-            <div class="col-lg-5 p-4 p-md-5 d-flex flex-column justify-content-between text-white" style="background: linear-gradient(145deg, #164621, #0c2b13);">
-              <div>
-                <span class="badge bg-warning text-dark fw-bold mb-3 px-3 py-1 rounded-pill">Sede Campesina</span>
-                <h4 class="fw-bold mb-4 text-white"><?php echo $sigla; ?></h4>
+            <!-- Información a la Derecha (Tarjeta de Alto Contraste) -->
+            <div class="col-lg-5">
+              <div class="contacto-dark-panel">
+                <div>
+                  <span class="bento-tag bento-tag-gold mb-3">Sede Oficial Campesina</span>
+                  <h4 class="fw-bold text-white mb-4"><?php echo $sigla; ?></h4>
 
-                <div class="d-flex flex-column gap-4">
-                  <!-- Dirección -->
-                  <div class="d-flex align-items-start gap-3">
-                    <div class="fs-4 text-warning">
+                  <!-- Fila 1: Dirección -->
+                  <div class="contacto-item-row">
+                    <div class="contacto-icon-pill">
                       <i class="bi bi-geo-alt-fill"></i>
                     </div>
                     <div>
-                      <h6 class="fw-bold mb-1 text-white">Ubicación y Sede Principal</h6>
-                      <p class="mb-0 text-light opacity-75 small">
-                        <?php echo $direccion; ?>
-                      </p>
+                      <h6 class="fw-bold text-white mb-1">Ubicación</h6>
+                      <p class="text-white-50 small mb-0"><?php echo $ubicacion; ?></p>
                     </div>
                   </div>
 
-                  <!-- Teléfono -->
-                  <div class="d-flex align-items-start gap-3">
-                    <div class="fs-4 text-warning">
+                  <!-- Fila 2: Teléfono -->
+                  <div class="contacto-item-row">
+                    <div class="contacto-icon-pill">
                       <i class="bi bi-telephone-fill"></i>
                     </div>
                     <div>
-                      <h6 class="fw-bold mb-1 text-white">Línea Telefónica y WhatsApp</h6>
-                      <p class="mb-0 text-light opacity-75 small">
-                        <a href="tel:<?php echo $telefono; ?>" class="text-white text-decoration-none fw-semibold">
+                      <h6 class="fw-bold text-white mb-1">Línea Móvil / WhatsApp</h6>
+                      <p class="text-white-50 small mb-0">
+                        <a href="tel:<?php echo $telefono; ?>" class="text-white text-decoration-none fw-bold">
                           +57 <?php echo $telefono; ?>
                         </a>
                       </p>
                     </div>
                   </div>
 
-                  <!-- Correo -->
-                  <div class="d-flex align-items-start gap-3">
-                    <div class="fs-4 text-warning">
+                  <!-- Fila 3: Correo -->
+                  <div class="contacto-item-row">
+                    <div class="contacto-icon-pill">
                       <i class="bi bi-envelope-fill"></i>
                     </div>
                     <div>
-                      <h6 class="fw-bold mb-1 text-white">Correo Electrónico Institucional</h6>
-                      <p class="mb-0 text-light opacity-75 small">
+                      <h6 class="fw-bold text-white mb-1">Correo Institucional</h6>
+                      <p class="text-white-50 small mb-0">
                         <a href="mailto:<?php echo $correo; ?>" class="text-white text-decoration-none">
                           <?php echo $correo; ?>
                         </a>
@@ -798,25 +1016,25 @@ $correo = "asoagroalizal@gmail.com";
                     </div>
                   </div>
 
-                  <!-- Horarios de Acopio -->
-                  <div class="d-flex align-items-start gap-3">
-                    <div class="fs-4 text-warning">
+                  <!-- Fila 4: Horarios de Acopio -->
+                  <div class="contacto-item-row mb-0">
+                    <div class="contacto-icon-pill">
                       <i class="bi bi-clock-history"></i>
                     </div>
                     <div>
-                      <h6 class="fw-bold mb-1 text-white">Horarios de Acopio Lechero</h6>
-                      <p class="mb-0 text-light opacity-75 small">
-                        ☀️ Mañana: 05:00 a.m. – 07:30 a.m.<br>
-                        🌅 Tarde: 03:30 p.m. – 05:30 p.m.
+                      <h6 class="fw-bold text-white mb-1">Horario de Acopio y Pesaje</h6>
+                      <p class="text-white-50 small mb-0">
+                        ☀️ Turno Mañana: 05:00 a.m. – 07:30 a.m.<br>
+                        🌅 Turno Tarde: 03:30 p.m. – 05:30 p.m.
                       </p>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              <!-- NIT y Transparencia -->
-              <div class="mt-4 pt-3 border-top border-light border-opacity-25 small text-light opacity-75">
-                <i class="bi bi-shield-check text-warning me-1"></i> Organización Campesina Registrada · NIT: <?php echo $nit; ?>
+                <!-- NIT Legal -->
+                <div class="pt-4 mt-4 border-top border-white border-opacity-10 small text-white-50">
+                  <i class="bi bi-shield-check text-success me-1"></i> Organización Campesina Registrada · NIT: <?php echo $nit; ?>
+                </div>
               </div>
             </div>
           </div>
@@ -826,19 +1044,21 @@ $correo = "asoagroalizal@gmail.com";
   </main>
 
   <!-- ===================================================================================== -->
-  <!-- FOOTER LEGAL INSTITUCIONAL (OBLIGATORIO)                                               -->
+  <!-- 7. FOOTER LEGAL ULTRA-PROFESIONAL                                                     -->
   <!-- ===================================================================================== -->
-  <footer class="footer-institucional py-5">
+  <footer class="footer-ultra">
     <div class="container">
-      <div class="row g-4 justify-content-between mb-4">
-        <!-- Razón Social y Misión Resumida -->
+      <div class="row g-4 justify-content-between mb-5">
+        <!-- Razón Social y Misión -->
         <div class="col-lg-5">
           <div class="d-flex align-items-center gap-2 mb-3">
-            <span class="fs-3 text-warning"><i class="bi bi-droplet-half"></i></span>
+            <div class="brand-emblem" style="width: 36px; height: 36px; font-size: 1.1rem;">
+              <i class="bi bi-droplet-half"></i>
+            </div>
             <h5 class="fw-bold text-white mb-0"><?php echo $sigla; ?></h5>
           </div>
           <p class="text-white-50 small mb-2" style="line-height: 1.6;">
-            <strong>Razón Social:</strong><br>
+            <strong>Razón Social Oficial:</strong><br>
             <?php echo $razonSocial; ?>
           </p>
           <p class="text-white-50 small mb-0">
@@ -846,25 +1066,21 @@ $correo = "asoagroalizal@gmail.com";
           </p>
         </div>
 
-        <!-- Enlaces Rápidos y Navegación -->
+        <!-- Navegación Rápida -->
         <div class="col-sm-6 col-lg-3">
-          <h6 class="text-white fw-bold text-uppercase mb-3" style="font-size: 0.8rem; letter-spacing: 0.08em;">
-            Navegación Institucional
-          </h6>
+          <h6>Navegación</h6>
           <ul class="list-unstyled d-flex flex-column gap-2 small">
-            <li><a href="#inicio"><i class="bi bi-chevron-right me-1"></i>Inicio</a></li>
-            <li><a href="#quienes-somos"><i class="bi bi-chevron-right me-1"></i>¿Quiénes Somos? (Misión / Visión)</a></li>
-            <li><a href="#labor-infraestructura"><i class="bi bi-chevron-right me-1"></i>Labor e Infraestructura BPO</a></li>
-            <li><a href="#galeria"><i class="bi bi-chevron-right me-1"></i>Galería de Faenas</a></li>
-            <li><a href="#contacto"><i class="bi bi-chevron-right me-1"></i>Atención al Ganadero</a></li>
+            <li><a href="#inicio"><i class="bi bi-chevron-right me-1 text-success"></i>Inicio</a></li>
+            <li><a href="#identidad"><i class="bi bi-chevron-right me-1 text-success"></i>Nuestra Identidad</a></li>
+            <li><a href="#infraestructura"><i class="bi bi-chevron-right me-1 text-success"></i>Infraestructura & BPO</a></li>
+            <li><a href="#galeria"><i class="bi bi-chevron-right me-1 text-success"></i>Galería</a></li>
+            <li><a href="#contacto"><i class="bi bi-chevron-right me-1 text-success"></i>Contacto</a></li>
           </ul>
         </div>
 
-        <!-- Acceso al Sistema y Enlaces Legales Colombia -->
+        <!-- Acceso y Enlaces Legales Colombia -->
         <div class="col-sm-6 col-lg-4">
-          <h6 class="text-white fw-bold text-uppercase mb-3" style="font-size: 0.8rem; letter-spacing: 0.08em;">
-            Sistema y Marco Legal Colombiano
-          </h6>
+          <h6>Marco Legal y Accesos</h6>
           <ul class="list-unstyled d-flex flex-column gap-2 small mb-3">
             <li>
               <a href="./login.php" class="text-warning fw-bold">
@@ -873,87 +1089,87 @@ $correo = "asoagroalizal@gmail.com";
             </li>
             <li>
               <a href="./registro.php">
-                <i class="bi bi-person-plus me-1"></i> Solicitud de Registro de Asociado
+                <i class="bi bi-person-plus me-1"></i> Afiliación de Nuevos Ganaderos
               </a>
             </li>
-            <!-- Enlaces Legales Exigidos con Modales Informativos -->
+            <!-- Modales Legales Requeridos (Ley 1581 de 2012 y Términos) -->
             <li>
               <a href="#" data-bs-toggle="modal" data-bs-target="#modalHabeasData">
-                <i class="bi bi-file-earmark-lock2 me-1"></i> Política de Tratamiento de Datos Personales (Ley 1581 de 2012)
+                <i class="bi bi-file-earmark-lock2 me-1 text-success"></i> Política de Tratamiento de Datos Personales (Ley 1581 de 2012)
               </a>
             </li>
             <li>
               <a href="#" data-bs-toggle="modal" data-bs-target="#modalTerminos">
-                <i class="bi bi-journal-check me-1"></i> Términos y Condiciones de Uso de la Plataforma
+                <i class="bi bi-journal-check me-1 text-success"></i> Términos y Condiciones de Uso
               </a>
             </li>
           </ul>
-          <p class="small text-white-50 mb-0">
-            <i class="bi bi-geo-alt me-1 text-warning"></i> <?php echo $direccion; ?>
-          </p>
+          <small class="text-white-50 d-block">
+            <i class="bi bi-geo-alt me-1 text-warning"></i> <?php echo $ubicacion; ?>
+          </small>
         </div>
       </div>
 
-      <!-- Barra de Copyright Dinámico PHP -->
-      <div class="pt-4 mt-4 border-top border-secondary border-opacity-25 text-center text-white-50 small">
+      <!-- [BACKEND PUENTE 4] Barra de Copyright Dinámica en PHP -->
+      <div class="pt-4 border-top border-secondary border-opacity-25 text-center text-white-50 small">
         <p class="mb-0">
           &copy; <?php echo date('Y'); ?> <strong><?php echo $sigla; ?></strong>. Todos los derechos reservados. 
-          Desarrollado para el fortalecimiento gremial de la vereda Alizal, Carmen de Carupa, Cundinamarca.
+          Diseñado con estándares Agri-Tech para los 32 asociados de la vereda Alizal, Carmen de Carupa, Cundinamarca.
         </p>
       </div>
     </div>
   </footer>
 
   <!-- ===================================================================================== -->
-  <!-- MODAL 1: POLÍTICA DE TRATAMIENTO DE DATOS PERSONALES (LEY 1581 DE 2012)              -->
+  <!-- MODAL: POLÍTICA DE TRATAMIENTO DE DATOS PERSONALES (LEY 1581 DE 2012)                 -->
   <!-- ===================================================================================== -->
   <div class="modal fade" id="modalHabeasData" tabindex="-1" aria-labelledby="modalHabeasDataLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
-      <div class="modal-content">
-        <div class="modal-header bg-success text-white">
+      <div class="modal-content rounded-4 border-0">
+        <div class="modal-header bg-success text-white py-3">
           <h5 class="modal-title fw-bold" id="modalHabeasDataLabel">
-            <i class="bi bi-shield-lock-fill me-2"></i>Política de Tratamiento de Datos Personales
+            <i class="bi bi-shield-lock-fill me-2"></i>Política de Tratamiento de Datos Personales (Ley 1581 de 2012)
           </h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-toggle="modal" aria-label="Cerrar"></button>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
-        <div class="modal-body text-dark small lh-lg">
+        <div class="modal-body text-dark small lh-lg p-4">
           <p class="fw-bold mb-2">Conforme a la Ley Estatutaria 1581 de 2012 y el Decreto Reglamentario 1377 de 2013 de la República de Colombia:</p>
           <p>
-            <strong>1. Responsable del Tratamiento:</strong> La <em><?php echo $razonSocial; ?></em> (en adelante <strong><?php echo $sigla; ?></strong>), con NIT <?php echo $nit; ?>, con domicilio en <?php echo $direccion; ?>, es la entidad responsable del tratamiento de los datos personales suministrados por sus asociados, proveedores y visitantes.
+            <strong>1. Responsable del Tratamiento:</strong> La <em><?php echo $razonSocial; ?></em> (en adelante <strong><?php echo $sigla; ?></strong>), con NIT <?php echo $nit; ?>, con domicilio en <?php echo $ubicacion; ?>, es la entidad responsable del tratamiento de los datos personales suministrados por sus asociados, proveedores y visitantes.
           </p>
           <p>
             <strong>2. Finalidad del Tratamiento:</strong> Los datos recolectados (nombres, documentos de identidad, teléfonos, correos electrónicos y registros de pesajes lecheros) son utilizados exclusivamente para:
           </p>
           <ul>
             <li>La liquidación quincenal y control administrativo del acopio lechero.</li>
-            <li>La comunicación oficial entre la Junta Directiva y los asociados.</li>
+            <li>La comunicación oficial entre la Junta Directiva y los 32 asociados.</li>
             <li>La atención y respuesta a las consultas enviadas mediante el formulario web.</li>
             <li>Cumplimiento de las obligaciones tributarias y legales ante las entidades del Estado.</li>
           </ul>
           <p>
-            <strong>3. Derechos del Titular (Habeas Data):</strong> En calidad de titular de la información, usted tiene derecho a conocer, actualizar, rectificar y solicitar la supresión de sus datos personales, así como revocar la autorización otorgada para su tratamiento, a través de nuestro correo oficial <strong><?php echo $correo; ?></strong>.
+            <strong>3. Derechos del Titular (Habeas Data):</strong> En calidad de titular de la información, usted tiene derecho a conocer, actualizar, rectificar y solicitar la supresión de sus datos personales, así como revocar la autorización otorgada para su tratamiento, a través de nuestro correo oficial <strong><?php echo $correo; ?></strong> o al teléfono <strong><?php echo $telefono; ?></strong>.
           </p>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Entendido y Cerrar</button>
+          <button type="button" class="btn btn-secondary btn-sm rounded-3" data-bs-dismiss="modal">Entendido y Cerrar</button>
         </div>
       </div>
     </div>
   </div>
 
   <!-- ===================================================================================== -->
-  <!-- MODAL 2: TÉRMINOS Y CONDICIONES DE USO                                                -->
+  <!-- MODAL: TÉRMINOS Y CONDICIONES DE USO                                                  -->
   <!-- ===================================================================================== -->
   <div class="modal fade" id="modalTerminos" tabindex="-1" aria-labelledby="modalTerminosLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
-      <div class="modal-content">
-        <div class="modal-header bg-dark text-white">
+      <div class="modal-content rounded-4 border-0">
+        <div class="modal-header bg-dark text-white py-3">
           <h5 class="modal-title fw-bold" id="modalTerminosLabel">
-            <i class="bi bi-file-text me-2"></i>Términos y Condiciones de Uso
+            <i class="bi bi-file-text me-2"></i>Términos y Condiciones de Uso de la Plataforma
           </h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-toggle="modal" aria-label="Cerrar"></button>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
-        <div class="modal-body text-dark small lh-lg">
+        <div class="modal-body text-dark small lh-lg p-4">
           <h6 class="fw-bold">1. Aceptación de los Términos</h6>
           <p>El acceso y uso de la Plataforma de Control Lechero de <?php echo $sigla; ?> confiere la condición de usuario e implica la aceptación plena de las presentes disposiciones.</p>
           
@@ -964,7 +1180,7 @@ $correo = "asoagroalizal@gmail.com";
           <p>Los registros de pesajes registrados en la plataforma constituyen soporte oficial para las liquidaciones quincenales. El usuario que detecte alguna inconsistencia cuenta con el buzón de quejas oficial en su panel para solicitar la correspondiente auditoría.</p>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+          <button type="button" class="btn btn-secondary btn-sm rounded-3" data-bs-dismiss="modal">Cerrar</button>
         </div>
       </div>
     </div>
@@ -974,37 +1190,44 @@ $correo = "asoagroalizal@gmail.com";
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
 
   <!-- ===================================================================================== -->
-  <!-- SCRIPT CLIENTE: ENVÍO ASÍNCRONO DEL FORMULARIO DE CONTACTO A api/consultas.php       -->
+  <!-- SCRIPT CLIENTE: NAVBAR SCROLL EFFECT & ENVÍO ASÍNCRONO DEL FORMULARIO                  -->
   <!-- ===================================================================================== -->
   <script>
     document.addEventListener("DOMContentLoaded", function() {
+      // 1. Efecto sutil de sombra y elevación al hacer Scroll en el Navbar
+      const navbar = document.getElementById("mainNavbar");
+      window.addEventListener("scroll", function() {
+        if (window.scrollY > 40) {
+          navbar.classList.add("scrolled");
+        } else {
+          navbar.classList.remove("scrolled");
+        }
+      });
+
+      // 2. Envío Asíncrono del Formulario con Floating Labels hacia api/consultas.php
       const formContacto = document.getElementById("form-contacto-publico");
       const btnEnviar = document.getElementById("btn-enviar-contacto");
       const alertBox = document.getElementById("contacto-alert");
 
       if (formContacto) {
         formContacto.addEventListener("submit", async function(event) {
-          // Evitamos el refresco tradicional de página para ofrecer experiencia moderna SPA
           event.preventDefault();
 
-          // Ocultar alertas previas
-          alertBox.className = "alert d-none shadow-sm";
+          alertBox.className = "alert d-none shadow-sm rounded-4";
           alertBox.textContent = "";
 
-          // Estado visual de carga en el botón
           btnEnviar.disabled = true;
           const textoOriginal = btnEnviar.innerHTML;
-          btnEnviar.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Enviando consulta...`;
+          btnEnviar.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Transmitiendo consulta...`;
 
-          // Recolección y saneamiento de campos del formulario
           const payload = {
-            nombre: document.getElementById("nombre").value.trim(),
-            contacto: document.getElementById("contacto").value.trim(),
-            mensaje: document.getElementById("mensaje").value.trim()
+            nombre: document.getElementById("floatingNombre").value.trim(),
+            contacto: document.getElementById("floatingContacto").value.trim(),
+            mensaje: document.getElementById("floatingMensaje").value.trim()
           };
 
           try {
-            // [BACKEND PUENTE] Petición POST al endpoint nativo api/consultas.php
+            // [BACKEND PUENTE] Envío POST asíncrono al endpoint PHP
             const respuesta = await fetch("./api/consultas.php", {
               method: "POST",
               headers: {
@@ -1017,24 +1240,20 @@ $correo = "asoagroalizal@gmail.com";
             const data = await respuesta.json();
 
             if (respuesta.ok && data.ok) {
-              // Respuesta exitosa del backend
-              alertBox.className = "alert alert-success d-flex align-items-center gap-2 shadow-sm";
+              alertBox.className = "alert alert-success d-flex align-items-center gap-2 shadow-sm rounded-4";
               alertBox.innerHTML = `<i class="bi bi-check-circle-fill fs-5"></i> <div><strong>¡Excelente!</strong> ${data.mensaje || 'Tu mensaje fue recibido satisfactoriamente.'}</div>`;
               alertBox.classList.remove("d-none");
               formContacto.reset();
             } else {
-              // Error validado por el backend
-              alertBox.className = "alert alert-danger d-flex align-items-center gap-2 shadow-sm";
+              alertBox.className = "alert alert-danger d-flex align-items-center gap-2 shadow-sm rounded-4";
               alertBox.innerHTML = `<i class="bi bi-exclamation-triangle-fill fs-5"></i> <div><strong>Atención:</strong> ${data.error || 'No fue posible registrar la consulta.'}</div>`;
               alertBox.classList.remove("d-none");
             }
           } catch (error) {
-            // Error de conexión o falla de red
-            alertBox.className = "alert alert-danger d-flex align-items-center gap-2 shadow-sm";
-            alertBox.innerHTML = `<i class="bi bi-wifi-off fs-5"></i> <div><strong>Error de conexión:</strong> No se pudo comunicar con el servidor local. Por favor verifica que Apache y MySQL estén activos.</div>`;
+            alertBox.className = "alert alert-danger d-flex align-items-center gap-2 shadow-sm rounded-4";
+            alertBox.innerHTML = `<i class="bi bi-wifi-off fs-5"></i> <div><strong>Error de conexión:</strong> No se pudo comunicar con el servidor local. Por favor verifica que Apache y MySQL estén activos en XAMPP.</div>`;
             alertBox.classList.remove("d-none");
           } finally {
-            // Restaurar estado del botón
             btnEnviar.disabled = false;
             btnEnviar.innerHTML = textoOriginal;
           }
