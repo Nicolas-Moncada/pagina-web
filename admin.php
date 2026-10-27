@@ -4,6 +4,7 @@
  * PLATAFORMA DE CONTROL LECHERO - ASOAGROALIZAL (CARMEN DE CARUPA)
  * Archivo: admin.php
  * Propósito: Panel de Administración General (SSR con PDO, DataTables BS5, filtros y exportación).
+ * Fuente Oficial: docs/FICHA_OFICIAL_ASOAGROALIZAL.md
  * =========================================================================================
  */
 
@@ -25,10 +26,7 @@ $filtroTurno    = trim($_GET['turno'] ?? '');
 $pestañaActiva  = $_GET['tab'] ?? 'planilla';
 
 // 3. PROCESAMIENTO DE ACCIONES VÍA POST CON PROTECCIÓN CSRF
-$mensajeAccion = '';
-$tipoMensaje = 'success';
-
-if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $tokenRecibido = $_POST['csrf_token'] ?? '';
     if (!validarCsrfToken($tokenRecibido)) {
         setFlashAlert('error', 'Error de Seguridad', 'El token CSRF ha vencido. Por favor recarga la página.');
@@ -57,7 +55,6 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                                        ON DUPLICATE KEY UPDATE litros = VALUES(litros), actualizadoEn = NOW()");
                 $stmt->execute([$entregaId, $ganaderoId, $fecha, $turno, $litros]);
 
-                // Registrar auditoría
                 registrarAuditoria($pdo, 'PESAJE_GUARDADO', $usuario['id'], $usuario['cedula'], "Ganadero: {$ganaderoId}, Fecha: {$fecha}, Turno: {$turno}, Litros: {$litros}");
                 setFlashAlert('success', '¡Pesaje Guardado!', "Se registraron " . formatoLitros($litros) . " exitosamente.");
             } catch (Exception $e) {
@@ -110,7 +107,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     } else {
                         if (!empty($password)) {
                             $hash = password_hash($password, PASSWORD_DEFAULT);
-                            $upd = $pdo->prepare("UPDATE usuario SET cedula = ?, nombre = ?, telefono = ?, finca = ?, passwordHash = ?, activo = ? WHERE id = ?");
+                            $upd = $pdo->prepare("UPDATE usuario SET cedula = ?, nombre = ?, telefono = ?, finca = ?, passwordHash = ?, activo = ?, sessionVersion = sessionVersion + 1 WHERE id = ?");
                             $upd->execute([$cedula, $nombre, $telefono, $finca, $hash, $activo, $asocId]);
                         } else {
                             $upd = $pdo->prepare("UPDATE usuario SET cedula = ?, nombre = ?, telefono = ?, finca = ?, activo = ? WHERE id = ?");
@@ -130,8 +127,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                         $hash = password_hash($claveAsignar, PASSWORD_DEFAULT);
                         $newId = generarUUID('usr');
 
-                        $ins = $pdo->prepare("INSERT INTO usuario (id, cedula, nombre, telefono, finca, passwordHash, rol, activo, debeCambiarPassword, creadoEn)
-                                              VALUES (?, ?, ?, ?, ?, ?, 'GANADERO', ?, 1, NOW())");
+                        $ins = $pdo->prepare("INSERT INTO usuario (id, cedula, nombre, telefono, finca, passwordHash, rol, activo, debeCambiarPassword, sessionVersion, creadoEn)
+                                              VALUES (?, ?, ?, ?, ?, ?, 'GANADERO', ?, 1, 1, NOW())");
                         $ins->execute([$newId, $cedula, $nombre, $telefono, $finca, $hash, $activo]);
 
                         registrarAuditoria($pdo, 'GANADERO_CREADO', $usuario['id'], $usuario['cedula'], "Nuevo Ganadero: {$nombre} (C.C. {$cedula})");
@@ -147,7 +144,27 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         exit;
     }
 
-    // ACCIÓN D: FIJAR O ACTUALIZAR PRECIO DE LA QUINCENA
+    // ACCIÓN D: REESTABLECER CLAVE TEMPORAL
+    if ($accion === 'reset_clave_ganadero') {
+        $asocId = trim($_POST['asociadoId'] ?? '');
+        if (!empty($asocId)) {
+            try {
+                $claveTemp = '123456';
+                $hash = password_hash($claveTemp, PASSWORD_DEFAULT);
+                $upd = $pdo->prepare("UPDATE usuario SET passwordHash = ?, debeCambiarPassword = 1, sessionVersion = sessionVersion + 1 WHERE id = ?");
+                $upd->execute([$hash, $asocId]);
+
+                registrarAuditoria($pdo, 'RESET_CLAVE_GANADERO', $usuario['id'], $usuario['cedula'], "Ganadero ID: $asocId");
+                setFlashAlert('success', 'Clave Reestablecida', "Se ha asignado la clave temporal '{$claveTemp}' y se forzará cambio en su próximo ingreso.");
+            } catch (Exception $e) {
+                setFlashAlert('error', 'Error', 'No se pudo reestablecer la clave.');
+            }
+        }
+        header("Location: admin.php?tab=ganaderos");
+        exit;
+    }
+
+    // ACCIÓN E: FIJAR O ACTUALIZAR PRECIO DE LA QUINCENA
     if ($accion === 'fijar_precio_quincena') {
         $fInicio = trim($_POST['fechaInicio'] ?? '');
         $fFin    = trim($_POST['fechaFin'] ?? '');
@@ -175,7 +192,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         exit;
     }
 
-    // ACCIÓN E: ATENDER INCONFORMIDAD / CONSULTA
+    // ACCIÓN F: ATENDER INCONFORMIDAD
     if ($accion === 'atender_reclamo') {
         $alertaId = trim($_POST['alertaId'] ?? '');
         $nuevoEstado = trim($_POST['estado'] ?? 'REVISADO');
@@ -186,6 +203,22 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                 setFlashAlert('success', 'Estado Actualizado', "La inconformidad ha pasado al estado: {$nuevoEstado}");
             } catch (Exception $e) {
                 setFlashAlert('error', 'Error', 'No se pudo actualizar el estado del reclamo.');
+            }
+        }
+        header("Location: admin.php?tab=buzon");
+        exit;
+    }
+
+    // ACCIÓN G: ATENDER CONSULTA WEB
+    if ($accion === 'atender_consulta') {
+        $conId = trim($_POST['consultaId'] ?? '');
+        if (!empty($conId)) {
+            try {
+                $updCon = $pdo->prepare("UPDATE consulta SET atendida = 1 WHERE id = ?");
+                $updCon->execute([$conId]);
+                setFlashAlert('success', 'Consulta Atendida', 'La consulta pública se ha marcado como resuelta.');
+            } catch (Exception $e) {
+                setFlashAlert('error', 'Error', 'No se pudo actualizar la consulta.');
             }
         }
         header("Location: admin.php?tab=buzon");
@@ -270,416 +303,440 @@ $listaAlertas = $stmtAlertas->fetchAll();
 
 $stmtConsultas = $pdo->query("SELECT id, nombre, contacto, mensaje, fecha, atendida FROM consulta ORDER BY fecha DESC LIMIT 50");
 $listaConsultas = $stmtConsultas->fetchAll();
+
+// Configuración de vista para header compartido
+$tituloPagina = 'Panel de Administración | ' . EMPRESA_SIGLA;
+$usarDataTables = true;
+$navbarFluido = true;
+
+require_once __DIR__ . '/includes/header.php';
 ?>
-<!DOCTYPE html>
-<html lang="es" data-bs-theme="light">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel de Administración | <?php echo e(EMPRESA_SIGLA); ?></title>
 
-  <!-- Script Anti-Parpadeo (Anti-FOUC) -->
-  <script>
-    (function() {
-      const savedTheme = localStorage.getItem('asoagro_theme');
-      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const theme = savedTheme ? savedTheme : (systemDark ? 'dark' : 'light');
-      document.documentElement.setAttribute('data-bs-theme', theme);
-    })();
-  </script>
-
-  <!-- Favicon Oficial -->
-  <link rel="icon" type="image/png" href="assets/img/logo.png">
-
-  <!-- Bootstrap 5.3 CSS -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-  
-  <!-- Bootstrap Icons 1.11.3 -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  
-  <!-- DataTables Bootstrap 5 CSS -->
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
-  <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
-  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
-
-  <!-- Estilos Globales de Marca AsoagroAlisal -->
-  <link rel="stylesheet" href="assets/css/estilos.css">
-</head>
-<body class="d-flex flex-column min-vh-100">
-
-  <!-- ========================================================================
-       BARRA DE NAVEGACIÓN SUPERIOR DEL ADMINISTRADOR
-       ======================================================================== -->
-  <header class="navbar navbar-expand-lg navbar-asoagro sticky-top py-2">
-    <div class="container-fluid px-3 px-md-4">
-      <div class="d-flex align-items-center gap-3">
-        <a href="admin.php" class="d-flex align-items-center gap-2 text-decoration-none">
-          <img src="assets/img/logo.png" alt="Logo <?php echo e(EMPRESA_SIGLA); ?>" class="brand-logo-img">
-          <div>
-            <span class="fw-bold fs-6 text-success lh-1 d-block"><?php echo e(EMPRESA_SIGLA); ?></span>
-            <small class="text-muted fw-semibold" style="font-size: 0.72rem;">Administración General</small>
-          </div>
+<!-- ========================================================================
+     BARRA DE PESTAÑAS PRINCIPALES (MÓDULOS DEL ADMINISTRADOR)
+     ======================================================================== -->
+<div class="bg-body-tertiary border-bottom py-2">
+  <div class="container-fluid px-3 px-md-4">
+    <ul class="nav nav-pills gap-2 flex-wrap" id="pills-tab" role="tablist">
+      <li class="nav-item" role="presentation">
+        <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'planilla') ? 'active bg-success text-white' : ''; ?> fw-bold" href="admin.php?tab=planilla&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>">
+          <i class="bi bi-clipboard2-data-fill me-1"></i> Planilla Quincenal de Pesajes
         </a>
-      </div>
-
-      <!-- Usuario y Acciones -->
-      <div class="d-flex align-items-center gap-2 gap-md-3">
-        <div class="text-end d-none d-md-block">
-          <span class="badge bg-warning text-dark px-2 py-0.5 rounded-pill fw-bold">ADMINISTRADOR</span>
-          <span class="fw-bold d-block text-success small"><?php echo e($usuario['nombre']); ?></span>
-        </div>
-
-        <!-- Toggle Modo Oscuro -->
-        <button type="button" class="btn btn-touch btn-outline-success border-2 rounded-circle p-0 theme-toggle-btn" style="width: 42px; height: 42px;" aria-label="Alternar modo oscuro">
-          <i class="bi bi-moon-stars-fill fs-5"></i>
-        </button>
-
-        <!-- Cambiar Contraseña -->
-        <a href="cambiar_password.php" class="btn btn-touch btn-outline-secondary border-2 rounded-pill px-3 py-1 small" title="Cambiar mi clave de Administrador">
-          <i class="bi bi-key-fill text-warning"></i>
-          <span class="d-none d-lg-inline">Clave</span>
+      </li>
+      <li class="nav-item" role="presentation">
+        <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'ganaderos') ? 'active bg-success text-white' : ''; ?> fw-bold" href="admin.php?tab=ganaderos">
+          <i class="bi bi-people-fill me-1"></i> Gestión de Asociados (<?php echo $totalGanaderosActivos; ?>)
         </a>
-
-        <!-- Ver Sitio Público -->
-        <a href="index.php" class="btn btn-touch btn-outline-success border-2 rounded-pill px-3 py-1 small d-none d-sm-inline-flex" title="Ver sitio público">
-          <i class="bi bi-globe"></i>
-          <span class="d-none d-lg-inline">Sitio</span>
+      </li>
+      <li class="nav-item" role="presentation">
+        <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'quincenas') ? 'active bg-success text-white' : ''; ?> fw-bold" href="admin.php?tab=quincenas&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>">
+          <i class="bi bi-cash-coin me-1"></i> Precios de Quincena
         </a>
-
-        <!-- Cerrar Sesión -->
-        <a href="logout.php" class="btn btn-touch btn-danger rounded-pill px-3 py-1 small fw-bold">
-          <i class="bi bi-box-arrow-right"></i>
-          <span class="d-none d-sm-inline">Salir</span>
-        </a>
-      </div>
-    </div>
-  </header>
-
-  <!-- ========================================================================
-       BARRA DE PESTAÑAS PRINCIPALES (MÓDULOS DEL ADMINISTRADOR)
-       ======================================================================== -->
-  <div class="bg-body-tertiary border-bottom py-2">
-    <div class="container-fluid px-3 px-md-4">
-      <ul class="nav nav-pills gap-2" id="pills-tab" role="tablist">
-        <li class="nav-item" role="presentation">
-          <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'planilla') ? 'active bg-success text-white' : ''; ?> fw-bold" href="admin.php?tab=planilla&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>">
-            <i class="bi bi-clipboard2-data-fill me-1"></i> Planilla Quincenal de Pesajes
-          </a>
-        </li>
-        <li class="nav-item" role="presentation">
-          <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'ganaderos') ? 'active bg-success text-white' : ''; ?> fw-bold" href="admin.php?tab=ganaderos">
-            <i class="bi bi-people-fill me-1"></i> Gestión de Asociados (<?php echo $totalGanaderosActivos; ?>)
-          </a>
-        </li>
-        <li class="nav-item" role="presentation">
-          <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'quincenas') ? 'active bg-success text-white' : ''; ?> fw-bold" href="admin.php?tab=quincenas&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>">
-            <i class="bi bi-cash-coin me-1"></i> Precios de Quincena
-          </a>
-        </li>
-        <li class="nav-item" role="presentation">
-          <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'buzon') ? 'active bg-success text-white' : ''; ?> fw-bold position-relative" href="admin.php?tab=buzon">
-            <i class="bi bi-inbox-fill me-1"></i> Buzón de Inconformidades y Consultas
-            <?php if (count($listaAlertas) > 0): ?>
-              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                <?php echo count($listaAlertas); ?>
-              </span>
-            <?php endif; ?>
-          </a>
-        </li>
-      </ul>
-    </div>
-  </div>
-
-  <!-- ========================================================================
-       CONTENIDO PRINCIPAL
-       ======================================================================== -->
-  <main class="container-fluid px-3 px-md-4 py-4 flex-grow-1">
-
-    <!-- ====================================================================
-         PESTAÑA 1: PLANILLA QUINCENAL DE LITROS
-         ==================================================================== -->
-    <?php if ($pestañaActiva === 'planilla'): ?>
-
-      <!-- 4 TARJETAS RESUMEN SUPERIORES -->
-      <div class="row g-3 mb-4">
-        <!-- Litros de la Quincena -->
-        <div class="col-md-3 col-6">
-          <div class="card card-rural p-3 p-md-4 text-center border-start border-4 border-success">
-            <small class="text-muted fw-bold text-uppercase">Litros Recolectados</small>
-            <div class="display-6 fw-extrabold text-success my-2">
-              <?php echo number_format($totalLitrosQuincena, 1, ',', '.'); ?> L
-            </div>
-            <small class="text-muted">Total acopiado en el periodo</small>
-          </div>
-        </div>
-
-        <!-- Promedio Diario -->
-        <div class="col-md-3 col-6">
-          <div class="card card-rural p-3 p-md-4 text-center border-start border-4 border-primary">
-            <small class="text-muted fw-bold text-uppercase">Promedio Diario</small>
-            <div class="display-6 fw-extrabold text-primary my-2">
-              <?php echo number_format($promedioDiarioGeneral, 1, ',', '.'); ?> L
-            </div>
-            <small class="text-muted">Litros/día promedio</small>
-          </div>
-        </div>
-
-        <!-- Total a Liquidar (COP) -->
-        <div class="col-md-3 col-6">
-          <div class="card card-rural p-3 p-md-4 text-center border-start border-4 border-warning">
-            <small class="text-muted fw-bold text-uppercase">Total a Liquidar</small>
-            <div class="display-6 fw-extrabold text-warning-emphasis my-2">
-              <?php echo formatoMonedaCOP($totalLiquidacionGeneral); ?>
-            </div>
-            <small class="text-muted">A precio de <?php echo formatoMonedaCOP($precioLitroActual); ?> / L</small>
-          </div>
-        </div>
-
-        <!-- Asociados Entregando -->
-        <div class="col-md-3 col-6">
-          <div class="card card-rural p-3 p-md-4 text-center border-start border-4 border-info">
-            <small class="text-muted fw-bold text-uppercase">Ganaderos con Entrega</small>
-            <div class="display-6 fw-extrabold text-info-emphasis my-2">
-              <?php echo $cantidadGanaderosEntregando; ?> / <?php echo $totalGanaderosActivos; ?>
-            </div>
-            <small class="text-muted">Asociados activos en quincena</small>
-          </div>
-        </div>
-      </div>
-
-      <!-- FORMULARIO DE REGISTRO RÁPIDO DE PESAJE -->
-      <div class="card card-rural p-4 mb-4 border-2 border-success-subtle shadow-sm">
-        <h5 class="fw-bold text-success mb-3">
-          <i class="bi bi-plus-circle-fill me-1"></i> Registrar o Modificar Pesaje de Entrega
-        </h5>
-
-        <form action="admin.php?tab=planilla&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>" method="POST" class="row g-3 align-items-end">
-          <?php echo campoCsrf(); ?>
-          <input type="hidden" name="accion" value="guardar_pesaje">
-
-          <div class="col-md-4">
-            <label for="usuarioId" class="form-label fw-bold small text-muted">Ganadero Asociado *</label>
-            <select name="usuarioId" id="usuarioId" class="form-select form-select-touch" required>
-              <option value="">-- Seleccionar Ganadero --</option>
-              <?php foreach ($listaGanaderos as $g): ?>
-                <option value="<?php echo e($g['id']); ?>" <?php echo ($filtroUsuario === $g['id']) ? 'selected' : ''; ?>>
-                  <?php echo e($g['nombre']); ?> &bull; C.C. <?php echo e($g['cedula']); ?>
-                </option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-
-          <div class="col-md-3">
-            <label for="fecha" class="form-label fw-bold small text-muted">Fecha de Entrega *</label>
-            <input type="date" name="fecha" id="fecha" class="form-control form-control-touch" value="<?php echo date('Y-m-d'); ?>" required>
-          </div>
-
-          <div class="col-md-2">
-            <label for="turno" class="form-label fw-bold small text-muted">Turno *</label>
-            <select name="turno" id="turno" class="form-select form-select-touch" required>
-              <option value="MANANA">☀️ Mañana</option>
-              <option value="TARDE">🌅 Tarde</option>
-            </select>
-          </div>
-
-          <div class="col-md-2">
-            <label for="litros" class="form-label fw-bold small text-muted">Litros (L) *</label>
-            <input type="number" step="0.1" min="0.1" name="litros" id="litros" class="form-control form-control-touch fw-bold fs-5 text-success" placeholder="Ej: 85.5" required>
-          </div>
-
-          <div class="col-md-1">
-            <button type="submit" class="btn btn-touch btn-aso-primary w-100 shadow" title="Guardar pesaje">
-              <i class="bi bi-save-fill"></i>
-            </button>
-          </div>
-        </form>
-      </div>
-
-      <!-- BARRA DE FILTROS POR QUINCENA, ASOCIADO Y TURNO -->
-      <div class="card card-rural p-3 mb-4 bg-body-tertiary">
-        <form action="admin.php" method="GET" class="row g-2 align-items-center">
-          <input type="hidden" name="tab" value="planilla">
-
-          <div class="col-md-4">
-            <label class="form-label small fw-bold text-muted mb-1">Filtrar Quincena:</label>
-            <select name="quincena_selector" class="form-select form-select-sm" onchange="const p = this.value.split('|'); location.href='admin.php?tab=planilla&fechaInicio=' + p[0] + '&fechaFin=' + p[1] + '&usuarioId=<?php echo urlencode($filtroUsuario); ?>&turno=<?php echo urlencode($filtroTurno); ?>';">
-              <?php foreach ($quincenasDisponibles as $q): ?>
-                <?php $sel = ($q['fechaInicio'] === $fechaInicioSel && $q['fechaFin'] === $fechaFinSel) ? 'selected' : ''; ?>
-                <option value="<?php echo e($q['fechaInicio'] . '|' . $q['fechaFin']); ?>" <?php echo $sel; ?>>
-                  <?php echo formatoFechaEspanol($q['fechaInicio']); ?> al <?php echo formatoFechaEspanol($q['fechaFin']); ?>
-                  <?php echo !empty($q['cerrada']) ? ' (Cerrada)' : ' (Activa)'; ?>
-                </option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-
-          <div class="col-md-4">
-            <label class="form-label small fw-bold text-muted mb-1">Filtrar Ganadero:</label>
-            <select name="usuarioId" class="form-select form-select-sm" onchange="this.form.submit()">
-              <option value="">-- Todos los Asociados --</option>
-              <?php foreach ($listaGanaderos as $g): ?>
-                <option value="<?php echo e($g['id']); ?>" <?php echo ($filtroUsuario === $g['id']) ? 'selected' : ''; ?>>
-                  <?php echo e($g['nombre']); ?> (C.C. <?php echo e($g['cedula']); ?>)
-                </option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-
-          <div class="col-md-3">
-            <label class="form-label small fw-bold text-muted mb-1">Filtrar Turno:</label>
-            <select name="turno" class="form-select form-select-sm" onchange="this.form.submit()">
-              <option value="">-- Todos los Turnos --</option>
-              <option value="MANANA" <?php echo ($filtroTurno === 'MANANA') ? 'selected' : ''; ?>>☀️ Mañana</option>
-              <option value="TARDE" <?php echo ($filtroTurno === 'TARDE') ? 'selected' : ''; ?>>🌅 Tarde</option>
-            </select>
-          </div>
-
-          <div class="col-md-1 text-end mt-auto">
-            <a href="admin.php?tab=planilla&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>" class="btn btn-sm btn-outline-secondary w-100 rounded-pill" title="Limpiar filtros">
-              <i class="bi bi-x-circle"></i>
-            </a>
-          </div>
-        </form>
-      </div>
-
-      <!-- TABLA GENERAL DE PESAJES CON DATATABLES BOOTSTRAP 5 -->
-      <div class="card card-rural border-0 shadow overflow-hidden">
-        <div class="card-header bg-success text-white p-3 d-flex justify-content-between align-items-center">
-          <h5 class="fw-bold mb-0">
-            <i class="bi bi-table me-2"></i> Planilla Oficial de Pesajes de la Quincena
-          </h5>
-          <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold">
-            <?php echo count($entregasFiltradas); ?> Registros Filtrados
-          </span>
-        </div>
-
-        <div class="card-body p-3 p-md-4">
-          <?php if (empty($entregasFiltradas)): ?>
-            <div class="text-center py-5">
-              <i class="bi bi-inbox display-1 text-muted"></i>
-              <h5 class="fw-bold mt-3">No hay registros de pesajes para los filtros seleccionados</h5>
-              <p class="text-muted">Utiliza el formulario superior para registrar entregas de leche en esta quincena.</p>
-            </div>
-          <?php else: ?>
-            <div class="table-responsive">
-              <table id="tabla-admin-entregas" class="table table-rural table-hover align-middle w-100">
-                <thead>
-                  <tr>
-                    <th>Fecha</th>
-                    <th>Ganadero Asociado</th>
-                    <th>Cédula</th>
-                    <th>Finca</th>
-                    <th class="text-center">Turno</th>
-                    <th class="text-end">Litros Entregados</th>
-                    <th class="text-end">Valor Liquidado</th>
-                    <th class="text-center">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <?php 
-                  $sumaTotalLitrosTabla = 0.0;
-                  $sumaTotalPesosTabla = 0.0;
-                  foreach ($entregasFiltradas as $row): 
-                      $litrosRow = (float)$row['litros'];
-                      $valorRow = $precioLitroActual ? ($litrosRow * $precioLitroActual) : 0.0;
-                      $sumaTotalLitrosTabla += $litrosRow;
-                      $sumaTotalPesosTabla += $valorRow;
-                  ?>
-                    <tr>
-                      <td><strong><?php echo e($row['fecha']); ?></strong></td>
-                      <td class="fw-bold text-success"><?php echo e($row['ganaderoNombre']); ?></td>
-                      <td class="font-monospace small"><?php echo e($row['ganaderoCedula']); ?></td>
-                      <td class="small text-muted"><?php echo e($row['finca'] ?? 'Vereda Alizal'); ?></td>
-                      <td class="text-center">
-                        <?php if ($row['turno'] === 'MANANA'): ?>
-                          <span class="badge-turno-manana">☀️ Mañana</span>
-                        <?php else: ?>
-                          <span class="badge-turno-tarde">🌅 Tarde</span>
-                        <?php endif; ?>
-                      </td>
-                      <td class="text-end fw-extrabold text-success fs-6">
-                        <?php echo number_format($litrosRow, 1, ',', '.'); ?> L
-                      </td>
-                      <td class="text-end fw-bold text-muted">
-                        <?php echo formatoMonedaCOP($valorRow); ?>
-                      </td>
-                      <td class="text-center">
-                        <form action="admin.php?tab=planilla&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>" method="POST" onsubmit="return confirm('¿Estás seguro de eliminar este pesaje de <?php echo $litrosRow; ?> L?');" class="d-inline">
-                          <?php echo campoCsrf(); ?>
-                          <input type="hidden" name="accion" value="eliminar_pesaje">
-                          <input type="hidden" name="entregaId" value="<?php echo e($row['id']); ?>">
-                          <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle p-1" title="Eliminar registro">
-                            <i class="bi bi-trash-fill"></i>
-                          </button>
-                        </form>
-                      </td>
-                    </tr>
-                  <?php endforeach; ?>
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <th colspan="5" class="text-end text-uppercase">Totales en Pantalla:</th>
-                    <th class="text-end text-success fs-5"><?php echo number_format($sumaTotalLitrosTabla, 1, ',', '.'); ?> L</th>
-                    <th class="text-end text-warning-emphasis fs-5"><?php echo formatoMonedaCOP($sumaTotalPesosTabla); ?></th>
-                    <th></th>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
+      </li>
+      <li class="nav-item" role="presentation">
+        <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'buzon') ? 'active bg-success text-white' : ''; ?> fw-bold position-relative" href="admin.php?tab=buzon">
+          <i class="bi bi-inbox-fill me-1"></i> Buzón de Inconformidades y Consultas
+          <?php if (count($listaAlertas) > 0): ?>
+            <span class="badge rounded-pill bg-danger ms-1">
+              <?php echo count($listaAlertas); ?>
+            </span>
           <?php endif; ?>
+        </a>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<!-- ========================================================================
+     CONTENIDO PRINCIPAL
+     ======================================================================== -->
+<main class="container-fluid px-3 px-md-4 py-4 flex-grow-1">
+
+  <!-- ====================================================================
+       PESTAÑA 1: PLANILLA QUINCENAL DE LITROS
+       ==================================================================== -->
+  <?php if ($pestañaActiva === 'planilla'): ?>
+
+    <!-- 4 TARJETAS RESUMEN SUPERIORES -->
+    <div class="row g-3 mb-4">
+      <!-- Litros de la Quincena -->
+      <div class="col-md-3 col-6">
+        <div class="card card-rural p-3 p-md-4 text-center border-start border-4 border-success">
+          <small class="text-muted fw-bold text-uppercase">Litros Recolectados</small>
+          <div class="display-6 fw-extrabold text-success my-2">
+            <?php echo number_format($totalLitrosQuincena, 1, ',', '.'); ?> L
+          </div>
+          <small class="text-muted">Total acopiado en el periodo</small>
         </div>
       </div>
 
-    <!-- ====================================================================
-         PESTAÑA 2: GESTIÓN DE ASOCIADOS
-         ==================================================================== -->
-    <?php elseif ($pestañaActiva === 'ganaderos'): ?>
-
-      <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-        <div>
-          <h4 class="fw-bold text-success mb-1">
-            <i class="bi bi-people-fill me-2"></i> Gestión de Ganaderos Asociados
-          </h4>
-          <p class="text-muted small mb-0">Afiliación, actualización de fincas, datos de contacto y estado de asociados.</p>
+      <!-- Promedio Diario -->
+      <div class="col-md-3 col-6">
+        <div class="card card-rural p-3 p-md-4 text-center border-start border-4 border-primary">
+          <small class="text-muted fw-bold text-uppercase">Promedio Diario</small>
+          <div class="display-6 fw-extrabold text-primary my-2">
+            <?php echo number_format($promedioDiarioGeneral, 1, ',', '.'); ?> L
+          </div>
+          <small class="text-muted">Litros/día promedio</small>
         </div>
-
-        <button type="button" class="btn btn-touch btn-aso-primary shadow" data-bs-toggle="modal" data-bs-target="#modalNuevoGanadero">
-          <i class="bi bi-person-plus-fill me-1"></i> Agregar Nuevo Asociado
-        </button>
       </div>
 
-      <div class="card card-rural border-0 shadow overflow-hidden">
-        <div class="card-body p-3 p-md-4">
+      <!-- Total a Liquidar (COP) -->
+      <div class="col-md-3 col-6">
+        <div class="card card-rural p-3 p-md-4 text-center border-start border-4 border-warning">
+          <small class="text-muted fw-bold text-uppercase">Total a Liquidar</small>
+          <div class="display-6 fw-extrabold text-warning-emphasis my-2">
+            <?php echo formatoMonedaCOP($totalLiquidacionGeneral); ?>
+          </div>
+          <small class="text-muted">A precio de <?php echo formatoMonedaCOP($precioLitroActual); ?> / L</small>
+        </div>
+      </div>
+
+      <!-- Asociados Entregando -->
+      <div class="col-md-3 col-6">
+        <div class="card card-rural p-3 p-md-4 text-center border-start border-4 border-info">
+          <small class="text-muted fw-bold text-uppercase">Ganaderos con Entrega</small>
+          <div class="display-6 fw-extrabold text-info-emphasis my-2">
+            <?php echo $cantidadGanaderosEntregando; ?> / <?php echo $totalGanaderosActivos; ?>
+          </div>
+          <small class="text-muted">Asociados activos en quincena</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- FORMULARIO DE REGISTRO RÁPIDO DE PESAJE -->
+    <div class="card card-rural p-4 mb-4 border-2 border-success-subtle shadow-sm">
+      <h5 class="fw-bold text-success mb-3">
+        <i class="bi bi-plus-circle-fill me-1"></i> Registrar o Modificar Pesaje de Entrega
+      </h5>
+
+      <form action="admin.php?tab=planilla&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>" method="POST" class="row g-3 align-items-end">
+        <?php echo campoCsrf(); ?>
+        <input type="hidden" name="accion" value="guardar_pesaje">
+
+        <div class="col-md-4">
+          <label for="usuarioId" class="form-label fw-bold small text-muted">Ganadero Asociado *</label>
+          <select name="usuarioId" id="usuarioId" class="form-select form-select-touch" required>
+            <option value="">-- Seleccionar Ganadero --</option>
+            <?php foreach ($listaGanaderos as $g): ?>
+              <option value="<?php echo e($g['id']); ?>" <?php echo ($filtroUsuario === $g['id']) ? 'selected' : ''; ?>>
+                <?php echo e($g['nombre']); ?> &bull; C.C. <?php echo e($g['cedula']); ?>
+              </option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label for="fecha" class="form-label fw-bold small text-muted">Fecha de Entrega *</label>
+          <input type="date" name="fecha" id="fecha" class="form-control form-control-touch" value="<?php echo date('Y-m-d'); ?>" required>
+        </div>
+
+        <div class="col-md-2">
+          <label for="turno" class="form-label fw-bold small text-muted">Turno *</label>
+          <select name="turno" id="turno" class="form-select form-select-touch" required>
+            <option value="MANANA">☀️ Mañana</option>
+            <option value="TARDE">🌅 Tarde</option>
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label for="litros" class="form-label fw-bold small text-muted">Litros (L) *</label>
+          <input type="number" step="0.1" min="0.1" name="litros" id="litros" class="form-control form-control-touch fw-bold fs-5 text-success" placeholder="Ej: 85.5" required>
+        </div>
+
+        <div class="col-md-1">
+          <button type="submit" class="btn btn-touch btn-aso-primary w-100 shadow" title="Guardar pesaje">
+            <i class="bi bi-save-fill"></i>
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- BARRA DE FILTROS POR QUINCENA, ASOCIADO Y TURNO -->
+    <div class="card card-rural p-3 mb-4 bg-body-tertiary">
+      <form action="admin.php" method="GET" class="row g-2 align-items-center">
+        <input type="hidden" name="tab" value="planilla">
+
+        <div class="col-md-4">
+          <label class="form-label small fw-bold text-muted mb-1">Filtrar Quincena:</label>
+          <select name="quincena_selector" class="form-select form-select-sm" onchange="const p = this.value.split('|'); location.href='admin.php?tab=planilla&fechaInicio=' + p[0] + '&fechaFin=' + p[1] + '&usuarioId=<?php echo urlencode($filtroUsuario); ?>&turno=<?php echo urlencode($filtroTurno); ?>';">
+            <?php foreach ($quincenasDisponibles as $q): ?>
+              <?php $sel = ($q['fechaInicio'] === $fechaInicioSel && $q['fechaFin'] === $fechaFinSel) ? 'selected' : ''; ?>
+              <option value="<?php echo e($q['fechaInicio'] . '|' . $q['fechaFin']); ?>" <?php echo $sel; ?>>
+                <?php echo formatoFechaEspanol($q['fechaInicio']); ?> al <?php echo formatoFechaEspanol($q['fechaFin']); ?>
+                <?php echo !empty($q['cerrada']) ? ' (Cerrada)' : ' (Activa)'; ?>
+              </option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+
+        <div class="col-md-4">
+          <label class="form-label small fw-bold text-muted mb-1">Filtrar Ganadero:</label>
+          <select name="usuarioId" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="">-- Todos los Asociados --</option>
+            <?php foreach ($listaGanaderos as $g): ?>
+              <option value="<?php echo e($g['id']); ?>" <?php echo ($filtroUsuario === $g['id']) ? 'selected' : ''; ?>>
+                <?php echo e($g['nombre']); ?> (C.C. <?php echo e($g['cedula']); ?>)
+              </option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+
+        <div class="col-md-3">
+          <label class="form-label small fw-bold text-muted mb-1">Filtrar Turno:</label>
+          <select name="turno" class="form-select form-select-sm" onchange="this.form.submit()">
+            <option value="">-- Todos los Turnos --</option>
+            <option value="MANANA" <?php echo ($filtroTurno === 'MANANA') ? 'selected' : ''; ?>>☀️ Mañana</option>
+            <option value="TARDE" <?php echo ($filtroTurno === 'TARDE') ? 'selected' : ''; ?>>🌅 Tarde</option>
+          </select>
+        </div>
+
+        <div class="col-md-1 text-end mt-auto">
+          <a href="admin.php?tab=planilla&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>" class="btn btn-sm btn-outline-secondary w-100 rounded-pill" title="Limpiar filtros">
+            <i class="bi bi-x-circle"></i>
+          </a>
+        </div>
+      </form>
+    </div>
+
+    <!-- TABLA GENERAL DE PESAJES CON DATATABLES BOOTSTRAP 5 -->
+    <div class="card card-rural border-0 shadow overflow-hidden">
+      <div class="card-header bg-success text-white p-3 d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0">
+          <i class="bi bi-table me-2"></i> Planilla Oficial de Pesajes de la Quincena
+        </h5>
+        <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold">
+          <?php echo count($entregasFiltradas); ?> Registros Filtrados
+        </span>
+      </div>
+
+      <div class="card-body p-3 p-md-4">
+        <?php if (empty($entregasFiltradas)): ?>
+          <div class="text-center py-5">
+            <i class="bi bi-inbox display-1 text-muted"></i>
+            <h5 class="fw-bold mt-3">No hay registros de pesajes para los filtros seleccionados</h5>
+            <p class="text-muted">Utiliza el formulario superior para registrar entregas de leche en esta quincena.</p>
+          </div>
+        <?php else: ?>
           <div class="table-responsive">
-            <table id="tabla-gestion-ganaderos" class="table table-rural table-hover align-middle w-100">
+            <table id="tabla-admin-entregas" class="table table-rural table-hover align-middle w-100">
               <thead>
                 <tr>
-                  <th>Nombre Completo</th>
+                  <th>Fecha</th>
+                  <th>Ganadero Asociado</th>
                   <th>Cédula</th>
-                  <th>Teléfono</th>
-                  <th>Finca / Predio</th>
-                  <th class="text-center">Estado</th>
+                  <th>Finca</th>
+                  <th class="text-center">Turno</th>
+                  <th class="text-end">Litros Entregados</th>
+                  <th class="text-end">Valor Liquidado</th>
                   <th class="text-center">Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                <?php foreach ($listaGanaderos as $g): ?>
+                <?php 
+                $sumaTotalLitrosTabla = 0.0;
+                $sumaTotalPesosTabla = 0.0;
+                foreach ($entregasFiltradas as $row): 
+                    $litrosRow = (float)$row['litros'];
+                    $valorRow = $precioLitroActual ? ($litrosRow * $precioLitroActual) : 0.0;
+                    $sumaTotalLitrosTabla += $litrosRow;
+                    $sumaTotalPesosTabla += $valorRow;
+                ?>
                   <tr>
-                    <td class="fw-bold text-success fs-6"><?php echo e($g['nombre']); ?></td>
-                    <td class="font-monospace fw-semibold"><?php echo e($g['cedula']); ?></td>
-                    <td><?php echo e($g['telefono'] ?: 'No registrado'); ?></td>
-                    <td><?php echo e($g['finca'] ?: 'Vereda Alizal'); ?></td>
+                    <td><strong><?php echo e($row['fecha']); ?></strong></td>
+                    <td class="fw-bold text-success"><?php echo e($row['ganaderoNombre']); ?></td>
+                    <td class="font-monospace small"><?php echo e($row['ganaderoCedula']); ?></td>
+                    <td class="small text-muted"><?php echo e($row['finca'] ?? 'Vereda Alizal'); ?></td>
                     <td class="text-center">
-                      <?php if (!empty($g['activo'])): ?>
-                        <span class="badge bg-success-subtle text-success px-3 py-1 rounded-pill fw-bold">Activo</span>
+                      <?php if ($row['turno'] === 'MANANA'): ?>
+                        <span class="badge-turno-manana">☀️ Mañana</span>
                       <?php else: ?>
-                        <span class="badge bg-danger-subtle text-danger px-3 py-1 rounded-pill fw-bold">Inactivo</span>
+                        <span class="badge-turno-tarde">🌅 Tarde</span>
                       <?php endif; ?>
                     </td>
+                    <td class="text-end fw-extrabold text-success fs-6">
+                      <?php echo number_format($litrosRow, 1, ',', '.'); ?> L
+                    </td>
+                    <td class="text-end fw-bold text-muted">
+                      <?php echo formatoMonedaCOP($valorRow); ?>
+                    </td>
                     <td class="text-center">
+                      <form action="admin.php?tab=planilla&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>" method="POST" onsubmit="return confirm('¿Estás seguro de eliminar este pesaje de <?php echo $litrosRow; ?> L?');" class="d-inline">
+                        <?php echo campoCsrf(); ?>
+                        <input type="hidden" name="accion" value="eliminar_pesaje">
+                        <input type="hidden" name="entregaId" value="<?php echo e($row['id']); ?>">
+                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle p-1" title="Eliminar registro">
+                          <i class="bi bi-trash-fill"></i>
+                        </button>
+                      </form>
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th colspan="5" class="text-end text-uppercase">Totales en Pantalla:</th>
+                  <th class="text-end text-success fs-5"><?php echo number_format($sumaTotalLitrosTabla, 1, ',', '.'); ?> L</th>
+                  <th class="text-end text-warning-emphasis fs-5"><?php echo formatoMonedaCOP($sumaTotalPesosTabla); ?></th>
+                  <th></th>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        <?php endif; ?>
+      </div>
+    </div>
+
+  <!-- ====================================================================
+       PESTAÑA 2: GESTIÓN DE ASOCIADOS
+       ==================================================================== -->
+  <?php elseif ($pestañaActiva === 'ganaderos'): ?>
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+      <div>
+        <h4 class="fw-bold text-success mb-1">
+          <i class="bi bi-people-fill me-2"></i> Gestión de Ganaderos Asociados
+        </h4>
+        <p class="text-muted small mb-0">Afiliación, actualización de fincas, datos de contacto y estado de asociados.</p>
+      </div>
+
+      <button type="button" class="btn btn-touch btn-aso-primary shadow" data-bs-toggle="modal" data-bs-target="#modalNuevoGanadero">
+        <i class="bi bi-person-plus-fill me-1"></i> Agregar Nuevo Asociado
+      </button>
+    </div>
+
+    <div class="card card-rural border-0 shadow overflow-hidden">
+      <div class="card-body p-3 p-md-4">
+        <div class="table-responsive">
+          <table id="tabla-gestion-ganaderos" class="table table-rural table-hover align-middle w-100">
+            <thead>
+              <tr>
+                <th>Nombre Completo</th>
+                <th>Cédula</th>
+                <th>Teléfono</th>
+                <th>Finca / Predio</th>
+                <th class="text-center">Estado</th>
+                <th class="text-center">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ($listaGanaderos as $g): ?>
+                <tr>
+                  <td class="fw-bold text-success fs-6"><?php echo e($g['nombre']); ?></td>
+                  <td class="font-monospace fw-semibold"><?php echo e($g['cedula']); ?></td>
+                  <td><?php echo e($g['telefono'] ?: 'No registrado'); ?></td>
+                  <td><?php echo e($g['finca'] ?: 'Vereda Alizal'); ?></td>
+                  <td class="text-center">
+                    <?php if (!empty($g['activo'])): ?>
+                      <span class="badge bg-success-subtle text-success px-3 py-1 rounded-pill fw-bold">Activo</span>
+                    <?php else: ?>
+                      <span class="badge bg-danger-subtle text-danger px-3 py-1 rounded-pill fw-bold">Inactivo</span>
+                    <?php endif; ?>
+                  </td>
+                  <td class="text-center">
+                    <div class="d-inline-flex gap-2">
                       <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1" onclick="editarGanadero(<?php echo htmlspecialchars(json_encode($g), ENT_QUOTES, 'UTF-8'); ?>)">
                         <i class="bi bi-pencil-fill me-1"></i> Editar
                       </button>
+                      <form action="admin.php?tab=ganaderos" method="POST" onsubmit="return confirm('¿Reestablecer clave a temporal (123456) para este asociado?');" class="d-inline">
+                        <?php echo campoCsrf(); ?>
+                        <input type="hidden" name="accion" value="reset_clave_ganadero">
+                        <input type="hidden" name="asociadoId" value="<?php echo e($g['id']); ?>">
+                        <button type="submit" class="btn btn-sm btn-outline-warning text-dark rounded-pill px-2 py-1" title="Reestablecer clave">
+                          <i class="bi bi-key-fill"></i>
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  <!-- ====================================================================
+       PESTAÑA 3: PRECIOS DE QUINCENA
+       ==================================================================== -->
+  <?php elseif ($pestañaActiva === 'quincenas'): ?>
+
+    <div class="row g-4 mb-4">
+      <div class="col-lg-5">
+        <div class="card card-rural p-4 shadow-sm border-2 border-success-subtle">
+          <h5 class="fw-bold text-success mb-3">
+            <i class="bi bi-tag-fill me-1"></i> Fijar Precio Oficial de Quincena
+          </h5>
+
+          <form action="admin.php?tab=quincenas" method="POST">
+            <?php echo campoCsrf(); ?>
+            <input type="hidden" name="accion" value="fijar_precio_quincena">
+
+            <div class="mb-3">
+              <label for="fechaInicio" class="form-label small fw-bold text-muted">Fecha Inicio de Quincena *</label>
+              <input type="date" name="fechaInicio" id="fechaInicio" class="form-control form-control-touch" value="<?php echo e($fechaInicioSel); ?>" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="fechaFin" class="form-label small fw-bold text-muted">Fecha Fin de Quincena *</label>
+              <input type="date" name="fechaFin" id="fechaFin" class="form-control form-control-touch" value="<?php echo e($fechaFinSel); ?>" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="precioLitro" class="form-label small fw-bold text-muted">Precio Oficial por Litro ($ COP) *</label>
+              <input type="number" step="1" name="precioLitro" id="precioLitro" class="form-control form-control-touch fw-extrabold fs-4 text-success" value="<?php echo $precioLitroActual ?: 2250; ?>" required placeholder="Ej: 2250">
+              <small class="text-muted">Tarifa base para liquidación a los ganaderos.</small>
+            </div>
+
+            <div class="form-check form-switch mb-4">
+              <input class="form-check-input" type="checkbox" role="switch" id="cerrada" name="cerrada" <?php echo $quincenaEstaCerrada ? 'checked' : ''; ?>>
+              <label class="form-check-label fw-bold small text-muted" for="cerrada">Marcar Quincena como Cerrada y Liquidada</label>
+            </div>
+
+            <button type="submit" class="btn btn-touch btn-aso-primary w-100 shadow">
+              <i class="bi bi-check-circle-fill me-1"></i> Guardar Precio Oficial
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div class="col-lg-7">
+        <div class="card card-rural p-4 shadow-sm">
+          <h5 class="fw-bold text-success mb-3">
+            <i class="bi bi-clock-history me-1"></i> Historial de Periodos Quincenales
+          </h5>
+
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Periodo</th>
+                  <th class="text-end">Precio / Litro</th>
+                  <th class="text-center">Estado</th>
+                  <th class="text-center">Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php foreach ($quincenasDisponibles as $qd): ?>
+                  <tr>
+                    <td>
+                      <strong><?php echo formatoFechaEspanol($qd['fechaInicio']); ?></strong> al 
+                      <strong><?php echo formatoFechaEspanol($qd['fechaFin']); ?></strong>
+                    </td>
+                    <td class="text-end fw-bold text-success">
+                      <?php echo formatoMonedaCOP($qd['precioLitro']); ?>
+                    </td>
+                    <td class="text-center">
+                      <?php if (!empty($qd['cerrada'])): ?>
+                        <span class="badge bg-secondary">Cerrada</span>
+                      <?php else: ?>
+                        <span class="badge bg-success">Activa</span>
+                      <?php endif; ?>
+                    </td>
+                    <td class="text-center">
+                      <a href="admin.php?tab=quincenas&fechaInicio=<?php echo $qd['fechaInicio']; ?>&fechaFin=<?php echo $qd['fechaFin']; ?>" class="btn btn-sm btn-outline-success rounded-pill px-3">
+                        Editar
+                      </a>
                     </td>
                   </tr>
                 <?php endforeach; ?>
@@ -688,304 +745,211 @@ $listaConsultas = $stmtConsultas->fetchAll();
           </div>
         </div>
       </div>
+    </div>
 
-    <!-- ====================================================================
-         PESTAÑA 3: PRECIOS DE QUINCENA
-         ==================================================================== -->
-    <?php elseif ($pestañaActiva === 'quincenas'): ?>
+  <!-- ====================================================================
+       PESTAÑA 4: BANDEJA DE QUEJAS Y CONSULTAS
+       ==================================================================== -->
+  <?php elseif ($pestañaActiva === 'buzon'): ?>
 
-      <div class="row g-4 mb-4">
-        <div class="col-lg-5">
-          <div class="card card-rural p-4 shadow-sm border-2 border-success-subtle">
-            <h5 class="fw-bold text-success mb-3">
-              <i class="bi bi-tag-fill me-1"></i> Fijar Precio Oficial de Quincena
-            </h5>
-
-            <form action="admin.php?tab=quincenas" method="POST">
-              <?php echo campoCsrf(); ?>
-              <input type="hidden" name="accion" value="fijar_precio_quincena">
-
-              <div class="mb-3">
-                <label for="fechaInicio" class="form-label small fw-bold text-muted">Fecha Inicio de Quincena *</label>
-                <input type="date" name="fechaInicio" id="fechaInicio" class="form-control form-control-touch" value="<?php echo e($fechaInicioSel); ?>" required>
-              </div>
-
-              <div class="mb-3">
-                <label for="fechaFin" class="form-label small fw-bold text-muted">Fecha Fin de Quincena *</label>
-                <input type="date" name="fechaFin" id="fechaFin" class="form-control form-control-touch" value="<?php echo e($fechaFinSel); ?>" required>
-              </div>
-
-              <div class="mb-3">
-                <label for="precioLitro" class="form-label small fw-bold text-muted">Precio Oficial por Litro ($ COP) *</label>
-                <input type="number" step="1" name="precioLitro" id="precioLitro" class="form-control form-control-touch fw-extrabold fs-4 text-success" value="<?php echo $precioLitroActual ?: 2250; ?>" required placeholder="Ej: 2250">
-                <small class="text-muted">Tarifa base para liquidación a los ganaderos.</small>
-              </div>
-
-              <div class="form-check form-switch mb-4">
-                <input class="form-check-input" type="checkbox" role="switch" id="cerrada" name="cerrada" <?php echo $quincenaEstaCerrada ? 'checked' : ''; ?>>
-                <label class="form-check-label fw-bold small text-muted" for="cerrada">Marcar Quincena como Cerrada y Liquidada</label>
-              </div>
-
-              <button type="submit" class="btn btn-touch btn-aso-primary w-100 shadow">
-                <i class="bi bi-check-circle-fill me-1"></i> Guardar Precio Oficial
-              </button>
-            </form>
-          </div>
-        </div>
-
-        <div class="col-lg-7">
-          <div class="card card-rural p-4 shadow-sm">
-            <h5 class="fw-bold text-success mb-3">
-              <i class="bi bi-clock-history me-1"></i> Historial de Periodos Quincenales
-            </h5>
-
-            <div class="table-responsive">
-              <table class="table table-hover align-middle">
-                <thead class="table-light">
-                  <tr>
-                    <th>Periodo</th>
-                    <th class="text-end">Precio / Litro</th>
-                    <th class="text-center">Estado</th>
-                    <th class="text-center">Acción</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <?php foreach ($quincenasDisponibles as $qd): ?>
-                    <tr>
-                      <td>
-                        <strong><?php echo formatoFechaEspanol($qd['fechaInicio']); ?></strong> al 
-                        <strong><?php echo formatoFechaEspanol($qd['fechaFin']); ?></strong>
-                      </td>
-                      <td class="text-end fw-bold text-success">
-                        <?php echo formatoMonedaCOP($qd['precioLitro']); ?>
-                      </td>
-                      <td class="text-center">
-                        <?php if (!empty($qd['cerrada'])): ?>
-                          <span class="badge bg-secondary">Cerrada</span>
-                        <?php else: ?>
-                          <span class="badge bg-success">Activa</span>
-                        <?php endif; ?>
-                      </td>
-                      <td class="text-center">
-                        <a href="admin.php?tab=quincenas&fechaInicio=<?php echo $qd['fechaInicio']; ?>&fechaFin=<?php echo $qd['fechaFin']; ?>" class="btn btn-sm btn-outline-success rounded-pill px-3">
-                          Editar
-                        </a>
-                      </td>
-                    </tr>
-                  <?php endforeach; ?>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+    <!-- Subsección Inconformidades Quincenales -->
+    <div class="card card-rural border-0 shadow mb-4 overflow-hidden">
+      <div class="card-header bg-warning text-dark p-3 d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold mb-0">
+          <i class="bi bi-shield-exclamation me-2"></i> Inconformidades Quincenales Radicadas por Ganaderos
+        </h5>
+        <span class="badge bg-dark text-white rounded-pill px-3 py-1"><?php echo count($listaAlertas); ?> Reclamos</span>
       </div>
 
-    <!-- ====================================================================
-         PESTAÑA 4: BANDEJA DE QUEJAS Y CONSULTAS
-         ==================================================================== -->
-    <?php elseif ($pestañaActiva === 'buzon'): ?>
-
-      <!-- Subsección Inconformidades Quincenales -->
-      <div class="card card-rural border-0 shadow mb-4 overflow-hidden">
-        <div class="card-header bg-warning text-dark p-3 d-flex justify-content-between align-items-center">
-          <h5 class="fw-bold mb-0">
-            <i class="bi bi-shield-exclamation me-2"></i> Inconformidades Quincenales Radicadas por Ganaderos
-          </h5>
-          <span class="badge bg-dark text-white rounded-pill px-3 py-1"><?php echo count($listaAlertas); ?> Reclamos</span>
-        </div>
-
-        <div class="card-body p-3 p-md-4">
-          <?php if (empty($listaAlertas)): ?>
-            <div class="text-center py-4 text-muted">
-              <i class="bi bi-check2-circle fs-1 text-success"></i>
-              <p class="mb-0 fw-bold mt-2">No hay inconformidades pendientes en el sistema.</p>
-            </div>
-          <?php else: ?>
-            <div class="table-responsive">
-              <table class="table table-hover align-middle">
-                <thead class="table-light">
+      <div class="card-body p-3 p-md-4">
+        <?php if (empty($listaAlertas)): ?>
+          <div class="text-center py-4 text-muted">
+            <i class="bi bi-check2-circle fs-1 text-success"></i>
+            <p class="mb-0 fw-bold mt-2">No hay inconformidades pendientes en el sistema.</p>
+          </div>
+        <?php else: ?>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Fecha Radicación</th>
+                  <th>Ganadero</th>
+                  <th>Periodo</th>
+                  <th class="text-end">Litros al Reclamar</th>
+                  <th>Detalle de la Inconformidad</th>
+                  <th class="text-center">Estado</th>
+                  <th class="text-center">Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php foreach ($listaAlertas as $alt): ?>
                   <tr>
-                    <th>Fecha Radicación</th>
-                    <th>Ganadero</th>
-                    <th>Periodo</th>
-                    <th class="text-end">Litros al Reclamar</th>
-                    <th>Detalle de la Inconformidad</th>
-                    <th class="text-center">Estado</th>
-                    <th class="text-center">Acción</th>
+                    <td class="small text-muted"><?php echo formatoFechaEspanol($alt['creadoEn']); ?></td>
+                    <td>
+                      <strong><?php echo e($alt['ganaderoNombre']); ?></strong><br>
+                      <small class="text-muted font-monospace">C.C. <?php echo e($alt['ganaderoCedula']); ?></small>
+                    </td>
+                    <td class="small"><?php echo e($alt['fechaInicio']); ?> al <?php echo e($alt['fechaFin']); ?></td>
+                    <td class="text-end fw-bold text-success"><?php echo formatoLitros($alt['litrosAlMomento']); ?></td>
+                    <td class="small fst-italic" style="max-width: 320px;">
+                      "<?php echo e($alt['mensaje']); ?>"
+                    </td>
+                    <td class="text-center">
+                      <span class="badge bg-<?php echo ($alt['estado'] === 'PENDIENTE') ? 'danger' : 'success'; ?>">
+                        <?php echo e($alt['estado']); ?>
+                      </span>
+                    </td>
+                    <td class="text-center">
+                      <form action="admin.php?tab=buzon" method="POST" class="d-inline">
+                        <?php echo campoCsrf(); ?>
+                        <input type="hidden" name="accion" value="atender_reclamo">
+                        <input type="hidden" name="alertaId" value="<?php echo e($alt['id']); ?>">
+                        <input type="hidden" name="estado" value="<?php echo ($alt['estado'] === 'PENDIENTE') ? 'ATENDIDO' : 'PENDIENTE'; ?>">
+                        <button type="submit" class="btn btn-sm btn-outline-success rounded-pill px-3">
+                          Marcar <?php echo ($alt['estado'] === 'PENDIENTE') ? 'Atendido' : 'Pendiente'; ?>
+                        </button>
+                      </form>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  <?php foreach ($listaAlertas as $alt): ?>
-                    <tr>
-                      <td class="small text-muted"><?php echo formatoFechaEspanol($alt['creadoEn']); ?></td>
-                      <td>
-                        <strong><?php echo e($alt['ganaderoNombre']); ?></strong><br>
-                        <small class="text-muted font-monospace">C.C. <?php echo e($alt['ganaderoCedula']); ?></small>
-                      </td>
-                      <td class="small"><?php echo e($alt['fechaInicio']); ?> al <?php echo e($alt['fechaFin']); ?></td>
-                      <td class="text-end fw-bold text-success"><?php echo formatoLitros($alt['litrosAlMomento']); ?></td>
-                      <td class="small fst-italic" style="max-width: 320px;">
-                        "<?php echo e($alt['mensaje']); ?>"
-                      </td>
-                      <td class="text-center">
-                        <span class="badge bg-<?php echo ($alt['estado'] === 'PENDIENTE') ? 'danger' : 'success'; ?>">
-                          <?php echo e($alt['estado']); ?>
-                        </span>
-                      </td>
-                      <td class="text-center">
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
+        <?php endif; ?>
+      </div>
+    </div>
+
+    <!-- Subsección Consultas de Contacto Web -->
+    <div class="card card-rural border-0 shadow overflow-hidden">
+      <div class="card-header bg-success text-white p-3">
+        <h5 class="fw-bold mb-0">
+          <i class="bi bi-envelope-open-fill me-2"></i> Mensajes Recibidos desde la Landing Web
+        </h5>
+      </div>
+      <div class="card-body p-3 p-md-4">
+        <?php if (empty($listaConsultas)): ?>
+          <div class="text-center py-4 text-muted">
+            <p class="mb-0">No se han recibido consultas públicas recientes.</p>
+          </div>
+        <?php else: ?>
+          <div class="table-responsive">
+            <table class="table table-hover align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Fecha</th>
+                  <th>Nombre</th>
+                  <th>Contacto</th>
+                  <th>Mensaje</th>
+                  <th class="text-center">Estado</th>
+                  <th class="text-center">Acción</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php foreach ($listaConsultas as $c): ?>
+                  <tr>
+                    <td class="small text-muted"><?php echo formatoFechaEspanol($c['fecha']); ?></td>
+                    <td class="fw-bold"><?php echo e($c['nombre']); ?></td>
+                    <td class="small"><?php echo e($c['contacto']); ?></td>
+                    <td class="small"><?php echo e($c['mensaje']); ?></td>
+                    <td class="text-center">
+                      <?php if (!empty($c['atendida'])): ?>
+                        <span class="badge bg-success-subtle text-success">Atendida</span>
+                      <?php else: ?>
+                        <span class="badge bg-warning-subtle text-warning-emphasis">Pendiente</span>
+                      <?php endif; ?>
+                    </td>
+                    <td class="text-center">
+                      <?php if (empty($c['atendida'])): ?>
                         <form action="admin.php?tab=buzon" method="POST" class="d-inline">
                           <?php echo campoCsrf(); ?>
-                          <input type="hidden" name="accion" value="atender_reclamo">
-                          <input type="hidden" name="alertaId" value="<?php echo e($alt['id']); ?>">
-                          <input type="hidden" name="estado" value="<?php echo ($alt['estado'] === 'PENDIENTE') ? 'ATENDIDO' : 'PENDIENTE'; ?>">
+                          <input type="hidden" name="accion" value="atender_consulta">
+                          <input type="hidden" name="consultaId" value="<?php echo e($c['id']); ?>">
                           <button type="submit" class="btn btn-sm btn-outline-success rounded-pill px-3">
-                            Marcar <?php echo ($alt['estado'] === 'PENDIENTE') ? 'Atendido' : 'Pendiente'; ?>
+                            Marcar Atendida
                           </button>
                         </form>
-                      </td>
-                    </tr>
-                  <?php endforeach; ?>
-                </tbody>
-              </table>
-            </div>
-          <?php endif; ?>
-        </div>
-      </div>
-
-      <!-- Subsección Consultas de Contacto Web -->
-      <div class="card card-rural border-0 shadow overflow-hidden">
-        <div class="card-header bg-success text-white p-3">
-          <h5 class="fw-bold mb-0">
-            <i class="bi bi-envelope-open-fill me-2"></i> Mensajes Recibidos desde la Landing Web
-          </h5>
-        </div>
-        <div class="card-body p-3 p-md-4">
-          <?php if (empty($listaConsultas)): ?>
-            <div class="text-center py-4 text-muted">
-              <p class="mb-0">No se han recibido consultas públicas recientes.</p>
-            </div>
-          <?php else: ?>
-            <div class="table-responsive">
-              <table class="table table-hover align-middle">
-                <thead class="table-light">
-                  <tr>
-                    <th>Fecha</th>
-                    <th>Nombre</th>
-                    <th>Contacto</th>
-                    <th>Mensaje</th>
+                      <?php else: ?>
+                        <span class="text-muted small"><i class="bi bi-check-circle-fill text-success"></i> Lista</span>
+                      <?php endif; ?>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  <?php foreach ($listaConsultas as $c): ?>
-                    <tr>
-                      <td class="small text-muted"><?php echo formatoFechaEspanol($c['fecha']); ?></td>
-                      <td class="fw-bold"><?php echo e($c['nombre']); ?></td>
-                      <td class="small"><?php echo e($c['contacto']); ?></td>
-                      <td class="small"><?php echo e($c['mensaje']); ?></td>
-                    </tr>
-                  <?php endforeach; ?>
-                </tbody>
-              </table>
-            </div>
-          <?php endif; ?>
-        </div>
+                <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
+        <?php endif; ?>
       </div>
+    </div>
 
-    <?php endif; ?>
+  <?php endif; ?>
 
-  </main>
+</main>
 
-  <!-- MODAL: AGREGAR / EDITAR GANADERO ASOCIADO -->
-  <div class="modal fade" id="modalNuevoGanadero" tabindex="-1" aria-labelledby="modalGanaderoLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content rounded-4 border-0 shadow-lg">
-        <div class="modal-header bg-success text-white p-4">
-          <h5 class="modal-title fw-bold" id="modalGanaderoLabel">
-            <i class="bi bi-person-plus-fill me-2"></i> Asociado Ganadero
-          </h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-        </div>
-        <form action="admin.php?tab=ganaderos" method="POST" id="form-ganadero">
-          <?php echo campoCsrf(); ?>
-          <input type="hidden" name="accion" value="guardar_ganadero">
-          <input type="hidden" name="asociadoId" id="modal_asociado_id" value="">
+<!-- MODAL: AGREGAR / EDITAR GANADERO ASOCIADO -->
+<div class="modal fade" id="modalNuevoGanadero" tabindex="-1" aria-labelledby="modalGanaderoLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow-lg">
+      <div class="modal-header bg-success text-white p-4">
+        <h5 class="modal-title fw-bold" id="modalGanaderoLabel">
+          <i class="bi bi-person-plus-fill me-2"></i> Asociado Ganadero
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <form action="admin.php?tab=ganaderos" method="POST" id="form-ganadero">
+        <?php echo campoCsrf(); ?>
+        <input type="hidden" name="accion" value="guardar_ganadero">
+        <input type="hidden" name="asociadoId" id="modal_asociado_id" value="">
 
-          <div class="modal-body p-4">
-            <div class="mb-3">
-              <label for="modal_cedula" class="form-label small fw-bold text-muted">Cédula de Ciudadanía *</label>
-              <input type="text" name="cedula" id="modal_cedula" class="form-control form-control-touch" required placeholder="Número de cédula">
-            </div>
-
-            <div class="mb-3">
-              <label for="modal_nombre" class="form-label small fw-bold text-muted">Nombre Completo *</label>
-              <input type="text" name="nombre" id="modal_nombre" class="form-control form-control-touch" required placeholder="Nombre del ganadero">
-            </div>
-
-            <div class="mb-3">
-              <label for="modal_telefono" class="form-label small fw-bold text-muted">Teléfono de Contacto</label>
-              <input type="text" name="telefono" id="modal_telefono" class="form-control form-control-touch" placeholder="Ej: 3101234567">
-            </div>
-
-            <div class="mb-3">
-              <label for="modal_finca" class="form-label small fw-bold text-muted">Finca / Predio</label>
-              <input type="text" name="finca" id="modal_finca" class="form-control form-control-touch" placeholder="Ej: Finca La Esperanza">
-            </div>
-
-            <div class="mb-3">
-              <label for="modal_password" class="form-label small fw-bold text-muted">Contraseña (Dejar en blanco para no cambiar)</label>
-              <input type="password" name="password" id="modal_password" class="form-control form-control-touch" placeholder="Por defecto: 123456">
-            </div>
-
-            <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" role="switch" id="modal_activo" name="activo" checked>
-              <label class="form-check-label fw-bold small text-muted" for="modal_activo">Asociado Activo para Recolección</label>
-            </div>
+        <div class="modal-body p-4">
+          <div class="mb-3">
+            <label for="modal_cedula" class="form-label small fw-bold text-muted">Cédula de Ciudadanía *</label>
+            <input type="text" name="cedula" id="modal_cedula" class="form-control form-control-touch" required placeholder="Número de cédula">
           </div>
 
-          <div class="modal-footer p-3 bg-body-tertiary">
-            <button type="button" class="btn btn-touch btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn btn-touch btn-aso-primary rounded-pill px-4">
-              <i class="bi bi-save-fill me-1"></i> Guardar Asociado
-            </button>
+          <div class="mb-3">
+            <label for="modal_nombre" class="form-label small fw-bold text-muted">Nombre Completo *</label>
+            <input type="text" name="nombre" id="modal_nombre" class="form-control form-control-touch" required placeholder="Nombre del ganadero">
           </div>
-        </form>
-      </div>
+
+          <div class="mb-3">
+            <label for="modal_telefono" class="form-label small fw-bold text-muted">Teléfono de Contacto</label>
+            <input type="text" name="telefono" id="modal_telefono" class="form-control form-control-touch" placeholder="Ej: 3101234567">
+          </div>
+
+          <div class="mb-3">
+            <label for="modal_finca" class="form-label small fw-bold text-muted">Finca / Predio</label>
+            <input type="text" name="finca" id="modal_finca" class="form-control form-control-touch" placeholder="Ej: Finca La Esperanza">
+          </div>
+
+          <div class="mb-3">
+            <label for="modal_password" class="form-label small fw-bold text-muted">Contraseña (Dejar en blanco para no cambiar)</label>
+            <input type="password" name="password" id="modal_password" class="form-control form-control-touch" placeholder="Por defecto: 123456">
+          </div>
+
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" role="switch" id="modal_activo" name="activo" checked>
+            <label class="form-check-label fw-bold small text-muted" for="modal_activo">Asociado Activo para Recolección</label>
+          </div>
+        </div>
+
+        <div class="modal-footer p-3 bg-body-tertiary">
+          <button type="button" class="btn btn-touch btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-touch btn-aso-primary rounded-pill px-4">
+            <i class="bi bi-save-fill me-1"></i> Guardar Asociado
+          </button>
+        </div>
+      </form>
     </div>
   </div>
+</div>
 
-  <!-- FOOTER -->
-  <footer class="py-3 text-center text-muted small mt-auto border-top">
-    <div class="container-fluid">
-      <?php echo e(EMPRESA_SIGLA); ?> &bull; Panel de Administración &bull; Carmen de Carupa, Cundinamarca &copy; <?php echo date('Y'); ?>
-    </div>
-  </footer>
-
-  <!-- Scripts: jQuery + Bootstrap Bundle + DataTables + SweetAlert2 + App.js -->
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
-  
-  <!-- DataTables JS & Plugins -->
-  <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
-  <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
-  <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
-  <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
-  <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
-
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script src="assets/js/app.js"></script>
-
-  <script>
-    $(document).ready(function() {
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    if (typeof $ !== 'undefined' && $.fn.DataTable) {
       // DataTables Planilla General
       if ($('#tabla-admin-entregas').length) {
         $('#tabla-admin-entregas').DataTable({
-          language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
+          language: window.AsoagroUI?.dataTablesSpanish || {},
           pageLength: 25,
           responsive: true,
           order: [[0, 'desc']],
@@ -1015,32 +979,29 @@ $listaConsultas = $stmtConsultas->fetchAll();
       // DataTables Gestión de Ganaderos
       if ($('#tabla-gestion-ganaderos').length) {
         $('#tabla-gestion-ganaderos').DataTable({
-          language: { url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json' },
+          language: window.AsoagroUI?.dataTablesSpanish || {},
           pageLength: 20,
           responsive: true,
           order: [[0, 'asc']]
         });
       }
-    });
-
-    // Helper para editar un ganadero en el modal
-    function editarGanadero(g) {
-      document.getElementById('modalGanaderoLabel').innerHTML = '<i class="bi bi-pencil-fill me-2"></i> Editar Ganadero Asociado';
-      document.getElementById('modal_asociado_id').value = g.id;
-      document.getElementById('modal_cedula').value = g.cedula;
-      document.getElementById('modal_nombre').value = g.nombre;
-      document.getElementById('modal_telefono').value = g.telefono || '';
-      document.getElementById('modal_finca').value = g.finca || '';
-      document.getElementById('modal_password').value = '';
-      document.getElementById('modal_activo').checked = (parseInt(g.activo) === 1);
-
-      const modal = new bootstrap.Modal(document.getElementById('modalNuevoGanadero'));
-      modal.show();
     }
-  </script>
+  });
 
-  <!-- SweetAlert2 Flash Messages -->
-  <?php echo renderSweetAlert(); ?>
+  // Helper para editar un ganadero en el modal
+  function editarGanadero(g) {
+    document.getElementById('modalGanaderoLabel').innerHTML = '<i class="bi bi-pencil-fill me-2"></i> Editar Ganadero Asociado';
+    document.getElementById('modal_asociado_id').value = g.id;
+    document.getElementById('modal_cedula').value = g.cedula;
+    document.getElementById('modal_nombre').value = g.nombre;
+    document.getElementById('modal_telefono').value = g.telefono || '';
+    document.getElementById('modal_finca').value = g.finca || '';
+    document.getElementById('modal_password').value = '';
+    document.getElementById('modal_activo').checked = (parseInt(g.activo) === 1);
 
-</body>
-</html>
+    const modal = new bootstrap.Modal(document.getElementById('modalNuevoGanadero'));
+    modal.show();
+  }
+</script>
+
+<?php require_once __DIR__ . '/includes/footer.php'; ?>

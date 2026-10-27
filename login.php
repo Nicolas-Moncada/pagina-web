@@ -4,6 +4,7 @@
  * PLATAFORMA DE CONTROL LECHERO - ASOAGROALIZAL (CARMEN DE CARUPA)
  * Archivo: login.php
  * Propósito: Acceso seguro con tarjeta flotante dividida, CAPTCHA GD nativo, CSRF y SweetAlert2.
+ * Fuente Oficial: docs/FICHA_OFICIAL_ASOAGROALIZAL.md
  * =========================================================================================
  */
 
@@ -81,7 +82,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     // 5. Verificación de contraseña con password_verify
                     $passwordValida = password_verify($password, $hashAValidar);
 
-                    // Compatibilidad con hashes demo antiguos tipo 123456 si el hash fue generado con otro salt
+                    // Compatibilidad con hashes demo antiguos tipo 123456
                     if (!$passwordValida && $user && ($password === '123456' || $password === '123456789')) {
                         $passwordValida = true;
                     }
@@ -183,7 +184,7 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   
   <!-- Estilos Globales de Marca AsoagroAlisal -->
-  <link rel="stylesheet" href="assets/css/estilos.css">
+  <link rel="stylesheet" href="assets/css/theme.css">
 
   <?php if (USE_RECAPTCHA_V2 && !empty(RECAPTCHA_SITE_KEY)): ?>
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
@@ -314,7 +315,7 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
                   <?php endif; ?>
                 </div>
 
-                <!-- Checkbox Recordarme -->
+                <!-- Checkbox Recordarme y Enlace Olvidé Clave -->
                 <div class="d-flex justify-content-between align-items-center mb-4">
                   <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="recordarme" name="recordarme" <?php echo !empty($cedulaRecordada) ? 'checked' : ''; ?>>
@@ -322,7 +323,7 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
                       Recordar mi cédula
                     </label>
                   </div>
-                  <a href="javascript:void(0)" onclick="AsoagroUI.showWarning('Restablecimiento de Contraseña', 'Comunícate con la administración de ASOAGROALIZAL o envía un mensaje al WhatsApp oficial (+57 3143820926) para validar tu identidad.')" class="small text-success text-decoration-none fw-bold hover-underline">
+                  <a href="olvide_password.php" class="small text-success text-decoration-none fw-bold hover-underline">
                     ¿Olvidaste tu clave?
                   </a>
                 </div>
@@ -337,8 +338,8 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
               <!-- Enlace de Afiliación / Registro -->
               <div class="text-center pt-3 border-top border-secondary-subtle">
                 <small class="text-muted d-block mb-2">¿Eres ganadero de la Vereda Alizal y no tienes usuario?</small>
-                <a href="index.php#contacto" class="btn btn-touch btn-outline-success border-2 rounded-pill w-100 small fw-bold">
-                  <i class="bi bi-person-plus-fill me-1"></i> Solicitar Vinculación de Asociado
+                <a href="registro.php" class="btn btn-touch btn-outline-success border-2 rounded-pill w-100 small fw-bold">
+                  <i class="bi bi-person-plus-fill me-1"></i> Solicitar Registro de Asociado
                 </a>
               </div>
             </div>
@@ -357,10 +358,10 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
     </div>
   </footer>
 
-  <!-- Scripts: Bootstrap 5.3 Bundle + SweetAlert2 + App.js -->
+  <!-- Scripts: Bootstrap 5.3 Bundle + SweetAlert2 + theme.js -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script src="assets/js/app.js"></script>
+  <script src="assets/js/theme.js"></script>
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {

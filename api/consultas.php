@@ -1,136 +1,171 @@
 <?php
-require_once __DIR__ . '/db.php';
+/**
+ * =========================================================================================
+ * PLATAFORMA DE CONTROL LECHERO - ASOAGROALIZAL (CARMEN DE CARUPA)
+ * Archivo: api/consultas.php
+ * Propósito: API para recepción segura de PQRS y consultas web (JSON y POST estándar).
+ * =========================================================================================
+ */
+
+require_once __DIR__ . '/../includes/config.php';
+require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/helpers.php';
+require_once __DIR__ . '/../includes/csrf.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
 $pdo = getDB();
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
+// 1. Asegurar existencia de la tabla 'consulta'
+try {
+    $pdo->exec("CREATE TABLE IF NOT EXISTS `consulta` (
+        `id` VARCHAR(50) NOT NULL PRIMARY KEY,
+        `nombre` VARCHAR(100) NOT NULL,
+        `contacto` VARCHAR(100) NOT NULL,
+        `mensaje` TEXT NOT NULL,
+        `fecha` DATETIME DEFAULT CURRENT_TIMESTAMP,
+        `atendida` TINYINT(1) DEFAULT 0
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+} catch (Exception $e) {
+    error_log("Error asegurando tabla consulta: " . $e->getMessage());
+}
+
+// 2. GET: Listado para administración autorizada
 if ($method === 'GET') {
-    $currentUser = requireAuth('ADMIN');
+    require_once __DIR__ . '/../includes/auth.php';
+    $user = getCurrentUser();
+    if (!$user || $user['rol'] !== 'ADMIN') {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => 'Acceso no autorizado']);
+        exit;
+    }
+
     try {
-        $stmt = $pdo->query("SELECT id, nombre, contacto, mensaje, atendida, COALESCE(fecha, NOW()) AS creadoEn FROM consulta ORDER BY id DESC");
+        $stmt = $pdo->query("SELECT id, nombre, contacto, mensaje, fecha, atendida FROM consulta ORDER BY fecha DESC LIMIT 100");
         $consultas = $stmt->fetchAll();
-
-        // También traer alertas e inconformidades para el buzón del administrador
-        try {
-            $altStmt = $pdo->query("SELECT a.id, a.asociadoId AS usuarioId, a.fechaInicio, a.fechaFin, a.mensaje, a.litrosAlMomento, a.estado, a.creadoEn,
-                                           u.nombre AS ganaderoNombre, u.cedula
-                                    FROM quejas a
-                                    JOIN asociados u ON a.asociadoId = u.id
-                                    ORDER BY a.creadoEn DESC");
-            $alertas = $altStmt->fetchAll();
-        } catch (Exception $e1) {
-            $alertas = [];
-        }
-
-        if (empty($alertas)) {
-            try {
-                $altStmtOld = $pdo->query("SELECT a.id, a.usuarioId, a.fechaInicio, a.fechaFin, a.mensaje, a.litrosAlMomento, a.estado, a.creadoEn,
-                                               u.nombre AS ganaderoNombre, u.cedula
-                                        FROM alertaquincena a
-                                        JOIN usuario u ON a.usuarioId = u.id
-                                        ORDER BY a.creadoEn DESC");
-                $alertas = $altStmtOld->fetchAll();
-            } catch (Exception $e2) {
-                $alertas = [];
-            }
-        }
-
-        // Solicitudes de restablecimiento de contraseña para el administrador (exclusivo ganaderos)
-        try {
-            $solStmt = $pdo->query("SELECT s.id, s.usuarioId, s.cedula, s.nombre, s.rol, s.metodo, s.estado, s.ipSolicitud, s.creadoEn,
-                                           COALESCE(a.telefono, '') AS telefono
-                                    FROM solicitudes_recuperacion s
-                                    LEFT JOIN asociados a ON s.usuarioId = a.id
-                                    WHERE s.rol = 'GANADERO'
-                                    ORDER BY s.creadoEn DESC");
-            $solicitudes = $solStmt->fetchAll();
-        } catch (Exception $eS) {
-            $solicitudes = [];
-        }
-
-        jsonResponse(['consultas' => $consultas, 'alertas' => $alertas, 'solicitudes' => $solicitudes]);
+        echo json_encode(['success' => true, 'consultas' => $consultas]);
+        exit;
     } catch (Exception $e) {
-        jsonResponse(['error' => 'Error al consultar buzón: ' . $e->getMessage()], 500);
+        http_response_code(500);
+        echo json_encode(['success' => false, 'error' => 'Error consultando registros']);
+        exit;
     }
 }
 
+// 3. POST: Recepción de mensaje de contacto
 if ($method === 'POST') {
-    $data = getRequestData();
-    $action = $data['action'] ?? '';
+    // Detectar si la petición es JSON o FormData
+    $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+    $datos = [];
 
-    // Si es acción administrativa de marcar como leída / atendida
-    if ($action === 'toggle_atendida') {
-        requireAuth('ADMIN');
-        $id = $data['id'] ?? '';
-        $atendida = !empty($data['atendida']) ? 1 : 0;
-        try {
-            $pdo->prepare("UPDATE consulta SET atendida = ? WHERE id = ?")->execute([$atendida, $id]);
-            jsonResponse(['ok' => true, 'mensaje' => 'Estado de consulta actualizado.']);
-        } catch (Exception $e) {
-            jsonResponse(['error' => 'Error al actualizar consulta: ' . $e->getMessage()], 500);
-        }
+    if (stripos($contentType, 'application/json') !== false) {
+        $raw = file_get_contents('php://input');
+        $datos = json_decode($raw, true) ?: [];
+    } else {
+        $datos = $_POST;
     }
 
-    // Si es acción de actualizar estado de queja
-    if ($action === 'cambiar_estado_queja') {
-        requireAuth('ADMIN');
-        $id = $data['id'] ?? '';
-        $estado = $data['estado'] ?? 'REVISADO';
-        try {
-            $pdo->prepare("UPDATE quejas SET estado = ? WHERE id = ?")->execute([$estado, $id]);
-            $pdo->prepare("UPDATE alertaquincena SET estado = ? WHERE id = ?")->execute([$estado, $id]);
-            jsonResponse(['ok' => true, 'mensaje' => 'Estado de inconformidad actualizado.']);
-        } catch (Exception $e) {
-            jsonResponse(['error' => 'Error al actualizar queja: ' . $e->getMessage()], 500);
-        }
+    // 4. Verificación de Honeypot Anti-Spam
+    $honeypot = trim($datos['website_hp'] ?? ($datos['website'] ?? ''));
+    if (!empty($honeypot)) {
+        // Responder éxito de forma silenciosa para neutralizar bots
+        echo json_encode([
+            'success' => true,
+            'ok' => true,
+            'message' => 'Tu mensaje ha sido registrado exitosamente.'
+        ]);
+        exit;
     }
 
-    $nombre = htmlspecialchars(strip_tags(trim($data['nombre'] ?? '')), ENT_QUOTES, 'UTF-8');
-    $contacto = htmlspecialchars(strip_tags(trim($data['contacto'] ?? '')), ENT_QUOTES, 'UTF-8');
-    $mensaje = htmlspecialchars(strip_tags(trim($data['mensaje'] ?? '')), ENT_QUOTES, 'UTF-8');
+    // 5. Rate Limiting por IP (Máximo 1 envío cada 60 segundos)
+    $ip = getClientIP();
+    $ahora = time();
+    $sessionKey = 'last_consulta_time_' . md5($ip);
+
+    if (isset($_SESSION[$sessionKey]) && ($ahora - $_SESSION[$sessionKey] < CONSULTAS_RATE_LIMIT_SEGUNDOS)) {
+        http_response_code(429);
+        echo json_encode([
+            'success' => false,
+            'ok' => false,
+            'message' => 'Has enviado un mensaje recientemente. Por favor espera un minuto antes de enviar otro.'
+        ]);
+        exit;
+    }
+
+    // 6. Validación de CSRF Token si se envía
+    $token = $datos['csrf_token'] ?? '';
+    if (!empty($token) && !validarCsrfToken($token)) {
+        http_response_code(403);
+        echo json_encode([
+            'success' => false,
+            'ok' => false,
+            'message' => 'La sesión de seguridad ha expirado. Por favor recarga la página.'
+        ]);
+        exit;
+    }
+
+    // 7. Sanitización y validaciones de contenido
+    $nombre   = htmlspecialchars(strip_tags(trim($datos['nombre'] ?? '')), ENT_QUOTES, 'UTF-8');
+    $contacto = htmlspecialchars(strip_tags(trim($datos['contacto'] ?? '')), ENT_QUOTES, 'UTF-8');
+    $mensaje  = htmlspecialchars(strip_tags(trim($datos['mensaje'] ?? '')), ENT_QUOTES, 'UTF-8');
 
     if (empty($nombre) || empty($contacto) || empty($mensaje)) {
-        jsonResponse(['error' => 'Por favor completa todos los campos del formulario.'], 400);
-    }
-
-    try {
-        $id = generarUUID('con');
-        $stmt = $pdo->prepare("INSERT INTO consulta (id, nombre, contacto, mensaje, fecha, atendida) VALUES (?, ?, ?, ?, NOW(), 0)");
-        $stmt->execute([$id, $nombre, $contacto, $mensaje]);
-
-        jsonResponse([
-            'ok' => true,
-            'mensaje' => '¡Mensaje enviado con éxito! Nos comunicaremos contigo lo más pronto posible.'
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'ok' => false,
+            'message' => 'Por favor completa todos los campos requeridos.'
         ]);
-    } catch (Exception $e) {
-        jsonResponse(['error' => 'Error al guardar la consulta: ' . $e->getMessage()], 500);
-    }
-}
-
-// DELETE: Eliminar consulta o queja
-if ($method === 'DELETE') {
-    requireAuth('ADMIN');
-    $data = getRequestData();
-    $id = $_GET['id'] ?? ($data['id'] ?? null);
-    $tipo = $_GET['tipo'] ?? ($data['tipo'] ?? 'consulta');
-
-    if (empty($id)) {
-        jsonResponse(['error' => 'ID requerido.'], 400);
+        exit;
     }
 
+    if (strlen($nombre) < 3) {
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'ok' => false,
+            'message' => 'El nombre debe contener al menos 3 caracteres.'
+        ]);
+        exit;
+    }
+
+    if (strlen($mensaje) < 10) {
+        http_response_code(400);
+        echo json_encode([
+            'success' => false,
+            'ok' => false,
+            'message' => 'El mensaje debe ser claro y contener al menos 10 caracteres.'
+        ]);
+        exit;
+    }
+
+    // 8. Inserción segura con PDO Prepared Statements
     try {
-        if ($tipo === 'queja') {
-            $pdo->prepare("DELETE FROM quejas WHERE id = ?")->execute([$id]);
-            $pdo->prepare("DELETE FROM alertaquincena WHERE id = ?")->execute([$id]);
-        } else {
-            $pdo->prepare("DELETE FROM consulta WHERE id = ?")->execute([$id]);
-        }
-        jsonResponse(['ok' => true, 'mensaje' => 'Registro eliminado con éxito.']);
+        $conId = generarUUID('con');
+        $stmt = $pdo->prepare("INSERT INTO consulta (id, nombre, contacto, mensaje, fecha, atendida) VALUES (?, ?, ?, ?, NOW(), 0)");
+        $stmt->execute([$conId, $nombre, $contacto, $mensaje]);
+
+        $_SESSION[$sessionKey] = $ahora;
+
+        echo json_encode([
+            'success' => true,
+            'ok' => true,
+            'message' => '¡Consulta enviada exitosamente! La administración de ' . EMPRESA_SIGLA . ' se comunicará contigo pronto.'
+        ]);
+        exit;
     } catch (Exception $e) {
-        jsonResponse(['error' => 'Error al eliminar: ' . $e->getMessage()], 500);
+        error_log("Error insertando consulta: " . $e->getMessage());
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'ok' => false,
+            'message' => 'Ocurrió un error al procesar tu mensaje. Por favor intenta más tarde.'
+        ]);
+        exit;
     }
 }
 
-jsonResponse(['error' => 'Método no soportado'], 405);
+http_response_code(405);
+echo json_encode(['success' => false, 'error' => 'Método no permitido']);
+exit;

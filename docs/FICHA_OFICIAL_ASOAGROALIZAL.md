@@ -61,3 +61,4 @@ Líneas de trabajo e implementación técnica (no logros cerrados):
 ## 6. Aliados Institucionales (Mención en Solo Texto)
 - Corporación PBA
 - Fundación Bolívar Davivienda
+

@@ -1,187 +1,143 @@
 <?php
-require_once __DIR__ . '/api/db.php';
+/**
+ * =========================================================================================
+ * PLATAFORMA DE CONTROL LECHERO - ASOAGROALIZAL (CARMEN DE CARUPA)
+ * Archivo: olvide_password.php
+ * Propósito: Solicitud de restablecimiento de contraseña para asociados y administradores.
+ * Fuente Oficial: docs/FICHA_OFICIAL_ASOAGROALIZAL.md
+ * =========================================================================================
+ */
 
-$usuario = getCurrentUser();
-if ($usuario) {
-    if (!empty($usuario['debeCambiarPassword'])) {
-        header("Location: ./cambiar_password.php");
-        exit;
-    }
-    header("Location: " . ($usuario['rol'] === 'ADMIN' ? "./admin.php" : "./panel.php"));
+require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/includes/db.php';
+require_once __DIR__ . '/includes/helpers.php';
+require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/captcha_gd.php';
+
+$usuarioActual = getCurrentUser();
+if ($usuarioActual) {
+    header('Location: ' . ($usuarioActual['rol'] === 'ADMIN' ? 'admin.php' : 'panel.php'));
     exit;
 }
-?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Recuperar Contraseña | Asociación de Ganaderos</title>
-  <link rel="stylesheet" href="./css/estilos.css">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            campo: {
-              50: '#f2f8f3', 100: '#e1efe4', 200: '#c4dfcb', 300: '#99c6a4',
-              400: '#6aa778', 500: '#498b58', 600: '#366e43', 700: '#2d5737',
-              800: '#26462e', 900: '#203a27', 950: '#0d1f13'
-            },
-            leche: { 50: '#ffffff', 100: '#fcfbf7', 200: '#f7f5ed', 300: '#ede8d8' },
-            dorado: { 400: '#f59e0b', 500: '#d97706', 600: '#b45309' }
-          }
+
+$pdo = getDB();
+$errorMsg = '';
+$infoMsg = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $token = $_POST['csrf_token'] ?? '';
+    if (!validarCsrfToken($token)) {
+        $errorMsg = 'Tu sesión de seguridad ha expirado. Por favor recarga el formulario.';
+    } else {
+        $cedula = normalizarCedula($_POST['cedula'] ?? '');
+        $captcha = trim($_POST['captcha'] ?? '');
+        $recaptchaToken = $_POST['g-recaptcha-response'] ?? null;
+
+        if (empty($cedula)) {
+            $errorMsg = 'Por favor ingresa tu número de cédula.';
+        } elseif (!CaptchaService::validar($captcha, $recaptchaToken)) {
+            $errorMsg = 'El código de seguridad (CAPTCHA) es incorrecto o ha vencido.';
+        } else {
+            // Verificar si el usuario existe
+            $stmt = $pdo->prepare("SELECT id, cedula, nombre, rol, email FROM usuario WHERE cedula = ? AND activo = 1 LIMIT 1");
+            $stmt->execute([$cedula]);
+            $user = $stmt->fetch();
+
+            if ($user) {
+                // Registrar auditoría de la solicitud
+                registrarAuditoria($pdo, 'SOLICITUD_RECUPERACION_PASSWORD', $user['id'], $user['cedula'], 'Rol: ' . $user['rol']);
+
+                if ($user['rol'] === 'ADMIN') {
+                    $infoMsg = 'Se ha generado un registro para la cuenta de Administración. Comunícate al correo oficial (' . EMPRESA_CORREO . ') o al teléfono oficial ' . EMPRESA_TELEFONO . ' para completar la verificación.';
+                } else {
+                    $infoMsg = 'Solicitud radicada. Como medida de seguridad rural, la administración validará tu identidad y te asignará una clave temporal de primer ingreso.';
+                }
+            } else {
+                // Mensaje genérico para no revelar si la cédula existe
+                $infoMsg = 'Si el número de cédula corresponde a un asociado activo, la administración gestionará el restablecimiento previa validación de identidad.';
+            }
         }
-      }
     }
-  </script>
-</head>
-<body class="min-h-screen flex flex-col justify-center items-center px-4 py-8 bg-gradient-to-b from-campo-50 via-leche-100 to-campo-100 font-sans antialiased text-campo-950">
+}
 
-  <!-- Enlace Superior -->
-  <div class="w-full max-w-md mb-4 flex items-center justify-between text-sm">
-    <a href="./login.php" class="inline-flex items-center gap-1.5 text-campo-800 hover:text-campo-950 font-bold p-2 rounded-lg hover:bg-campo-100 transition-colors">
-      <span>←</span>
-      <span>Volver al inicio de sesión</span>
-    </a>
-  </div>
+$tituloPagina = 'Recuperar Contraseña | ' . EMPRESA_SIGLA;
+require_once __DIR__ . '/includes/header.php';
+?>
 
-  <!-- Tarjeta Recuperación -->
-  <div class="w-full max-w-md bg-white rounded-3xl shadow-xl border border-campo-200 overflow-hidden">
-    <!-- Cabecera -->
-    <div class="bg-campo-700 text-white p-6 sm:p-7 text-center">
-      <div class="inline-flex items-center justify-center w-14 h-14 rounded-full bg-campo-800 text-white mb-2 shadow-inner text-2xl">
-        🔐
+<main class="container my-auto py-5" style="max-width: 580px;">
+  <div class="card card-rural border-0 shadow-lg overflow-hidden">
+    <div class="p-4 text-center text-white" style="background: linear-gradient(135deg, #0b2914 0%, #144722 100%);">
+      <div class="rounded-circle bg-warning text-dark mx-auto d-flex align-items-center justify-content-center mb-3 shadow" style="width: 58px; height: 58px; font-size: 1.6rem;">
+        <i class="bi bi-key-fill"></i>
       </div>
-      <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Recuperar Contraseña</h1>
-      <p class="text-campo-100 text-xs sm:text-sm mt-1">
-        Restablecimiento seguro para Ganaderos y Administración
-      </p>
+      <h3 class="fw-bold mb-1">Recuperar Acceso</h3>
+      <p class="small opacity-75 mb-0"><?php echo e(EMPRESA_SIGLA); ?> &bull; Carmen de Carupa</p>
     </div>
 
-    <!-- Contenido -->
-    <div class="p-6 sm:p-8 space-y-5">
-      <!-- Explicación de seguridad -->
-      <div class="p-3.5 bg-amber-50/70 border-l-4 border-dorado-500 rounded-r-xl text-amber-950 text-xs leading-relaxed">
-        <strong>¿Cómo funciona?</strong>
-        <ul class="list-disc list-inside mt-1 space-y-0.5 text-[11px] text-amber-900">
-          <li><strong>Ganaderos:</strong> Se registra tu solicitud en la administración para emitir una clave temporal tras verificación.</li>
-          <li><strong>Administrador:</strong> Se remite un enlace seguro de 15 minutos al correo oficial.</li>
-        </ul>
+    <div class="p-4 p-md-5">
+      <?php if (!empty($errorMsg)): ?>
+        <div class="alert alert-danger rounded-4 py-3 small fw-bold mb-4" role="alert">
+          <i class="bi bi-exclamation-triangle-fill me-2 fs-5 align-middle"></i>
+          <?php echo e($errorMsg); ?>
+        </div>
+      <?php endif; ?>
+
+      <?php if (!empty($infoMsg)): ?>
+        <div class="alert alert-success rounded-4 py-3 small fw-bold mb-4" role="alert">
+          <i class="bi bi-check-circle-fill me-2 fs-5 align-middle"></i>
+          <?php echo e($infoMsg); ?>
+        </div>
+      <?php endif; ?>
+
+      <div class="p-3 mb-4 rounded-4 small" style="background: var(--aso-secondary-light); border: 1px solid var(--card-border);">
+        <strong class="text-success"><i class="bi bi-shield-lock me-1"></i> Protocolo de Seguridad</strong>
+        <p class="text-muted mb-0 mt-1" style="font-size: 0.85rem;">
+          Para proteger la confidencialidad de las planillas de pesajes y liquidaciones, las solicitudes de cambio de clave son verificadas por la administración asociativa.
+        </p>
       </div>
 
-      <!-- Mensaje de respuesta -->
-      <div id="msg-recuperacion" class="hidden p-4 rounded-xl text-sm font-semibold"></div>
+      <form action="olvide_password.php" method="POST" id="form-olvide" class="needs-validation" novalidate>
+        <?php echo campoCsrf(); ?>
 
-      <form id="form-recuperar" class="space-y-4">
-        <div>
-          <label for="cedula" class="block text-sm font-bold text-campo-900 mb-1">
-            Número de Cédula Registrada
-          </label>
-          <input type="text" id="cedula" name="cedula" inputmode="numeric" required 
-                 placeholder="Ej: 1098765432"
-                 class="w-full px-4 py-3 text-base border-2 border-campo-200 rounded-xl focus:outline-none focus:border-campo-600 focus:ring-4 focus:ring-campo-100 transition-all text-gray-900 bg-white">
+        <div class="mb-3">
+          <label for="cedula" class="form-label fw-bold small text-muted">Número de Cédula Registrada *</label>
+          <div class="input-group">
+            <span class="input-group-text bg-transparent text-success border-2" style="border-radius: var(--radius-md) 0 0 var(--radius-md); border-right: none;">
+              <i class="bi bi-person-vcard fs-5"></i>
+            </span>
+            <input type="text" class="form-control form-control-touch border-start-0" id="cedula" name="cedula" inputmode="numeric" required placeholder="Ej: 79164451" style="border-radius: 0 var(--radius-md) var(--radius-md) 0;" value="<?php echo e($_POST['cedula'] ?? ''); ?>">
+          </div>
         </div>
 
-        <!-- MÓDULO DE CAPTCHA -->
-        <div class="bg-campo-50/70 p-3.5 rounded-2xl border border-campo-200 space-y-2">
-          <div class="flex items-center justify-between">
-            <label for="captcha" class="text-xs font-bold text-campo-950">
-              Verificación de Seguridad *
+        <!-- CAPTCHA GD NATIVO -->
+        <div class="mb-4 p-3 rounded-4" style="background: var(--aso-secondary-light); border: 1px solid var(--card-border);">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <label for="captcha" class="form-label fw-bold small mb-0 text-success">
+              <i class="bi bi-shield-check me-1"></i> Verificación de Seguridad *
             </label>
-            <button type="button" id="btn-refresh-captcha" class="text-[11px] font-bold text-campo-700 hover:underline flex items-center gap-1" title="Generar nuevo desafío">
-              <span>🔄 Cambiar</span>
+            <button type="button" class="btn btn-sm btn-link text-success fw-bold text-decoration-none p-0" onclick="AsoagroUI.refreshCaptcha('#captcha-img', '#captcha')">
+              <i class="bi bi-arrow-clockwise"></i> Cambiar
             </button>
           </div>
-
-          <div class="flex items-center gap-3">
-            <div id="captcha-display" class="flex-shrink-0">
-              <div class="w-[130px] h-[42px] bg-campo-800 rounded-lg flex items-center justify-center text-xs text-white">Cargando...</div>
-            </div>
-            <input type="text" id="captcha" name="captcha" required placeholder="Respuesta"
-                   class="w-full px-3 py-2 text-sm font-bold border-2 border-campo-300 rounded-xl focus:outline-none focus:border-campo-600 bg-white text-center">
+          <div class="d-flex align-items-center gap-3">
+            <img src="includes/captcha_gd.php?t=<?php echo time(); ?>" alt="CAPTCHA" id="captcha-img" class="rounded-3 shadow-sm" style="height: 44px; width: 140px; object-fit: contain;">
+            <input type="text" class="form-control form-control-touch text-center fw-bold text-uppercase fs-5" id="captcha" name="captcha" maxlength="5" required placeholder="Código" autocomplete="off">
           </div>
-          <p class="text-[10px] text-gray-500">Resuelve la operación matemática para procesar la solicitud.</p>
         </div>
 
-        <button type="submit" id="btn-submit-recuperar"
-                class="btn-touch w-full bg-campo-700 hover:bg-campo-800 active:bg-campo-900 text-white shadow-md text-base font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2">
+        <button type="submit" class="btn btn-touch btn-aso-primary w-100 shadow mb-3">
+          <i class="bi bi-send-fill me-1"></i>
           <span>Solicitar Restablecimiento</span>
-          <span>➜</span>
         </button>
-
-        <div class="pt-3 border-t border-gray-100 text-center">
-          <a href="./login.php" class="text-xs text-campo-800 font-bold hover:underline">
-            ¿Recordaste tu contraseña? Iniciar Sesión
-          </a>
-        </div>
       </form>
+
+      <div class="text-center pt-3 border-top border-secondary-subtle">
+        <a href="login.php" class="small fw-bold text-success text-decoration-none hover-underline">
+          <i class="bi bi-arrow-left me-1"></i> Volver a Iniciar Sesión
+        </a>
+      </div>
     </div>
   </div>
+</main>
 
-  <script>
-    // Manejo de CAPTCHA
-    async function cargarCaptcha() {
-      try {
-        const res = await fetch('./api/captcha.php?v=' + Date.now());
-        const data = await res.json();
-        const display = document.getElementById('captcha-display');
-        if (display && data.svg) {
-          display.innerHTML = data.svg;
-        }
-      } catch (err) {
-        console.warn('Error al cargar captcha:', err);
-      }
-    }
-
-    document.getElementById('btn-refresh-captcha')?.addEventListener('click', cargarCaptcha);
-    document.addEventListener('DOMContentLoaded', cargarCaptcha);
-
-    // Envío del Formulario
-    document.getElementById('form-recuperar')?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const form = e.target;
-      const btn = document.getElementById('btn-submit-recuperar');
-      const msgBox = document.getElementById('msg-recuperacion');
-
-      const cedula = form.cedula.value.trim();
-      const captcha = form.captcha.value.trim();
-
-      if (!cedula || !captcha) return;
-
-      btn.disabled = true;
-      btn.innerHTML = '<span>Procesando...</span>';
-      msgBox.classList.add('hidden');
-
-      try {
-        const res = await fetch('./api/recuperar_password.php', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ cedula, captcha })
-        });
-
-        const data = await res.json();
-
-        if (res.ok) {
-          msgBox.className = 'p-4 bg-green-50 border-l-4 border-campo-600 rounded-r-lg text-campo-900 text-sm font-semibold block';
-          msgBox.innerHTML = `✅ ${data.mensaje || 'Si la cédula existe, se procesará tu solicitud.'}<br><span class="text-xs font-normal text-campo-800 mt-1 block">Los ganaderos asociados pueden comunicarse con la administración de la asociación para obtener su clave temporal.</span>`;
-          form.reset();
-          cargarCaptcha();
-        } else {
-          msgBox.className = 'p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg text-red-800 text-sm font-semibold block';
-          msgBox.textContent = `⚠️ ${data.error || 'Ocurrió un error al procesar la solicitud.'}`;
-          cargarCaptcha();
-        }
-      } catch (err) {
-        msgBox.className = 'p-4 bg-red-50 border-l-4 border-red-500 rounded-r-lg text-red-800 text-sm font-semibold block';
-        msgBox.textContent = '⚠️ Error de conexión con el servidor. Intenta de nuevo.';
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = '<span>Solicitar Restablecimiento</span><span>➜</span>';
-      }
-    });
-  </script>
-</body>
-</html>
-
+<?php require_once __DIR__ . '/includes/footer.php'; ?>

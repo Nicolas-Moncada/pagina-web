@@ -3,77 +3,50 @@
  * =========================================================================================
  * PLATAFORMA DE CONTROL LECHERO - ASOAGROALIZAL (CARMEN DE CARUPA)
  * Archivo: includes/helpers.php
- * Propósito: Funciones utilitarias globales, CSRF, formateo monetario/litros, SweetAlert2.
+ * Propósito: Funciones utilitarias globales, sanitización, formateo COP/Litros, SweetAlert2.
  * =========================================================================================
  */
 
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/csrf.php';
 
 /**
- * Escape seguro de cadenas contra XSS para renderizado en HTML.
+ * Escape seguro contra XSS para salida en HTML.
  */
 function e(?string $string): string {
     return htmlspecialchars((string)$string, ENT_QUOTES, 'UTF-8');
 }
 
 /**
- * Genera o recupera el token CSRF activo de la sesión.
+ * Normaliza y valida cédula (dígitos numéricos de 6 a 12 caracteres).
  */
-function generarCsrfToken(): string {
-    if (empty($_SESSION['csrf_token'])) {
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+function normalizarCedula($cedula): ?string {
+    $limpia = preg_replace('/\D/', '', (string)$cedula);
+    if (strlen($limpia) < 6 || strlen($limpia) > 12) {
+        return null;
     }
-    return $_SESSION['csrf_token'];
+    return $limpia;
 }
 
 /**
- * Retorna el campo oculto HTML con el token CSRF.
+ * Obtiene la dirección IP real del visitante.
  */
-function campoCsrf(): string {
-    $token = generarCsrfToken();
-    return '<input type="hidden" name="csrf_token" value="' . e($token) . '">';
+function getClientIP(): string {
+    return $_SERVER['HTTP_CF_CONNECTING_IP']
+        ?? $_SERVER['HTTP_X_FORWARDED_FOR']
+        ?? $_SERVER['REMOTE_ADDR']
+        ?? '127.0.0.1';
 }
 
 /**
- * Valida un token CSRF recibido contra el almacenado en sesión.
+ * Genera un identificador único seguro prefijado.
  */
-function validarCsrfToken(?string $token): bool {
-    if (empty($token) || empty($_SESSION['csrf_token'])) {
-        return false;
-    }
-    return hash_equals($_SESSION['csrf_token'], $token);
+function generarUUID(string $prefix = 'id'): string {
+    return $prefix . '_' . substr(bin2hex(random_bytes(8)), 0, 12);
 }
 
 /**
- * Normaliza y valida una cédula (solo dígitos, longitud 6 a 12).
- */
-if (!function_exists('normalizarCedula')) {
-    function normalizarCedula($cedula): ?string {
-        $limpia = preg_replace('/\D/', '', (string)$cedula);
-        if (strlen($limpia) < 6 || strlen($limpia) > 12) {
-            return null;
-        }
-        return $limpia;
-    }
-}
-
-if (!function_exists('getClientIP')) {
-    function getClientIP(): string {
-        return $_SERVER['HTTP_CF_CONNECTING_IP']
-            ?? $_SERVER['HTTP_X_FORWARDED_FOR']
-            ?? $_SERVER['REMOTE_ADDR']
-            ?? '127.0.0.1';
-    }
-}
-
-if (!function_exists('generarUUID')) {
-    function generarUUID(string $prefix = 'id'): string {
-        return $prefix . '_' . substr(bin2hex(random_bytes(8)), 0, 12);
-    }
-}
-
-/**
- * Formatea un valor numérico a moneda colombiana (COP): $ 1.234.567
+ * Formato de moneda en pesos colombianos (COP): $ 1.234.567
  */
 function formatoMonedaCOP($valor): string {
     if ($valor === null || $valor === '' || !is_numeric($valor)) {
@@ -83,7 +56,7 @@ function formatoMonedaCOP($valor): string {
 }
 
 /**
- * Formatea una cantidad de litros con separador de miles: 1.234,5 L
+ * Formato de litros con separador de miles y coma decimal: 1.234,5 L
  */
 function formatoLitros($litros, int $decimales = 1): string {
     if ($litros === null || $litros === '' || !is_numeric($litros)) {
@@ -93,7 +66,7 @@ function formatoLitros($litros, int $decimales = 1): string {
 }
 
 /**
- * Retorna la fecha en formato legible en español: "15 de Octubre de 2026"
+ * Formatea fechas a texto formal en español: "15 de Octubre de 2026"
  */
 function formatoFechaEspanol(?string $dateStr): string {
     if (empty($dateStr)) return '';
@@ -111,7 +84,7 @@ function formatoFechaEspanol(?string $dateStr): string {
 }
 
 /**
- * Calcula el periodo quincenal actual basado en la fecha de hoy.
+ * Retorna las fechas y nombre de la quincena actual en curso.
  */
 function calcularQuincenaActual(): array {
     $diaHoy = (int)date('d');
@@ -151,7 +124,7 @@ function calcularQuincenaActual(): array {
 }
 
 /**
- * Genera la lista de días entre fechaInicio y fechaFin para la planilla de control lechero.
+ * Genera el arreglo de días entre fechaInicio y fechaFin para tablas de pesaje.
  */
 function generarDiasQuincena(string $fechaInicio, string $fechaFin): array {
     $dias = [];
@@ -179,7 +152,7 @@ function generarDiasQuincena(string $fechaInicio, string $fechaFin): array {
 }
 
 /**
- * Establece una alerta flash para mostrarse con SweetAlert2 en la siguiente carga.
+ * Encola una notificación flash para mostrarse con SweetAlert2.
  */
 function setFlashAlert(string $icon, string $title, string $text = ''): void {
     $_SESSION['swal_flash'] = [
@@ -190,7 +163,7 @@ function setFlashAlert(string $icon, string $title, string $text = ''): void {
 }
 
 /**
- * Renderiza el bloque de script de SweetAlert2 si existe alerta en flash.
+ * Renderiza el bloque JavaScript para activar SweetAlert2 si existe alerta en flash.
  */
 function renderSweetAlert(): string {
     if (empty($_SESSION['swal_flash'])) {
@@ -212,9 +185,7 @@ function renderSweetAlert(): string {
                     text: '{$text}',
                     confirmButtonColor: '#144722',
                     confirmButtonText: 'Aceptar',
-                    customClass: {
-                        popup: 'rounded-4 shadow-lg'
-                    }
+                    customClass: { popup: 'rounded-4 shadow-lg' }
                 });
             }
         });
@@ -222,7 +193,7 @@ function renderSweetAlert(): string {
 }
 
 /**
- * Verifica si una cédula/IP está bloqueada por intentos fallidos de login.
+ * Rate Limiting contra ataques de fuerza bruta en Login (5 fallos -> 15 min bloqueo).
  */
 function verificarRateLimitLogin(PDO $pdo, string $cedula, string $ip): array {
     try {
@@ -238,7 +209,7 @@ function verificarRateLimitLogin(PDO $pdo, string $cedula, string $ip): array {
                 $minutos = max(1, ceil($diff / 60));
                 return [
                     'bloqueado' => true,
-                    'mensaje'   => "Acceso suspendido temporalmente por reiterados intentos fallidos. Por favor espera {$minutos} minutos."
+                    'mensaje'   => "Acceso suspendido temporalmente por intentos fallidos. Espera {$minutos} minutos."
                 ];
             }
         }
@@ -249,9 +220,6 @@ function verificarRateLimitLogin(PDO $pdo, string $cedula, string $ip): array {
     return ['bloqueado' => false];
 }
 
-/**
- * Registra un intento fallido y bloquea si alcanza MAX_LOGIN_INTENTOS.
- */
 function registrarIntentoFallido(PDO $pdo, string $cedula, string $ip): void {
     try {
         $stmt = $pdo->prepare("SELECT intentos FROM login_intentos WHERE cedula = ? AND ip = ? LIMIT 1");
@@ -273,9 +241,6 @@ function registrarIntentoFallido(PDO $pdo, string $cedula, string $ip): void {
     }
 }
 
-/**
- * Limpia los intentos fallidos al iniciar sesión con éxito.
- */
 function limpiarIntentosFallidos(PDO $pdo, string $cedula, string $ip): void {
     try {
         $stmt = $pdo->prepare("DELETE FROM login_intentos WHERE cedula = ? AND ip = ?");
@@ -285,9 +250,6 @@ function limpiarIntentosFallidos(PDO $pdo, string $cedula, string $ip): void {
     }
 }
 
-/**
- * Registra eventos de seguridad sin almacenar contraseñas ni datos sensibles.
- */
 function registrarAuditoria(PDO $pdo, string $evento, ?string $usuarioId = null, ?string $cedula = null, ?string $detalles = null): void {
     try {
         $ip = getClientIP();
