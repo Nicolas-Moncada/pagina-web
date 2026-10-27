@@ -50,9 +50,9 @@ foreach ($entregasHoy as $eh) {
 $totalHoy = $litrosMananaHoy + $litrosTardeHoy;
 
 // 5. LISTAR TODAS LAS ENTREGAS DE ESTE GANADERO EN LA QUINCENA
-$stmtEntregas = $pdo->prepare("SELECT fecha, turno, litros, creadoEn
-                               FROM entrega
-                               WHERE usuarioId = ? AND fecha >= ? AND fecha <= ?
+$stmtEntregas = $pdo->prepare("SELECT fecha, turno, litros, creadoEn 
+                               FROM entrega 
+                               WHERE usuarioId = ? AND fecha >= ? AND fecha <= ? 
                                ORDER BY fecha ASC, turno ASC");
 $stmtEntregas->execute([$usuario['id'], $fechaInicioSel, $fechaFinSel]);
 $entregasQuincena = $stmtEntregas->fetchAll();
@@ -98,9 +98,9 @@ if (empty($quincenasDisponibles)) {
 }
 
 // 7. VERIFICAR INCONFORMIDAD / RECLAMO DE ESTA QUINCENA (LÍMITE 1 POR QUINCENA)
-$stmtAlerta = $pdo->prepare("SELECT id, mensaje, litrosAlMomento, estado, creadoEn
-                             FROM alertaquincena
-                             WHERE usuarioId = ? AND fechaInicio = ? AND fechaFin = ?
+$stmtAlerta = $pdo->prepare("SELECT id, mensaje, litrosAlMomento, estado, creadoEn 
+                             FROM alertaquincena 
+                             WHERE usuarioId = ? AND fechaInicio = ? AND fechaFin = ? 
                              LIMIT 1");
 $stmtAlerta->execute([$usuario['id'], $fechaInicioSel, $fechaFinSel]);
 $alertaExistente = $stmtAlerta->fetch();
@@ -120,8 +120,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['accion_reclam
         } else {
             try {
                 $altId = generarUUID('alt');
-                $stmtInsAlt = $pdo->prepare("INSERT INTO alertaquincena
-                    (id, usuarioId, fechaInicio, fechaFin, mensaje, litrosAlMomento, estado, correoEnviado, atendida, creadoEn)
+                $stmtInsAlt = $pdo->prepare("INSERT INTO alertaquincena 
+                    (id, usuarioId, fechaInicio, fechaFin, mensaje, litrosAlMomento, estado, correoEnviado, atendida, creadoEn) 
                     VALUES (?, ?, ?, ?, ?, ?, 'PENDIENTE', 0, 0, NOW())");
                 $stmtInsAlt->execute([
                     $altId,
@@ -292,7 +292,7 @@ require_once __DIR__ . '/includes/header.php';
           </span>
         </div>
         <div class="progress-milk-container" style="height: 34px;">
-          <?php
+          <?php 
             $totalDiasPeriodo = max(1, count($diasQuincena));
             $pctAvanceQuincena = min(100, round(($cantidadDiasConEntrega / $totalDiasPeriodo) * 100));
           ?>
@@ -384,10 +384,10 @@ require_once __DIR__ . '/includes/header.php';
                   </tr>
                 </thead>
                 <tbody>
-                  <?php
+                  <?php 
                   $sumaTotalMañana = 0.0;
                   $sumaTotalTarde  = 0.0;
-                  foreach ($diasQuincena as $diaObj):
+                  foreach ($diasQuincena as $diaObj): 
                       $fStr = $diaObj['fecha'];
                       $mVal = $mapaPesajes[$fStr]['MANANA'] ?? 0.0;
                       $tVal = $mapaPesajes[$fStr]['TARDE']  ?? 0.0;
@@ -463,7 +463,7 @@ require_once __DIR__ . '/includes/header.php';
           <div>
             <?php if ($alertaExistente): ?>
               <div class="alert alert-info rounded-4 py-2 px-3 mb-0 small fw-bold">
-                <i class="bi bi-clock-history me-1"></i> Inconformidad radicada el <?php echo formatoFechaEspanol($alertaExistente['creadoEn']); ?>.
+                <i class="bi bi-clock-history me-1"></i> Inconformidad radicada el <?php echo formatoFechaEspanol($alertaExistente['creadoEn']); ?>. 
                 Estado: <span class="badge bg-primary"><?php echo e($alertaExistente['estado']); ?></span>
               </div>
             <?php else: ?>
