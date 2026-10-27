@@ -152,6 +152,76 @@ function generarDiasQuincena(string $fechaInicio, string $fechaFin): array {
 }
 
 /**
+ * Calcula la quincena vecina anterior (-1) o siguiente (+1) dado un periodo.
+ */
+function calcularQuincenaVecina(string $fechaInicio, string $fechaFin, int $direccion = 1): array {
+    $d = new DateTime($fechaInicio);
+    $meses = [
+        1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
+        5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
+        9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre'
+    ];
+
+    $ano = (int)$d->format('Y');
+    $mes = (int)$d->format('m');
+    $dia = (int)$d->format('d');
+
+    if ($dia <= 15) {
+        $numQ = 1;
+    } else {
+        $numQ = 2;
+    }
+
+    if ($direccion < 0) { // Anterior
+        if ($numQ === 2) {
+            $numQ = 1;
+        } else {
+            $numQ = 2;
+            $mes--;
+            if ($mes < 1) {
+                $mes = 12;
+                $ano--;
+            }
+        }
+    } else { // Siguiente
+        if ($numQ === 1) {
+            $numQ = 2;
+        } else {
+            $numQ = 1;
+            $mes++;
+            if ($mes > 12) {
+                $mes = 1;
+                $ano++;
+            }
+        }
+    }
+
+    $padM = str_pad((string)$mes, 2, '0', STR_PAD_LEFT);
+    $nombreMes = $meses[$mes];
+
+    if ($numQ === 1) {
+        $fIni = "{$ano}-{$padM}-01";
+        $fFin = "{$ano}-{$padM}-15";
+        $nombre = "1ra Quincena de {$nombreMes} {$ano}";
+    } else {
+        $ultimoDia = (new DateTime("{$ano}-{$padM}-01"))->format('t');
+        $fIni = "{$ano}-{$padM}-16";
+        $fFin = "{$ano}-{$padM}-{$ultimoDia}";
+        $nombre = "2da Quincena de {$nombreMes} {$ano}";
+    }
+
+    return [
+        'fechaInicio'    => $fIni,
+        'fechaFin'       => $fFin,
+        'numeroQuincena' => $numQ,
+        'nombre'         => $nombre,
+        'ano'            => $ano,
+        'mes'            => $mes,
+        'mesNombre'      => $nombreMes
+    ];
+}
+
+/**
  * Encola una notificación flash para mostrarse con SweetAlert2.
  */
 function setFlashAlert(string $icon, string $title, string $text = ''): void {

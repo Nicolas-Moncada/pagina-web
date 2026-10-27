@@ -3,7 +3,9 @@
  * =========================================================================================
  * PLATAFORMA DE CONTROL LECHERO - ASOAGROALIZAL (CARMEN DE CARUPA)
  * Archivo: admin.php
- * Propósito: Panel de Administración General (SSR con PDO, DataTables BS5, filtros y exportación).
+ * Propósito: Panel de Administración General con Planilla Matricial Horizontal tipo Excel.
+ * Requisitos: Planilla Matricial con edición inline, navegación por teclado, pegado Excel,
+ *             totales reactivos en servidor, DataTables solo en listas (asociados/quincenas/buzón).
  * Fuente Oficial: docs/FICHA_OFICIAL_ASOAGROALIZAL.md
  * =========================================================================================
  */
@@ -17,15 +19,23 @@ require_once __DIR__ . '/includes/auth.php';
 $usuario = requireAuth('ADMIN');
 $pdo = getDB();
 
-// 2. DETECCIÓN Y FILTROS DE QUINCENA, ASOCIADO Y TURNO
+// 2. DETECCIÓN Y PARÁMETROS DE QUINCENA
 $quincenaActual = calcularQuincenaActual();
 $fechaInicioSel = $_GET['fechaInicio'] ?? $quincenaActual['fechaInicio'];
 $fechaFinSel    = $_GET['fechaFin'] ?? $quincenaActual['fechaFin'];
-$filtroUsuario  = trim($_GET['usuarioId'] ?? '');
-$filtroTurno    = trim($_GET['turno'] ?? '');
 $pestañaActiva  = $_GET['tab'] ?? 'planilla';
 
-// 3. PROCESAMIENTO DE ACCIONES VÍA POST CON PROTECCIÓN CSRF
+// Validar fechas
+if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaInicioSel) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaFinSel)) {
+    $fechaInicioSel = $quincenaActual['fechaInicio'];
+    $fechaFinSel    = $quincenaActual['fechaFin'];
+}
+
+// Quincenas anterior y siguiente para navegación rápida
+$qAnt = calcularQuincenaVecina($fechaInicioSel, $fechaFinSel, -1);
+$qSig = calcularQuincenaVecina($fechaInicioSel, $fechaFinSel, 1);
+
+// 3. PROCESAMIENTO DE ACCIONES VÍA POST CON PROTECCIÓN CSRF (Para formularios tradicionales)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $tokenRecibido = $_POST['csrf_token'] ?? '';
     if (!validarCsrfToken($tokenRecibido)) {
@@ -36,55 +46,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $accion = $_POST['accion'] ?? '';
 
-    // ACCIÓN A: REGISTRAR O ACTUALIZAR PESAJE DE LECHE
-    if ($accion === 'guardar_pesaje') {
+    // ACCIÓN: REGISTRO RÁPIDO TRADICIONAL DE PESAJE
+    if ($accion === 'guardar_pesaje_rapido') {
         $ganaderoId = trim($_POST['usuarioId'] ?? '');
         $fecha = trim($_POST['fecha'] ?? '');
         $turno = trim($_POST['turno'] ?? '');
         $litros = (float)str_replace(',', '.', trim($_POST['litros'] ?? '0'));
 
-        if (empty($ganaderoId) || empty($fecha) || empty($turno) || $litros <= 0) {
-            setFlashAlert('warning', 'Campos Incompletos', 'Verifica que hayas seleccionado ganadero, fecha, turno y litros válidos (> 0).');
+        if (empty($ganaderoId) || empty($fecha) || empty($turno) || $litros < 0) {
+            setFlashAlert('warning', 'Campos Incompletos', 'Verifica ganadero, fecha, turno y litros.');
         } elseif (!in_array($turno, ['MANANA', 'TARDE'])) {
             setFlashAlert('error', 'Turno Inválido', 'El turno debe ser Mañana o Tarde.');
         } else {
             try {
                 $entregaId = generarUUID('ent');
-                $stmt = $pdo->prepare("INSERT INTO entrega (id, usuarioId, fecha, turno, litros, creadoEn, actualizadoEn)
-                                       VALUES (?, ?, ?, ?, ?, NOW(), NOW())
-                                       ON DUPLICATE KEY UPDATE litros = VALUES(litros), actualizadoEn = NOW()");
+                $stmt = $pdo->prepare("INSERT INTO entrega (id, usuarioId, fecha, turno, litros, creadoEn)
+                                       VALUES (?, ?, ?, ?, ?, NOW())
+                                       ON DUPLICATE KEY UPDATE litros = VALUES(litros)");
                 $stmt->execute([$entregaId, $ganaderoId, $fecha, $turno, $litros]);
 
-                registrarAuditoria($pdo, 'PESAJE_GUARDADO', $usuario['id'], $usuario['cedula'], "Ganadero: {$ganaderoId}, Fecha: {$fecha}, Turno: {$turno}, Litros: {$litros}");
+                $stmtR = $pdo->prepare("INSERT INTO registros_leche (id, asociadoId, fecha, turno, litros, creadoEn, actualizadoEn)
+                                        VALUES (?, ?, ?, ?, ?, NOW(), NOW())
+                                        ON DUPLICATE KEY UPDATE litros = VALUES(litros), actualizadoEn = NOW()");
+                $stmtR->execute([$entregaId, $ganaderoId, $fecha, $turno, $litros]);
+
                 setFlashAlert('success', '¡Pesaje Guardado!', "Se registraron " . formatoLitros($litros) . " exitosamente.");
             } catch (Exception $e) {
                 error_log("Error guardando pesaje: " . $e->getMessage());
-                setFlashAlert('error', 'Error en Base de Datos', 'No fue posible guardar el pesaje.');
+                setFlashAlert('error', 'Error en BD', 'No fue posible guardar el pesaje.');
             }
         }
         header("Location: admin.php?tab=planilla&fechaInicio={$fechaInicioSel}&fechaFin={$fechaFinSel}");
         exit;
     }
 
-    // ACCIÓN B: ELIMINAR UN PESAJE
-    if ($accion === 'eliminar_pesaje') {
-        $idEntrega = trim($_POST['entregaId'] ?? '');
-        if (!empty($idEntrega)) {
-            try {
-                $stmt = $pdo->prepare("DELETE FROM entrega WHERE id = ?");
-                $stmt->execute([$idEntrega]);
-                registrarAuditoria($pdo, 'PESAJE_ELIMINADO', $usuario['id'], $usuario['cedula'], "Entrega ID: {$idEntrega}");
-                setFlashAlert('success', 'Pesaje Eliminado', 'El registro de pesaje fue borrado de la base de datos.');
-            } catch (Exception $e) {
-                error_log("Error eliminando pesaje: " . $e->getMessage());
-                setFlashAlert('error', 'Error', 'No se pudo eliminar el pesaje.');
-            }
-        }
-        header("Location: admin.php?tab=planilla&fechaInicio={$fechaInicioSel}&fechaFin={$fechaFinSel}");
-        exit;
-    }
-
-    // ACCIÓN C: CREAR O EDITAR GANADERO ASOCIADO
+    // ACCIÓN: CREAR O EDITAR ASOCIADO
     if ($accion === 'guardar_ganadero') {
         $asocId   = trim($_POST['asociadoId'] ?? '');
         $cedula   = normalizarCedula($_POST['cedula'] ?? '');
@@ -99,11 +95,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             try {
                 if (!empty($asocId)) {
-                    // Editar asociado existente
                     $chk = $pdo->prepare("SELECT id FROM usuario WHERE cedula = ? AND id != ? LIMIT 1");
                     $chk->execute([$cedula, $asocId]);
                     if ($chk->fetch()) {
-                        setFlashAlert('error', 'Cédula Duplicada', 'Ya existe otro ganadero registrado con este número de cédula.');
+                        setFlashAlert('error', 'Cédula Duplicada', 'Ya existe otro ganadero con este número de cédula.');
                     } else {
                         if (!empty($password)) {
                             $hash = password_hash($password, PASSWORD_DEFAULT);
@@ -113,11 +108,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $upd = $pdo->prepare("UPDATE usuario SET cedula = ?, nombre = ?, telefono = ?, finca = ?, activo = ? WHERE id = ?");
                             $upd->execute([$cedula, $nombre, $telefono, $finca, $activo, $asocId]);
                         }
-                        registrarAuditoria($pdo, 'GANADERO_ACTUALIZADO', $usuario['id'], $usuario['cedula'], "ID: {$asocId}, Cédula: {$cedula}");
                         setFlashAlert('success', 'Asociado Actualizado', 'Los datos del ganadero se actualizaron con éxito.');
                     }
                 } else {
-                    // Crear nuevo asociado
                     $chk = $pdo->prepare("SELECT id FROM usuario WHERE cedula = ? LIMIT 1");
                     $chk->execute([$cedula]);
                     if ($chk->fetch()) {
@@ -130,8 +123,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $ins = $pdo->prepare("INSERT INTO usuario (id, cedula, nombre, telefono, finca, passwordHash, rol, activo, debeCambiarPassword, sessionVersion, creadoEn)
                                               VALUES (?, ?, ?, ?, ?, ?, 'GANADERO', ?, 1, 1, NOW())");
                         $ins->execute([$newId, $cedula, $nombre, $telefono, $finca, $hash, $activo]);
-
-                        registrarAuditoria($pdo, 'GANADERO_CREADO', $usuario['id'], $usuario['cedula'], "Nuevo Ganadero: {$nombre} (C.C. {$cedula})");
                         setFlashAlert('success', '¡Asociado Creado!', "Ganadero registrado correctamente. Clave temporal asignada: {$claveAsignar}");
                     }
                 }
@@ -144,7 +135,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // ACCIÓN D: REESTABLECER CLAVE TEMPORAL
+    // ACCIÓN: REESTABLECER CLAVE A TEMPORAL
     if ($accion === 'reset_clave_ganadero') {
         $asocId = trim($_POST['asociadoId'] ?? '');
         if (!empty($asocId)) {
@@ -153,9 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $hash = password_hash($claveTemp, PASSWORD_DEFAULT);
                 $upd = $pdo->prepare("UPDATE usuario SET passwordHash = ?, debeCambiarPassword = 1, sessionVersion = sessionVersion + 1 WHERE id = ?");
                 $upd->execute([$hash, $asocId]);
-
-                registrarAuditoria($pdo, 'RESET_CLAVE_GANADERO', $usuario['id'], $usuario['cedula'], "Ganadero ID: $asocId");
-                setFlashAlert('success', 'Clave Reestablecida', "Se ha asignado la clave temporal '{$claveTemp}' y se forzará cambio en su próximo ingreso.");
+                setFlashAlert('success', 'Clave Reestablecida', "Se asignó la clave temporal '{$claveTemp}' con cambio obligatorio en su próximo acceso.");
             } catch (Exception $e) {
                 setFlashAlert('error', 'Error', 'No se pudo reestablecer la clave.');
             }
@@ -164,7 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // ACCIÓN E: FIJAR O ACTUALIZAR PRECIO DE LA QUINCENA
+    // ACCIÓN: FIJAR O ACTUALIZAR PRECIO DE QUINCENA
     if ($accion === 'fijar_precio_quincena') {
         $fInicio = trim($_POST['fechaInicio'] ?? '');
         $fFin    = trim($_POST['fechaFin'] ?? '');
@@ -172,7 +161,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $cerrada = isset($_POST['cerrada']) ? 1 : 0;
 
         if (empty($fInicio) || empty($fFin) || $precio < 0) {
-            setFlashAlert('warning', 'Datos Inválidos', 'Debes ingresar un rango de fechas válido y un precio mayor o igual a cero.');
+            setFlashAlert('warning', 'Datos Inválidos', 'Rango de fechas y precio mayor o igual a cero requeridos.');
         } else {
             try {
                 $qId = generarUUID('q');
@@ -180,11 +169,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                            VALUES (?, ?, ?, ?, ?, NOW())
                                            ON DUPLICATE KEY UPDATE precioLitro = VALUES(precioLitro), cerrada = VALUES(cerrada)");
                 $stmtQIns->execute([$qId, $fInicio, $fFin, $precio, $cerrada]);
-
-                registrarAuditoria($pdo, 'PRECIO_QUINCENA_ACTUALIZADO', $usuario['id'], $usuario['cedula'], "Periodo: {$fInicio} al {$fFin}, Precio: {$precio}");
-                setFlashAlert('success', 'Precio Configurado', "Tarifa de " . formatoMonedaCOP($precio) . " fijada para el periodo seleccionado.");
+                setFlashAlert('success', 'Precio Guardado', "Tarifa de " . formatoMonedaCOP($precio) . " fijada correctamente.");
             } catch (Exception $e) {
-                error_log("Error fijando precio: " . $e->getMessage());
                 setFlashAlert('error', 'Error', 'No se pudo actualizar el precio de la quincena.');
             }
         }
@@ -192,108 +178,94 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // ACCIÓN F: ATENDER INCONFORMIDAD
+    // ACCIÓN: ATENDER RECLAMO
     if ($accion === 'atender_reclamo') {
         $alertaId = trim($_POST['alertaId'] ?? '');
         $nuevoEstado = trim($_POST['estado'] ?? 'REVISADO');
         if (!empty($alertaId)) {
-            try {
-                $updAlt = $pdo->prepare("UPDATE alertaquincena SET estado = ?, atendida = 1 WHERE id = ?");
-                $updAlt->execute([$nuevoEstado, $alertaId]);
-                setFlashAlert('success', 'Estado Actualizado', "La inconformidad ha pasado al estado: {$nuevoEstado}");
-            } catch (Exception $e) {
-                setFlashAlert('error', 'Error', 'No se pudo actualizar el estado del reclamo.');
-            }
+            $pdo->prepare("UPDATE alertaquincena SET estado = ?, atendida = 1 WHERE id = ?")->execute([$nuevoEstado, $alertaId]);
+            setFlashAlert('success', 'Estado Actualizado', "La inconformidad ha pasado al estado: {$nuevoEstado}");
         }
         header("Location: admin.php?tab=buzon");
         exit;
     }
 
-    // ACCIÓN G: ATENDER CONSULTA WEB
+    // ACCIÓN: ATENDER CONSULTA
     if ($accion === 'atender_consulta') {
         $conId = trim($_POST['consultaId'] ?? '');
         if (!empty($conId)) {
-            try {
-                $updCon = $pdo->prepare("UPDATE consulta SET atendida = 1 WHERE id = ?");
-                $updCon->execute([$conId]);
-                setFlashAlert('success', 'Consulta Atendida', 'La consulta pública se ha marcado como resuelta.');
-            } catch (Exception $e) {
-                setFlashAlert('error', 'Error', 'No se pudo actualizar la consulta.');
-            }
+            $pdo->prepare("UPDATE consulta SET atendida = 1 WHERE id = ?")->execute([$conId]);
+            setFlashAlert('success', 'Consulta Atendida', 'La consulta pública se marcó como atendida.');
         }
         header("Location: admin.php?tab=buzon");
         exit;
     }
 }
 
-// 4. CONSULTA DE QUINCENAS EXISTENTES PARA SELECTORES
-$stmtQAll = $pdo->query("SELECT fechaInicio, fechaFin, precioLitro, cerrada FROM quincena ORDER BY fechaInicio DESC LIMIT 24");
-$quincenasDisponibles = $stmtQAll->fetchAll();
-if (empty($quincenasDisponibles)) {
-    $quincenasDisponibles = [[
-        'fechaInicio' => $quincenaActual['fechaInicio'],
-        'fechaFin'    => $quincenaActual['fechaFin'],
-        'precioLitro' => 2250,
-        'cerrada'     => 0
-    ]];
-}
-
-// Precio de la quincena activa filtrada
+// 4. DATOS GENERALES DE LA QUINCENA SELECCIONADA
 $stmtQAct = $pdo->prepare("SELECT precioLitro, cerrada FROM quincena WHERE fechaInicio = ? AND fechaFin = ? LIMIT 1");
 $stmtQAct->execute([$fechaInicioSel, $fechaFinSel]);
 $quincenaSelData = $stmtQAct->fetch();
 $precioLitroActual = $quincenaSelData ? (float)$quincenaSelData['precioLitro'] : 0.0;
 $quincenaEstaCerrada = !empty($quincenaSelData['cerrada']);
 
-// 5. CONSULTA GENERAL DE ASOCIADOS GANADEROS
-$stmtGanaderos = $pdo->query("SELECT id, cedula, nombre, telefono, finca, activo, creadoEn FROM usuario WHERE rol = 'GANADERO' ORDER BY nombre ASC");
-$listaGanaderos = $stmtGanaderos->fetchAll();
+// Lista de quincenas históricas para selector
+$stmtQAll = $pdo->query("SELECT fechaInicio, fechaFin, precioLitro, cerrada FROM quincena ORDER BY fechaInicio DESC LIMIT 36");
+$quincenasDisponibles = $stmtQAll->fetchAll();
 
-// 6. CONSULTA DE ENTREGAS FILTRADAS CON JOINS Y CONSULTAS PREPARADAS (NINGUNA TABLA ESTÁTICA)
-$sqlEntregas = "SELECT e.id, e.usuarioId, e.fecha, e.turno, e.litros, e.creadoEn, 
-                       u.nombre AS ganaderoNombre, u.cedula AS ganaderoCedula, u.finca
-                FROM entrega e
-                JOIN usuario u ON e.usuarioId = u.id
-                WHERE e.fecha >= :fIni AND e.fecha <= :fFin";
-$paramsEntregas = [
-    ':fIni' => $fechaInicioSel,
-    ':fFin' => $fechaFinSel
-];
-
-if (!empty($filtroUsuario)) {
-    $sqlEntregas .= " AND e.usuarioId = :uid";
-    $paramsEntregas[':uid'] = $filtroUsuario;
+// Si la quincena seleccionada no está en la BD, incorporarla a la lista en memoria
+$encontrada = false;
+foreach ($quincenasDisponibles as $qItem) {
+    if ($qItem['fechaInicio'] === $fechaInicioSel && $qItem['fechaFin'] === $fechaFinSel) {
+        $encontrada = true;
+        break;
+    }
+}
+if (!$encontrada) {
+    array_unshift($quincenasDisponibles, [
+        'fechaInicio' => $fechaInicioSel,
+        'fechaFin'    => $fechaFinSel,
+        'precioLitro' => $precioLitroActual,
+        'cerrada'     => $quincenaEstaCerrada ? 1 : 0
+    ]);
 }
 
-if (!empty($filtroTurno) && in_array($filtroTurno, ['MANANA', 'TARDE'])) {
-    $sqlEntregas .= " AND e.turno = :turno";
-    $paramsEntregas[':turno'] = $filtroTurno;
+// 5. CARGA DE ASOCIADOS ACTIVOS Y DÍAS PARA LA PLANILLA MATRICIAL
+$ganaderosPlanilla = $pdo->query("SELECT id, cedula, nombre, finca, activo FROM usuario WHERE rol = 'GANADERO' AND activo = 1 ORDER BY nombre ASC")->fetchAll(PDO::FETCH_ASSOC);
+$totalGanaderosActivos = count($ganaderosPlanilla);
+
+// Todos los ganaderos para la pestaña de gestión
+$listaTodosGanaderos = $pdo->query("SELECT id, cedula, nombre, telefono, finca, activo, creadoEn FROM usuario WHERE rol = 'GANADERO' ORDER BY nombre ASC")->fetchAll(PDO::FETCH_ASSOC);
+
+// Días que componen la quincena
+$diasQuincena = generarDiasQuincena($fechaInicioSel, $fechaFinSel);
+
+// 6. CARGAR PEMAJES DE LA QUINCENA Y CONSTRUIR MAPA MATRICIAL
+$stmtEntQ = $pdo->prepare("SELECT usuarioId, fecha, turno, litros FROM entrega WHERE fecha >= ? AND fecha <= ?");
+$stmtEntQ->execute([$fechaInicioSel, $fechaFinSel]);
+
+$mapaMatriz = [];
+$totalesPorGanadero = [];
+$totalesPorColumna = [];
+$granTotalMatriz = 0.0;
+
+while ($r = $stmtEntQ->fetch()) {
+    $uId   = $r['usuarioId'];
+    $fecha = $r['fecha'];
+    $turno = $r['turno'];
+    $litros = (float)$r['litros'];
+
+    $mapaMatriz[$uId]["{$fecha}_{$turno}"] = $litros;
+    $totalesPorGanadero[$uId] = ($totalesPorGanadero[$uId] ?? 0.0) + $litros;
+    $totalesPorColumna["{$fecha}_{$turno}"] = ($totalesPorColumna["{$fecha}_{$turno}"] ?? 0.0) + $litros;
+    $granTotalMatriz += $litros;
 }
 
-$sqlEntregas .= " ORDER BY e.fecha DESC, e.turno DESC, u.nombre ASC";
+$totalLiquidacionGeneral = $precioLitroActual ? ($granTotalMatriz * $precioLitroActual) : 0.0;
+$cantDias = count($diasQuincena);
+$promedioDiarioGeneral = ($cantDias > 0) ? ($granTotalMatriz / $cantDias) : 0.0;
 
-$stmtEnt = $pdo->prepare($sqlEntregas);
-$stmtEnt->execute($paramsEntregas);
-$entregasFiltradas = $stmtEnt->fetchAll();
-
-// 7. CÁLCULO DE MÉTRICAS RESUMEN QUINCENALES
-$totalLitrosQuincena = 0.0;
-$ganaderosConEntrega = [];
-$diasRegistrados = [];
-
-foreach ($entregasFiltradas as $ef) {
-    $totalLitrosQuincena += (float)$ef['litros'];
-    $ganaderosConEntrega[$ef['usuarioId']] = true;
-    $diasRegistrados[$ef['fecha']] = true;
-}
-
-$totalGanaderosActivos = count($listaGanaderos);
-$cantidadGanaderosEntregando = count($ganaderosConEntrega);
-$cantDias = count($diasRegistrados);
-$promedioDiarioGeneral = ($cantDias > 0) ? ($totalLitrosQuincena / $cantDias) : 0.0;
-$totalLiquidacionGeneral = $precioLitroActual ? ($totalLitrosQuincena * $precioLitroActual) : 0.0;
-
-// 8. CONSULTA DE INCONFORMIDADES Y MENSAJES DE CONTACTO
+// 7. CONSULTAS PARA BUZÓN
 $stmtAlertas = $pdo->query("SELECT a.id, a.usuarioId, a.fechaInicio, a.fechaFin, a.mensaje, a.litrosAlMomento, a.estado, a.creadoEn,
                                    u.nombre AS ganaderoNombre, u.cedula AS ganaderoCedula
                             FROM alertaquincena a
@@ -304,42 +276,38 @@ $listaAlertas = $stmtAlertas->fetchAll();
 $stmtConsultas = $pdo->query("SELECT id, nombre, contacto, mensaje, fecha, atendida FROM consulta ORDER BY fecha DESC LIMIT 50");
 $listaConsultas = $stmtConsultas->fetchAll();
 
-// Configuración de vista para header compartido
+// Configuración de header compartido
 $tituloPagina = 'Panel de Administración | ' . EMPRESA_SIGLA;
-$usarDataTables = true;
+$usarDataTables = true; // Solo para listas tipo tabla (ganaderos, precios, buzon)
 $navbarFluido = true;
 
 require_once __DIR__ . '/includes/header.php';
 ?>
 
-<!-- ========================================================================
-     BARRA DE PESTAÑAS PRINCIPALES (MÓDULOS DEL ADMINISTRADOR)
-     ======================================================================== -->
+<!-- BARRA DE PESTAÑAS PRINCIPALES (MÓDULOS DEL ADMINISTRADOR) -->
 <div class="bg-body-tertiary border-bottom py-2">
   <div class="container-fluid px-3 px-md-4">
     <ul class="nav nav-pills gap-2 flex-wrap" id="pills-tab" role="tablist">
-      <li class="nav-item" role="presentation">
+      <li class="nav-item">
         <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'planilla') ? 'active bg-success text-white' : ''; ?> fw-bold" href="admin.php?tab=planilla&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>">
-          <i class="bi bi-clipboard2-data-fill me-1"></i> Planilla Quincenal de Pesajes
+          <i class="bi bi-grid-3x3-gap-fill me-1"></i> Planilla Matricial de Pesajes
         </a>
       </li>
-      <li class="nav-item" role="presentation">
+      <li class="nav-item">
         <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'ganaderos') ? 'active bg-success text-white' : ''; ?> fw-bold" href="admin.php?tab=ganaderos">
-          <i class="bi bi-people-fill me-1"></i> Gestión de Asociados (<?php echo $totalGanaderosActivos; ?>)
+          <i class="bi bi-people-fill me-1"></i> Gestión de Asociados (<?php echo count($listaTodosGanaderos); ?>)
         </a>
       </li>
-      <li class="nav-item" role="presentation">
+      <li class="nav-item">
         <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'quincenas') ? 'active bg-success text-white' : ''; ?> fw-bold" href="admin.php?tab=quincenas&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>">
           <i class="bi bi-cash-coin me-1"></i> Precios de Quincena
         </a>
       </li>
-      <li class="nav-item" role="presentation">
+      <li class="nav-item">
         <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'buzon') ? 'active bg-success text-white' : ''; ?> fw-bold position-relative" href="admin.php?tab=buzon">
           <i class="bi bi-inbox-fill me-1"></i> Buzón de Inconformidades y Consultas
           <?php if (count($listaAlertas) > 0): ?>
-            <span class="badge rounded-pill bg-danger ms-1">
-              <?php echo count($listaAlertas); ?>
-            </span>
+            <span class="badge rounded-pill bg-danger ms-1"><?php echo count($listaAlertas); ?></span>
           <?php endif; ?>
         </a>
       </li>
@@ -347,243 +315,244 @@ require_once __DIR__ . '/includes/header.php';
   </div>
 </div>
 
-<!-- ========================================================================
-     CONTENIDO PRINCIPAL
-     ======================================================================== -->
 <main class="container-fluid px-3 px-md-4 py-4 flex-grow-1">
 
   <!-- ====================================================================
-       PESTAÑA 1: PLANILLA QUINCENAL DE LITROS
+       PESTAÑA 1: PLANILLA MATRICIAL HORIZONTAL TIPO EXCEL
        ==================================================================== -->
   <?php if ($pestañaActiva === 'planilla'): ?>
 
-    <!-- 4 TARJETAS RESUMEN SUPERIORES -->
+    <!-- TARJETAS DE RESUMEN SUPERIORES -->
     <div class="row g-3 mb-4">
-      <!-- Litros de la Quincena -->
       <div class="col-md-3 col-6">
-        <div class="card card-rural p-3 p-md-4 text-center border-start border-4 border-success">
+        <div class="card card-rural p-3 text-center border-start border-4 border-success">
           <small class="text-muted fw-bold text-uppercase">Litros Recolectados</small>
-          <div class="display-6 fw-extrabold text-success my-2">
-            <?php echo number_format($totalLitrosQuincena, 1, ',', '.'); ?> L
+          <div class="display-6 fw-extrabold text-success my-1" id="kpi-gran-total">
+            <?php echo number_format($granTotalMatriz, 1, ',', '.'); ?> L
           </div>
-          <small class="text-muted">Total acopiado en el periodo</small>
+          <small class="text-muted">Total quincena en acopio</small>
         </div>
       </div>
 
-      <!-- Promedio Diario -->
       <div class="col-md-3 col-6">
-        <div class="card card-rural p-3 p-md-4 text-center border-start border-4 border-primary">
+        <div class="card card-rural p-3 text-center border-start border-4 border-primary">
           <small class="text-muted fw-bold text-uppercase">Promedio Diario</small>
-          <div class="display-6 fw-extrabold text-primary my-2">
+          <div class="display-6 fw-extrabold text-primary my-1" id="kpi-promedio-diario">
             <?php echo number_format($promedioDiarioGeneral, 1, ',', '.'); ?> L
           </div>
-          <small class="text-muted">Litros/día promedio</small>
+          <small class="text-muted"><?php echo $cantDias; ?> días en el periodo</small>
         </div>
       </div>
 
-      <!-- Total a Liquidar (COP) -->
       <div class="col-md-3 col-6">
-        <div class="card card-rural p-3 p-md-4 text-center border-start border-4 border-warning">
+        <div class="card card-rural p-3 text-center border-start border-4 border-warning">
           <small class="text-muted fw-bold text-uppercase">Total a Liquidar</small>
-          <div class="display-6 fw-extrabold text-warning-emphasis my-2">
+          <div class="display-6 fw-extrabold text-warning-emphasis my-1" id="kpi-liquidacion">
             <?php echo formatoMonedaCOP($totalLiquidacionGeneral); ?>
           </div>
-          <small class="text-muted">A precio de <?php echo formatoMonedaCOP($precioLitroActual); ?> / L</small>
+          <small class="text-muted">Tarifa: <?php echo $precioLitroActual ? formatoMonedaCOP($precioLitroActual) . ' / L' : 'Por fijar'; ?></small>
         </div>
       </div>
 
-      <!-- Asociados Entregando -->
       <div class="col-md-3 col-6">
-        <div class="card card-rural p-3 p-md-4 text-center border-start border-4 border-info">
-          <small class="text-muted fw-bold text-uppercase">Ganaderos con Entrega</small>
-          <div class="display-6 fw-extrabold text-info-emphasis my-2">
-            <?php echo $cantidadGanaderosEntregando; ?> / <?php echo $totalGanaderosActivos; ?>
+        <div class="card card-rural p-3 text-center border-start border-4 border-info">
+          <small class="text-muted fw-bold text-uppercase">Asociados en Planilla</small>
+          <div class="display-6 fw-extrabold text-info-emphasis my-1">
+            <?php echo $totalGanaderosActivos; ?>
           </div>
-          <small class="text-muted">Asociados activos en quincena</small>
+          <small class="text-muted">Ganaderos activos registrados</small>
         </div>
       </div>
     </div>
 
-    <!-- FORMULARIO DE REGISTRO RÁPIDO DE PESAJE -->
-    <div class="card card-rural p-4 mb-4 border-2 border-success-subtle shadow-sm">
-      <h5 class="fw-bold text-success mb-3">
-        <i class="bi bi-plus-circle-fill me-1"></i> Registrar o Modificar Pesaje de Entrega
-      </h5>
-
-      <form action="admin.php?tab=planilla&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>" method="POST" class="row g-3 align-items-end">
-        <?php echo campoCsrf(); ?>
-        <input type="hidden" name="accion" value="guardar_pesaje">
-
-        <div class="col-md-4">
-          <label for="usuarioId" class="form-label fw-bold small text-muted">Ganadero Asociado *</label>
-          <select name="usuarioId" id="usuarioId" class="form-select form-select-touch" required>
-            <option value="">-- Seleccionar Ganadero --</option>
-            <?php foreach ($listaGanaderos as $g): ?>
-              <option value="<?php echo e($g['id']); ?>" <?php echo ($filtroUsuario === $g['id']) ? 'selected' : ''; ?>>
-                <?php echo e($g['nombre']); ?> &bull; C.C. <?php echo e($g['cedula']); ?>
-              </option>
-            <?php endforeach; ?>
-          </select>
+    <!-- AVISO SI LA QUINCENA ESTÁ CERRADA -->
+    <?php if ($quincenaEstaCerrada): ?>
+      <div class="alert alert-warning rounded-4 shadow-sm py-2 px-3 mb-4 d-flex align-items-center gap-2">
+        <i class="bi bi-lock-fill fs-4 text-warning"></i>
+        <div>
+          <strong>Quincena Cerrada y Liquidada:</strong> Esta quincena se encuentra en modo de <em>solo lectura</em>. No se permiten ediciones inline ni inserciones. Para editar pesajes, debes reabrirla en la pestaña <strong>Precios de Quincena</strong>.
         </div>
+      </div>
+    <?php endif; ?>
 
-        <div class="col-md-3">
-          <label for="fecha" class="form-label fw-bold small text-muted">Fecha de Entrega *</label>
-          <input type="date" name="fecha" id="fecha" class="form-control form-control-touch" value="<?php echo date('Y-m-d'); ?>" required>
-        </div>
+    <!-- BARRA DE CONTROL DE LA PLANILLA (Selector, Anterior/Siguiente, Búsqueda, Exportar) -->
+    <div class="card card-rural p-3 mb-3">
+      <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+        <!-- Navegación de Quincenas -->
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <a href="admin.php?tab=planilla&fechaInicio=<?php echo $qAnt['fechaInicio']; ?>&fechaFin=<?php echo $qAnt['fechaFin']; ?>" class="btn btn-touch btn-outline-secondary btn-sm rounded-pill" title="Quincena anterior">
+            <i class="bi bi-chevron-left"></i> Anterior
+          </a>
 
-        <div class="col-md-2">
-          <label for="turno" class="form-label fw-bold small text-muted">Turno *</label>
-          <select name="turno" id="turno" class="form-select form-select-touch" required>
-            <option value="MANANA">☀️ Mañana</option>
-            <option value="TARDE">🌅 Tarde</option>
-          </select>
-        </div>
-
-        <div class="col-md-2">
-          <label for="litros" class="form-label fw-bold small text-muted">Litros (L) *</label>
-          <input type="number" step="0.1" min="0.1" name="litros" id="litros" class="form-control form-control-touch fw-bold fs-5 text-success" placeholder="Ej: 85.5" required>
-        </div>
-
-        <div class="col-md-1">
-          <button type="submit" class="btn btn-touch btn-aso-primary w-100 shadow" title="Guardar pesaje">
-            <i class="bi bi-save-fill"></i>
-          </button>
-        </div>
-      </form>
-    </div>
-
-    <!-- BARRA DE FILTROS POR QUINCENA, ASOCIADO Y TURNO -->
-    <div class="card card-rural p-3 mb-4 bg-body-tertiary">
-      <form action="admin.php" method="GET" class="row g-2 align-items-center">
-        <input type="hidden" name="tab" value="planilla">
-
-        <div class="col-md-4">
-          <label class="form-label small fw-bold text-muted mb-1">Filtrar Quincena:</label>
-          <select name="quincena_selector" class="form-select form-select-sm" onchange="const p = this.value.split('|'); location.href='admin.php?tab=planilla&fechaInicio=' + p[0] + '&fechaFin=' + p[1] + '&usuarioId=<?php echo urlencode($filtroUsuario); ?>&turno=<?php echo urlencode($filtroTurno); ?>';">
+          <select class="form-select form-select-touch form-select-sm" style="min-width: 280px;" onchange="const p = this.value.split('|'); location.href='admin.php?tab=planilla&fechaInicio=' + p[0] + '&fechaFin=' + p[1];">
             <?php foreach ($quincenasDisponibles as $q): ?>
               <?php $sel = ($q['fechaInicio'] === $fechaInicioSel && $q['fechaFin'] === $fechaFinSel) ? 'selected' : ''; ?>
               <option value="<?php echo e($q['fechaInicio'] . '|' . $q['fechaFin']); ?>" <?php echo $sel; ?>>
                 <?php echo formatoFechaEspanol($q['fechaInicio']); ?> al <?php echo formatoFechaEspanol($q['fechaFin']); ?>
-                <?php echo !empty($q['cerrada']) ? ' (Cerrada)' : ' (Activa)'; ?>
+                <?php echo !empty($q['cerrada']) ? ' 🔒 (Cerrada)' : ' 🟢 (En curso)'; ?>
               </option>
             <?php endforeach; ?>
           </select>
-        </div>
 
-        <div class="col-md-4">
-          <label class="form-label small fw-bold text-muted mb-1">Filtrar Ganadero:</label>
-          <select name="usuarioId" class="form-select form-select-sm" onchange="this.form.submit()">
-            <option value="">-- Todos los Asociados --</option>
-            <?php foreach ($listaGanaderos as $g): ?>
-              <option value="<?php echo e($g['id']); ?>" <?php echo ($filtroUsuario === $g['id']) ? 'selected' : ''; ?>>
-                <?php echo e($g['nombre']); ?> (C.C. <?php echo e($g['cedula']); ?>)
-              </option>
-            <?php endforeach; ?>
-          </select>
-        </div>
-
-        <div class="col-md-3">
-          <label class="form-label small fw-bold text-muted mb-1">Filtrar Turno:</label>
-          <select name="turno" class="form-select form-select-sm" onchange="this.form.submit()">
-            <option value="">-- Todos los Turnos --</option>
-            <option value="MANANA" <?php echo ($filtroTurno === 'MANANA') ? 'selected' : ''; ?>>☀️ Mañana</option>
-            <option value="TARDE" <?php echo ($filtroTurno === 'TARDE') ? 'selected' : ''; ?>>🌅 Tarde</option>
-          </select>
-        </div>
-
-        <div class="col-md-1 text-end mt-auto">
-          <a href="admin.php?tab=planilla&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>" class="btn btn-sm btn-outline-secondary w-100 rounded-pill" title="Limpiar filtros">
-            <i class="bi bi-x-circle"></i>
+          <a href="admin.php?tab=planilla&fechaInicio=<?php echo $qSig['fechaInicio']; ?>&fechaFin=<?php echo $qSig['fechaFin']; ?>" class="btn btn-touch btn-outline-secondary btn-sm rounded-pill" title="Quincena siguiente">
+            Siguiente <i class="bi bi-chevron-right"></i>
           </a>
-        </div>
-      </form>
-    </div>
 
-    <!-- TABLA GENERAL DE PESAJES CON DATATABLES BOOTSTRAP 5 -->
-    <div class="card card-rural border-0 shadow overflow-hidden">
-      <div class="card-header bg-success text-white p-3 d-flex justify-content-between align-items-center">
-        <h5 class="fw-bold mb-0">
-          <i class="bi bi-table me-2"></i> Planilla Oficial de Pesajes de la Quincena
-        </h5>
-        <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold">
-          <?php echo count($entregasFiltradas); ?> Registros Filtrados
-        </span>
+          <span class="badge <?php echo $quincenaEstaCerrada ? 'bg-secondary' : 'bg-success'; ?> px-3 py-2 rounded-pill ms-lg-2">
+            <?php echo $quincenaEstaCerrada ? '🔒 Cerrada' : '🟢 Abierta para edición'; ?>
+          </span>
+        </div>
+
+        <!-- Buscador en tiempo real de ganaderos y exportación -->
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          <div class="input-group input-group-sm" style="min-width: 240px;">
+            <span class="input-group-text bg-transparent border-2 text-success">
+              <i class="bi bi-search"></i>
+            </span>
+            <input type="text" id="filtro-matriz" class="form-control form-control-touch form-control-sm border-start-0" placeholder="Buscar por nombre o cédula...">
+          </div>
+
+          <button type="button" id="btn-exportar-csv" class="btn btn-touch btn-outline-success btn-sm rounded-pill">
+            <i class="bi bi-file-earmark-excel-fill me-1"></i> Descargar CSV
+          </button>
+        </div>
       </div>
 
-      <div class="card-body p-3 p-md-4">
-        <?php if (empty($entregasFiltradas)): ?>
-          <div class="text-center py-5">
-            <i class="bi bi-inbox display-1 text-muted"></i>
-            <h5 class="fw-bold mt-3">No hay registros de pesajes para los filtros seleccionados</h5>
-            <p class="text-muted">Utiliza el formulario superior para registrar entregas de leche en esta quincena.</p>
-          </div>
-        <?php else: ?>
-          <div class="table-responsive">
-            <table id="tabla-admin-entregas" class="table table-rural table-hover align-middle w-100">
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Ganadero Asociado</th>
-                  <th>Cédula</th>
-                  <th>Finca</th>
-                  <th class="text-center">Turno</th>
-                  <th class="text-end">Litros Entregados</th>
-                  <th class="text-end">Valor Liquidado</th>
-                  <th class="text-center">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
+      <!-- Leyenda de Uso -->
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 pt-2 mt-2 border-top border-secondary-subtle small text-muted">
+        <div>
+          <span class="me-3"><strong class="text-warning-emphasis">☀️ Mañana:</strong> Primer turno</span>
+          <span class="me-3"><strong class="text-danger-emphasis">🌅 Tarde:</strong> Segundo turno</span>
+          <span class="me-3">⌨️ <strong>Enter:</strong> Baja celda &bull; <strong>Tab / Flechas:</strong> Navega &bull; <strong>Esc:</strong> Cancela</span>
+          <span>📋 <strong>Pegar desde Excel:</strong> Selecciona una celda y presiona Ctrl + V para pegar en bloque</span>
+        </div>
+        <div id="contador-filas-visibles" class="fw-bold text-success">
+          <?php echo $totalGanaderosActivos; ?> asociados visibles
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTENEDOR DE LA PLANILLA MATRICIAL HORIZONTAL -->
+    <div class="matrix-container mb-4">
+      <div class="matrix-scroll-wrapper">
+        <table class="matrix-table" id="tabla-matriz">
+          <thead>
+            <!-- Fila Nivel 1: Fechas -->
+            <tr>
+              <th rowspan="2" class="col-sticky-name align-middle">
+                ASOCIADO / CÉDULA
+              </th>
+              <?php foreach ($diasQuincena as $d): ?>
                 <?php 
-                $sumaTotalLitrosTabla = 0.0;
-                $sumaTotalPesosTabla = 0.0;
-                foreach ($entregasFiltradas as $row): 
-                    $litrosRow = (float)$row['litros'];
-                    $valorRow = $precioLitroActual ? ($litrosRow * $precioLitroActual) : 0.0;
-                    $sumaTotalLitrosTabla += $litrosRow;
-                    $sumaTotalPesosTabla += $valorRow;
+                  $esHoy = ($d['fecha'] === date('Y-m-d'));
+                  $w = (int)(new DateTime($d['fecha']))->format('w');
+                  $esFinSemana = ($w === 0 || $w === 6);
                 ?>
-                  <tr>
-                    <td><strong><?php echo e($row['fecha']); ?></strong></td>
-                    <td class="fw-bold text-success"><?php echo e($row['ganaderoNombre']); ?></td>
-                    <td class="font-monospace small"><?php echo e($row['ganaderoCedula']); ?></td>
-                    <td class="small text-muted"><?php echo e($row['finca'] ?? 'Vereda Alizal'); ?></td>
-                    <td class="text-center">
-                      <?php if ($row['turno'] === 'MANANA'): ?>
-                        <span class="badge-turno-manana">☀️ Mañana</span>
-                      <?php else: ?>
-                        <span class="badge-turno-tarde">🌅 Tarde</span>
-                      <?php endif; ?>
+                <th colspan="2" class="<?php echo $esHoy ? 'col-today' : ($esFinSemana ? 'col-weekend' : ''); ?> border-end border-success-subtle">
+                  <div><?php echo e($d['etiqueta']); ?></div>
+                  <?php if ($esHoy): ?>
+                    <span class="badge bg-warning text-dark px-1.5 py-0 rounded-pill" style="font-size: 0.65rem;">HOY</span>
+                  <?php endif; ?>
+                </th>
+              <?php endforeach; ?>
+              <th rowspan="2" class="col-sticky-total align-middle text-end">
+                TOTAL (L)
+              </th>
+            </tr>
+            <!-- Fila Nivel 2: Turnos -->
+            <tr>
+              <?php foreach ($diasQuincena as $d): ?>
+                <th class="py-1 px-1 bg-warning-subtle text-dark">☀️ M</th>
+                <th class="py-1 px-1 bg-danger-subtle text-dark col-border-day">🌅 T</th>
+              <?php endforeach; ?>
+            </tr>
+          </thead>
+          <tbody id="tbody-matriz">
+            <?php if (empty($ganaderosPlanilla)): ?>
+              <tr>
+                <td colspan="<?php echo (count($diasQuincena) * 2) + 2; ?>" class="text-center py-5 text-muted">
+                  <i class="bi bi-people display-4 d-block mb-2"></i>
+                  No hay ganaderos activos registrados en el sistema. Agrega asociados en la pestaña correspondiente.
+                </td>
+              </tr>
+            <?php else: ?>
+              <?php foreach ($ganaderosPlanilla as $idx => $g): ?>
+                <?php $totG = $totalesPorGanadero[$g['id']] ?? 0.0; ?>
+                <tr class="fila-matriz" data-uid="<?php echo e($g['id']); ?>" data-idx="<?php echo $idx; ?>" data-texto="<?php echo strtolower(e($g['nombre'] . ' ' . $g['cedula'])); ?>">
+                  <!-- Columna Asociado Fija a la Izquierda -->
+                  <td class="col-sticky-name">
+                    <div class="fw-bold text-truncate" style="max-width: 210px;" title="<?php echo e($g['nombre']); ?>">
+                      <?php echo e($g['nombre']); ?>
+                    </div>
+                    <div class="text-muted font-monospace small">
+                      C.C. <?php echo e($g['cedula']); ?><?php if (!empty($g['finca'])) echo ' &bull; ' . e($g['finca']); ?>
+                    </div>
+                  </td>
+
+                  <!-- Celdas de Pesaje Día a Día (Mañana / Tarde) -->
+                  <?php foreach ($diasQuincena as $cIdx => $d): ?>
+                    <?php 
+                      $esHoy = ($d['fecha'] === date('Y-m-d'));
+                      $w = (int)(new DateTime($d['fecha']))->format('w');
+                      $esFinSemana = ($w === 0 || $w === 6);
+                      $claseColExtra = $esHoy ? 'col-today' : ($esFinSemana ? 'col-weekend' : '');
+
+                      $valM = $mapaMatriz[$g['id']]["{$d['fecha']}_MANANA"] ?? null;
+                      $valT = $mapaMatriz[$g['id']]["{$d['fecha']}_TARDE"] ?? null;
+                    ?>
+                    <!-- Celda Mañana -->
+                    <td class="matrix-cell <?php echo $claseColExtra; ?>" data-uid="<?php echo e($g['id']); ?>" data-fecha="<?php echo e($d['fecha']); ?>" data-turno="MANANA" data-r="<?php echo $idx; ?>" data-c="<?php echo ($cIdx * 2); ?>">
+                      <input type="text" inputmode="decimal" 
+                             class="matrix-input <?php echo ($valM === null ? 'is-empty' : ($valM == 0 ? 'is-zero' : '')); ?>" 
+                             value="<?php echo ($valM !== null ? number_format($valM, 1, '.', '') : ''); ?>" 
+                             placeholder="-" 
+                             <?php echo $quincenaEstaCerrada ? 'disabled' : ''; ?> 
+                             autocomplete="off" spellcheck="false">
                     </td>
-                    <td class="text-end fw-extrabold text-success fs-6">
-                      <?php echo number_format($litrosRow, 1, ',', '.'); ?> L
+
+                    <!-- Celda Tarde -->
+                    <td class="matrix-cell col-border-day <?php echo $claseColExtra; ?>" data-uid="<?php echo e($g['id']); ?>" data-fecha="<?php echo e($d['fecha']); ?>" data-turno="TARDE" data-r="<?php echo $idx; ?>" data-c="<?php echo ($cIdx * 2 + 1); ?>">
+                      <input type="text" inputmode="decimal" 
+                             class="matrix-input <?php echo ($valT === null ? 'is-empty' : ($valT == 0 ? 'is-zero' : '')); ?>" 
+                             value="<?php echo ($valT !== null ? number_format($valT, 1, '.', '') : ''); ?>" 
+                             placeholder="-" 
+                             <?php echo $quincenaEstaCerrada ? 'disabled' : ''; ?> 
+                             autocomplete="off" spellcheck="false">
                     </td>
-                    <td class="text-end fw-bold text-muted">
-                      <?php echo formatoMonedaCOP($valorRow); ?>
-                    </td>
-                    <td class="text-center">
-                      <form action="admin.php?tab=planilla&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>" method="POST" onsubmit="return confirm('¿Estás seguro de eliminar este pesaje de <?php echo $litrosRow; ?> L?');" class="d-inline">
-                        <?php echo campoCsrf(); ?>
-                        <input type="hidden" name="accion" value="eliminar_pesaje">
-                        <input type="hidden" name="entregaId" value="<?php echo e($row['id']); ?>">
-                        <button type="submit" class="btn btn-sm btn-outline-danger rounded-circle p-1" title="Eliminar registro">
-                          <i class="bi bi-trash-fill"></i>
-                        </button>
-                      </form>
-                    </td>
-                  </tr>
-                <?php endforeach; ?>
-              </tbody>
-              <tfoot>
-                <tr>
-                  <th colspan="5" class="text-end text-uppercase">Totales en Pantalla:</th>
-                  <th class="text-end text-success fs-5"><?php echo number_format($sumaTotalLitrosTabla, 1, ',', '.'); ?> L</th>
-                  <th class="text-end text-warning-emphasis fs-5"><?php echo formatoMonedaCOP($sumaTotalPesosTabla); ?></th>
-                  <th></th>
+                  <?php endforeach; ?>
+
+                  <!-- Total Quincena del Ganadero Fijo a la Derecha -->
+                  <td class="col-sticky-total text-end" id="tot-g-<?php echo e($g['id']); ?>">
+                    <?php echo number_format($totG, 1, ',', '.'); ?> L
+                  </td>
                 </tr>
-              </tfoot>
-            </table>
-          </div>
-        <?php endif; ?>
+              <?php endforeach; ?>
+            <?php endif; ?>
+          </tbody>
+          <!-- Fila de Totales de Columna Fija Abajo -->
+          <tfoot>
+            <tr>
+              <td class="col-sticky-name text-uppercase">
+                TOTALES POR TURNO (L)
+              </td>
+              <?php foreach ($diasQuincena as $d): ?>
+                <?php 
+                  $totColM = $totalesPorColumna["{$d['fecha']}_MANANA"] ?? 0.0;
+                  $totColT = $totalesPorColumna["{$d['fecha']}_TARDE"] ?? 0.0;
+                ?>
+                <td class="text-center" id="tot-col-<?php echo e($d['fecha']); ?>_MANANA">
+                  <?php echo $totColM > 0 ? number_format($totColM, 1, ',', '.') : '-'; ?>
+                </td>
+                <td class="text-center col-border-day" id="tot-col-<?php echo e($d['fecha']); ?>_TARDE">
+                  <?php echo $totColT > 0 ? number_format($totColT, 1, ',', '.') : '-'; ?>
+                </td>
+              <?php endforeach; ?>
+              <td class="col-sticky-total text-end" id="gran-total-matriz">
+                <?php echo number_format($granTotalMatriz, 1, ',', '.'); ?> L
+              </td>
+            </tr>
+          </tfoot>
+        </table>
       </div>
     </div>
 
@@ -620,7 +589,7 @@ require_once __DIR__ . '/includes/header.php';
               </tr>
             </thead>
             <tbody>
-              <?php foreach ($listaGanaderos as $g): ?>
+              <?php foreach ($listaTodosGanaderos as $g): ?>
                 <tr>
                   <td class="fw-bold text-success fs-6"><?php echo e($g['nombre']); ?></td>
                   <td class="font-monospace fw-semibold"><?php echo e($g['cedula']); ?></td>
@@ -642,7 +611,7 @@ require_once __DIR__ . '/includes/header.php';
                         <?php echo campoCsrf(); ?>
                         <input type="hidden" name="accion" value="reset_clave_ganadero">
                         <input type="hidden" name="asociadoId" value="<?php echo e($g['id']); ?>">
-                        <button type="submit" class="btn btn-sm btn-outline-warning text-dark rounded-pill px-2 py-1" title="Reestablecer clave">
+                        <button type="submit" class="btn btn-sm btn-outline-warning text-dark rounded-pill px-2 py-1" title="Reestablecer clave a 123456">
                           <i class="bi bi-key-fill"></i>
                         </button>
                       </form>
@@ -665,7 +634,7 @@ require_once __DIR__ . '/includes/header.php';
       <div class="col-lg-5">
         <div class="card card-rural p-4 shadow-sm border-2 border-success-subtle">
           <h5 class="fw-bold text-success mb-3">
-            <i class="bi bi-tag-fill me-1"></i> Fijar Precio Oficial de Quincena
+            <i class="bi bi-tag-fill me-1"></i> Fijar Precio y Estado de Quincena
           </h5>
 
           <form action="admin.php?tab=quincenas" method="POST">
@@ -694,7 +663,7 @@ require_once __DIR__ . '/includes/header.php';
             </div>
 
             <button type="submit" class="btn btn-touch btn-aso-primary w-100 shadow">
-              <i class="bi bi-check-circle-fill me-1"></i> Guardar Precio Oficial
+              <i class="bi bi-check-circle-fill me-1"></i> Guardar Configuración
             </button>
           </form>
         </div>
@@ -707,7 +676,7 @@ require_once __DIR__ . '/includes/header.php';
           </h5>
 
           <div class="table-responsive">
-            <table class="table table-hover align-middle">
+            <table id="tabla-quincenas-historial" class="table table-hover align-middle w-100">
               <thead class="table-light">
                 <tr>
                   <th>Periodo</th>
@@ -728,14 +697,14 @@ require_once __DIR__ . '/includes/header.php';
                     </td>
                     <td class="text-center">
                       <?php if (!empty($qd['cerrada'])): ?>
-                        <span class="badge bg-secondary">Cerrada</span>
+                        <span class="badge bg-secondary">🔒 Cerrada</span>
                       <?php else: ?>
-                        <span class="badge bg-success">Activa</span>
+                        <span class="badge bg-success">🟢 Activa</span>
                       <?php endif; ?>
                     </td>
                     <td class="text-center">
                       <a href="admin.php?tab=quincenas&fechaInicio=<?php echo $qd['fechaInicio']; ?>&fechaFin=<?php echo $qd['fechaFin']; ?>" class="btn btn-sm btn-outline-success rounded-pill px-3">
-                        Editar
+                        Configurar
                       </a>
                     </td>
                   </tr>
@@ -769,7 +738,7 @@ require_once __DIR__ . '/includes/header.php';
           </div>
         <?php else: ?>
           <div class="table-responsive">
-            <table class="table table-hover align-middle">
+            <table id="tabla-alertas-admin" class="table table-hover align-middle w-100">
               <thead class="table-light">
                 <tr>
                   <th>Fecha Radicación</th>
@@ -833,7 +802,7 @@ require_once __DIR__ . '/includes/header.php';
           </div>
         <?php else: ?>
           <div class="table-responsive">
-            <table class="table table-hover align-middle">
+            <table id="tabla-consultas-admin" class="table table-hover align-middle w-100">
               <thead class="table-light">
                 <tr>
                   <th>Fecha</th>
@@ -943,65 +912,420 @@ require_once __DIR__ . '/includes/header.php';
   </div>
 </div>
 
+<!-- SCRIPTS DE LA PLANILLA MATRICIAL Y LISTAS -->
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    if (typeof $ !== 'undefined' && $.fn.DataTable) {
-      // DataTables Planilla General
-      if ($('#tabla-admin-entregas').length) {
-        $('#tabla-admin-entregas').DataTable({
-          language: window.AsoagroUI?.dataTablesSpanish || {},
-          pageLength: 25,
-          responsive: true,
-          order: [[0, 'desc']],
-          dom: '<"d-flex flex-wrap justify-content-between align-items-center mb-3"Bf>rt<"d-flex flex-wrap justify-content-between align-items-center mt-3"ip>',
-          buttons: [
-            {
-              extend: 'excelHtml5',
-              text: '<i class="bi bi-file-earmark-excel-fill text-success me-1"></i> Excel',
-              className: 'btn btn-outline-success btn-sm rounded-pill shadow-sm me-1',
-              title: 'Planilla_General_AsoagroAlisal_<?php echo $fechaInicioSel; ?>'
-            },
-            {
-              extend: 'pdfHtml5',
-              text: '<i class="bi bi-file-earmark-pdf-fill text-danger me-1"></i> PDF',
-              className: 'btn btn-outline-danger btn-sm rounded-pill shadow-sm me-1',
-              title: 'Planilla_Oficial_AsoagroAlisal'
-            },
-            {
-              extend: 'print',
-              text: '<i class="bi bi-printer-fill text-primary me-1"></i> Imprimir',
-              className: 'btn btn-outline-primary btn-sm rounded-pill shadow-sm'
-            }
-          ]
-        });
-      }
+document.addEventListener('DOMContentLoaded', function () {
+  const CSRF_TOKEN = '<?php echo generarCsrfToken(); ?>';
+  const FECHA_INICIO = '<?php echo $fechaInicioSel; ?>';
+  const FECHA_FIN = '<?php echo $fechaFinSel; ?>';
+  const PRECIO_LITRO = <?php echo (float)$precioLitroActual; ?>;
+  const QUINCENA_CERRADA = <?php echo $quincenaEstaCerrada ? 'true' : 'false'; ?>;
 
-      // DataTables Gestión de Ganaderos
-      if ($('#tabla-gestion-ganaderos').length) {
-        $('#tabla-gestion-ganaderos').DataTable({
-          language: window.AsoagroUI?.dataTablesSpanish || {},
-          pageLength: 20,
-          responsive: true,
-          order: [[0, 'asc']]
-        });
-      }
+  // 1. INICIALIZAR DATATABLES ÚNICAMENTE EN LISTAS (NUNCA EN LA PLANILLA MATRICIAL)
+  if (typeof $ !== 'undefined' && $.fn.DataTable) {
+    const dtLang = window.AsoagroUI?.dataTablesSpanish || {};
+
+    if ($('#tabla-gestion-ganaderos').length) {
+      $('#tabla-gestion-ganaderos').DataTable({ language: dtLang, pageLength: 20, responsive: true, order: [[0, 'asc']] });
     }
-  });
-
-  // Helper para editar un ganadero en el modal
-  function editarGanadero(g) {
-    document.getElementById('modalGanaderoLabel').innerHTML = '<i class="bi bi-pencil-fill me-2"></i> Editar Ganadero Asociado';
-    document.getElementById('modal_asociado_id').value = g.id;
-    document.getElementById('modal_cedula').value = g.cedula;
-    document.getElementById('modal_nombre').value = g.nombre;
-    document.getElementById('modal_telefono').value = g.telefono || '';
-    document.getElementById('modal_finca').value = g.finca || '';
-    document.getElementById('modal_password').value = '';
-    document.getElementById('modal_activo').checked = (parseInt(g.activo) === 1);
-
-    const modal = new bootstrap.Modal(document.getElementById('modalNuevoGanadero'));
-    modal.show();
+    if ($('#tabla-quincenas-historial').length) {
+      $('#tabla-quincenas-historial').DataTable({ language: dtLang, pageLength: 15, responsive: true, order: [[0, 'desc']] });
+    }
+    if ($('#tabla-alertas-admin').length) {
+      $('#tabla-alertas-admin').DataTable({ language: dtLang, pageLength: 15, responsive: true, order: [[0, 'desc']] });
+    }
+    if ($('#tabla-consultas-admin').length) {
+      $('#tabla-consultas-admin').DataTable({ language: dtLang, pageLength: 15, responsive: true, order: [[0, 'desc']] });
+    }
   }
+
+  // 2. LÓGICA DE LA PLANILLA MATRICIAL HORIZONTAL TIPO EXCEL
+  const tablaMatriz = document.getElementById('tabla-matriz');
+  if (tablaMatriz && !QUINCENA_CERRADA) {
+    const inputs = Array.from(tablaMatriz.querySelectorAll('.matrix-input'));
+
+    inputs.forEach((input) => {
+      // Guardar valor inicial para detectar cambios o revertir con Esc
+      input.dataset.prev = input.value.trim();
+
+      // Al enfocar: seleccionar texto para sobreescribir rápido
+      input.addEventListener('focus', function () {
+        this.select();
+      });
+
+      // Navegación por teclado (Tab, Enter, Flechas, Esc)
+      input.addEventListener('keydown', function (e) {
+        const td = this.closest('td');
+        const r = parseInt(td.dataset.r, 10);
+        const c = parseInt(td.dataset.c, 10);
+
+        if (e.key === 'Escape') {
+          this.value = this.dataset.prev || '';
+          this.blur();
+          return;
+        }
+
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          // Enter: bajar a la misma columna de la fila siguiente
+          const target = tablaMatriz.querySelector(`td[data-r="${r + 1}"][data-c="${c}"] input`);
+          if (target) {
+            target.focus();
+          } else {
+            this.blur();
+          }
+          return;
+        }
+
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          const target = tablaMatriz.querySelector(`td[data-r="${r + 1}"][data-c="${c}"] input`);
+          if (target) target.focus();
+          return;
+        }
+
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          const target = tablaMatriz.querySelector(`td[data-r="${r - 1}"][data-c="${c}"] input`);
+          if (target) target.focus();
+          return;
+        }
+
+        if (e.key === 'ArrowRight' && (this.selectionEnd === this.value.length || this.value === '')) {
+          const target = tablaMatriz.querySelector(`td[data-r="${r}"][data-c="${c + 1}"] input`);
+          if (target) {
+            e.preventDefault();
+            target.focus();
+          }
+          return;
+        }
+
+        if (e.key === 'ArrowLeft' && (this.selectionStart === 0 || this.value === '')) {
+          const target = tablaMatriz.querySelector(`td[data-r="${r}"][data-c="${c - 1}"] input`);
+          if (target) {
+            e.preventDefault();
+            target.focus();
+          }
+          return;
+        }
+      });
+
+      // Al perder el foco (blur): enviar al servidor si cambió el valor
+      input.addEventListener('blur', function () {
+        const actual = this.value.trim().replace(',', '.');
+        const previo = (this.dataset.prev || '').trim().replace(',', '.');
+
+        if (actual === previo) return;
+
+        // Validar formato numérico si no está vacío
+        if (actual !== '' && (isNaN(parseFloat(actual)) || parseFloat(actual) < 0 || parseFloat(actual) > 9999)) {
+          alert('Por favor ingresa un número de litros válido (entre 0 y 9.999).');
+          this.value = this.dataset.prev || '';
+          return;
+        }
+
+        guardarCeldaInline(this, actual);
+      });
+
+      // Pegar desde Excel / Portapapeles (Paste Handler en bloque)
+      input.addEventListener('paste', function (e) {
+        const clipboard = (e.clipboardData || window.clipboardData).getData('text');
+        if (!clipboard) return;
+
+        // Si contiene tabulaciones (\t) o saltos de línea (\n), es un bloque de celdas
+        if (clipboard.includes('\t') || clipboard.includes('\n')) {
+          e.preventDefault();
+          pegarBloqueExcel(this, clipboard);
+        }
+      });
+    });
+  }
+
+  // Guardar celda individual con fetch y feedback visual
+  async function guardarCeldaInline(input, valorNuevo) {
+    const td = input.closest('td');
+    const uId = td.dataset.uid;
+    const fecha = td.dataset.fecha;
+    const turno = td.dataset.turno;
+
+    // Actualizar clases de vacío o cero de forma inmediata
+    if (valorNuevo === '') {
+      input.className = 'matrix-input is-empty';
+    } else if (parseFloat(valorNuevo) === 0) {
+      input.className = 'matrix-input is-zero';
+    } else {
+      input.className = 'matrix-input';
+    }
+
+    // Feedback: Guardando
+    td.classList.remove('is-saved', 'is-error');
+    td.classList.add('is-saving');
+
+    try {
+      const resp = await fetch('api/guardar_pesaje_matriz.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          csrf_token: CSRF_TOKEN,
+          fechaInicio: FECHA_INICIO,
+          fechaFin: FECHA_FIN,
+          usuarioId: uId,
+          fecha: fecha,
+          turno: turno,
+          litros: valorNuevo === '' ? null : parseFloat(valorNuevo)
+        })
+      });
+
+      const res = await resp.json();
+      td.classList.remove('is-saving');
+
+      if (resp.ok && res.ok) {
+        // Feedback: Guardado con éxito
+        td.classList.add('is-saved');
+        input.dataset.prev = valorNuevo;
+        if (valorNuevo !== '') {
+          input.value = parseFloat(valorNuevo).toFixed(1);
+        }
+
+        // Actualizar totales en pantalla con los valores oficiales devueltos por el servidor
+        actualizarTotalesUI(uId, `${fecha}_${turno}`, res.totalGanadero, res.totalColumna, res.granTotal);
+      } else {
+        td.classList.add('is-error');
+        alert(res.error || 'Error al guardar el pesaje.');
+        input.value = input.dataset.prev || '';
+      }
+    } catch (err) {
+      td.classList.remove('is-saving');
+      td.classList.add('is-error');
+      console.error(err);
+      alert('Error de conexión con el servidor. Verifica tu red.');
+      input.value = input.dataset.prev || '';
+    }
+  }
+
+  // Pegar bloque copiado desde Excel
+  async function pegarBloqueExcel(celdaOrigen, textoPegado) {
+    const tdOrigen = celdaOrigen.closest('td');
+    const rBase = parseInt(tdOrigen.dataset.r, 10);
+    const cBase = parseInt(tdOrigen.dataset.c, 10);
+
+    const lineas = textoPegado.trim().split(/\r\n|\r|\n/);
+    const itemsLote = [];
+    const celdasAfectadas = [];
+
+    lineas.forEach((linea, rOff) => {
+      const celdasTexto = linea.split('\t');
+      celdasTexto.forEach((valStr, cOff) => {
+        const td = tablaMatriz.querySelector(`td[data-r="${rBase + rOff}"][data-c="${cBase + cOff}"]`);
+        if (td) {
+          const inp = td.querySelector('input');
+          const valLim = valStr.trim().replace(',', '.');
+          const uId = td.dataset.uid;
+          const fecha = td.dataset.fecha;
+          const turno = td.dataset.turno;
+
+          let litrosVal = null;
+          if (valLim !== '') {
+            const num = parseFloat(valLim);
+            if (!isNaN(num) && num >= 0 && num <= 9999) {
+              litrosVal = num;
+            }
+          }
+
+          itemsLote.push({
+            usuarioId: uId,
+            fecha: fecha,
+            turno: turno,
+            litros: litrosVal
+          });
+
+          celdasAfectadas.push({ td, inp, litrosVal });
+          td.classList.add('is-saving');
+        }
+      });
+    });
+
+    if (itemsLote.length === 0) return;
+
+    try {
+      const resp = await fetch('api/guardar_pesaje_matriz.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          csrf_token: CSRF_TOKEN,
+          action: 'batch',
+          fechaInicio: FECHA_INICIO,
+          fechaFin: FECHA_FIN,
+          items: itemsLote
+        })
+      });
+
+      const res = await resp.json();
+
+      celdasAfectadas.forEach(({ td, inp, litrosVal }) => {
+        td.classList.remove('is-saving');
+        if (resp.ok && res.ok) {
+          td.classList.add('is-saved');
+          if (litrosVal !== null) {
+            inp.value = litrosVal.toFixed(1);
+            inp.dataset.prev = inp.value;
+            inp.className = (litrosVal === 0) ? 'matrix-input is-zero' : 'matrix-input';
+          } else {
+            inp.value = '';
+            inp.dataset.prev = '';
+            inp.className = 'matrix-input is-empty';
+          }
+        } else {
+          td.classList.add('is-error');
+        }
+      });
+
+      if (resp.ok && res.ok) {
+        // Actualizar totales masivos recibidos
+        if (res.totalesGanaderos) {
+          for (const [gId, totG] of Object.entries(res.totalesGanaderos)) {
+            const el = document.getElementById(`tot-g-${gId}`);
+            if (el) el.textContent = formatLitros(totG);
+          }
+        }
+        if (res.totalesColumnas) {
+          for (const [colKey, totC] of Object.entries(res.totalesColumnas)) {
+            const el = document.getElementById(`tot-col-${colKey}`);
+            if (el) el.textContent = totC > 0 ? totC.toFixed(1) : '-';
+          }
+        }
+        if (res.granTotal !== undefined) {
+          actualizarGranTotalUI(res.granTotal);
+        }
+
+        if (window.AsoagroUI) {
+          window.AsoagroUI.showSuccess('Pegado Exitoso', res.mensaje || 'Datos pegados desde Excel guardados en lote.');
+        }
+      } else {
+        alert(res.error || 'Error al procesar el lote pegado.');
+      }
+    } catch (err) {
+      console.error(err);
+      celdasAfectadas.forEach(({ td }) => {
+        td.classList.remove('is-saving');
+        td.classList.add('is-error');
+      });
+      alert('Error al guardar el bloque pegado.');
+    }
+  }
+
+  // Actualizar totales en DOM
+  function actualizarTotalesUI(uId, colKey, totalG, totalCol, granTot) {
+    const elTotG = document.getElementById(`tot-g-${uId}`);
+    if (elTotG && totalG !== undefined) {
+      elTotG.textContent = formatLitros(totalG);
+    }
+
+    const elTotC = document.getElementById(`tot-col-${colKey}`);
+    if (elTotC && totalCol !== undefined) {
+      elTotC.textContent = totalCol > 0 ? totalCol.toFixed(1) : '-';
+    }
+
+    if (granTot !== undefined) {
+      actualizarGranTotalUI(granTot);
+    }
+  }
+
+  function actualizarGranTotalUI(granTot) {
+    const elGT = document.getElementById('gran-total-matriz');
+    if (elGT) elGT.textContent = formatLitros(granTot);
+
+    const kpiGT = document.getElementById('kpi-gran-total');
+    if (kpiGT) kpiGT.textContent = formatLitros(granTot);
+
+    const kpiLiq = document.getElementById('kpi-liquidacion');
+    if (kpiLiq && PRECIO_LITRO > 0) {
+      kpiLiq.textContent = window.AsoagroUI?.formatCOP(granTot * PRECIO_LITRO) || `$ ${Math.round(granTot * PRECIO_LITRO)}`;
+    }
+
+    const diasCount = <?php echo (int)$cantDias; ?>;
+    const kpiProm = document.getElementById('kpi-promedio-diario');
+    if (kpiProm && diasCount > 0) {
+      kpiProm.textContent = (granTot / diasCount).toFixed(1).replace('.', ',') + ' L';
+    }
+  }
+
+  function formatLitros(val) {
+    if (val === null || val === undefined) return '0,0 L';
+    return (parseFloat(val).toFixed(1)).replace('.', ',') + ' L';
+  }
+
+  // 3. FILTRO EN VIVO DE GANADEROS EN LA PLANILLA
+  const filtroInput = document.getElementById('filtro-matriz');
+  if (filtroInput && tablaMatriz) {
+    filtroInput.addEventListener('input', function () {
+      const q = this.value.trim().toLowerCase();
+      const filas = tablaMatriz.querySelectorAll('tbody tr.fila-matriz');
+      let visibles = 0;
+
+      filas.forEach((f) => {
+        const texto = f.dataset.texto || '';
+        if (!q || texto.includes(q)) {
+          f.style.display = '';
+          visibles++;
+        } else {
+          f.style.display = 'none';
+        }
+      });
+
+      const contador = document.getElementById('contador-filas-visibles');
+      if (contador) {
+        contador.textContent = `${visibles} asociados visibles`;
+      }
+    });
+  }
+
+  // 4. DESCARGAR PLANILLA MATRICIAL EN CSV
+  const btnCsv = document.getElementById('btn-exportar-csv');
+  if (btnCsv && tablaMatriz) {
+    btnCsv.addEventListener('click', function () {
+      let csv = [];
+      const trs = tablaMatriz.querySelectorAll('tr');
+
+      trs.forEach((tr) => {
+        if (tr.style.display === 'none') return;
+        const row = [];
+        tr.querySelectorAll('th, td').forEach((cell) => {
+          const inp = cell.querySelector('input');
+          let text = inp ? inp.value.trim() : cell.innerText.trim();
+          text = text.replace(/"/g, '""');
+          row.push(`"${text}"`);
+        });
+        csv.push(row.join(';'));
+      });
+
+      const csvContent = '\uFEFF' + csv.join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `Planilla_Matricial_${FECHA_INICIO}_a_${FECHA_FIN}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+  }
+});
+
+// Helper para modal de editar ganadero
+function editarGanadero(g) {
+  document.getElementById('modalGanaderoLabel').innerHTML = '<i class="bi bi-pencil-fill me-2"></i> Editar Ganadero Asociado';
+  document.getElementById('modal_asociado_id').value = g.id;
+  document.getElementById('modal_cedula').value = g.cedula;
+  document.getElementById('modal_nombre').value = g.nombre;
+  document.getElementById('modal_telefono').value = g.telefono || '';
+  document.getElementById('modal_finca').value = g.finca || '';
+  document.getElementById('modal_password').value = '';
+  document.getElementById('modal_activo').checked = (parseInt(g.activo) === 1);
+
+  const modal = new bootstrap.Modal(document.getElementById('modalNuevoGanadero'));
+  modal.show();
+}
 </script>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
