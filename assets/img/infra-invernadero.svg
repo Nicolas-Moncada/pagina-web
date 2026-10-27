@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="100%" height="100%">
+  <defs>
+    <linearGradient id="invBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fefce8" />
+      <stop offset="100%" stop-color="#ecfdf5" />
+    </linearGradient>
+  </defs>
+  <rect width="600" height="400" fill="url(#invBg)" rx="24"/>
+  <!-- Estructura Invernadero Forrajes -->
+  <path d="M150,290 L150,180 L300,120 L450,180 L450,290 Z" fill="rgba(240, 253, 244, 0.85)" stroke="#166534" stroke-width="4"/>
+  <!-- Líneas de estructura metálica / arcos -->
+  <line x1="225" y1="290" x2="225" y2="150" stroke="#166534" stroke-width="2"/>
+  <line x1="300" y1="290" x2="300" y2="120" stroke="#166534" stroke-width="3"/>
+  <line x1="375" y1="290" x2="375" y2="150" stroke="#166534" stroke-width="2"/>
+  <line x1="150" y1="220" x2="450" y2="220" stroke="#166534" stroke-width="2" stroke-dasharray="4,4"/>
+  <!-- Brotes y Forrajes Verdes Hidropónicos -->
+  <rect x="170" y="270" width="260" height="15" rx="4" fill="#3e2723"/>
+  <!-- Hojitas -->
+  <circle cx="190" cy="260" r="10" fill="#22c55e"/>
+  <circle cx="230" cy="255" r="12" fill="#16a34a"/>
+  <circle cx="270" cy="258" r="11" fill="#4ade80"/>
+  <circle cx="310" cy="252" r="13" fill="#15803d"/>
+  <circle cx="350" cy="258" r="11" fill="#22c55e"/>
+  <circle cx="390" cy="255" r="12" fill="#16a34a"/>
+  <circle cx="415" cy="260" r="9" fill="#4ade80"/>
+  <text x="300" y="65" font-family="sans-serif" font-size="22" font-weight="900" fill="#144722" text-anchor="middle">Invernaderos y Pastos de Corte</text>
+  <text x="300" y="92" font-family="sans-serif" font-size="14" font-weight="bold" fill="#2e7d32" text-anchor="middle">Seguridad Forrajera y Nutrición Bovina Sostenible</text>
+</svg>
+

@@ -1,0 +1,376 @@
+/* ==========================================================================
+   PLATAFORMA DE CONTROL LECHERO - ASOAGROALIZAL (CARMEN DE CARUPA)
+   Archivo: assets/css/estilos.css
+   Estilo: Moderno, Móvil-First, Accesible (WCAG AA), Soporte Modo Oscuro Nativo
+   ========================================================================== */
+
+/* 1. FUENTES Y VARIABLES DEL SISTEMA DE DISEÑO */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Paleta Extraída del Logo Oficial de AsoagroAlisal */
+  --aso-primary: #144722;          /* Verde Bosque Aliso */
+  --aso-primary-hover: #0b2914;    /* Verde Bosque Profundo */
+  --aso-secondary: #2e7d32;        /* Verde Pradera Andina */
+  --aso-secondary-light: #e8f5e9;  /* Verde Pasto Suave */
+  --aso-accent: #f59e0b;           /* Ámbar / Dorado del Rótulo */
+  --aso-accent-hover: #d97706;     /* Ámbar Oscuro */
+  --aso-sky: #60c4f8;              /* Azul Cielo del Logo */
+  --aso-sky-light: #e0f2fe;        /* Azul Cielo Claro */
+  --aso-earth: #2b1704;            /* Pardo Tierra / Surcos */
+  --aso-cream: #fbfdf9;            /* Crema Claro Fondo */
+
+  /* Tipografía y Espaciado Táctil */
+  --font-heading: 'Poppins', sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-size-base: 1rem;          /* 16px mínimo para celulares rurales */
+  --btn-min-height: 48px;          /* Altura táctil mínima para dedos de campo */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-pill: 50rem;
+
+  /* Elevación y Sombras Suaves */
+  --shadow-sm: 0 4px 12px rgba(20, 71, 34, 0.05);
+  --shadow-md: 0 10px 25px rgba(20, 71, 34, 0.09);
+  --shadow-lg: 0 18px 45px rgba(11, 41, 20, 0.12);
+
+  /* Variables Bootstrap en Modo Claro */
+  --bs-body-font-family: var(--font-body);
+  --bs-body-font-size: var(--font-size-base);
+  --bs-body-bg: #f5f8f5;
+  --bs-body-color: #17281d;
+  --card-bg: #ffffff;
+  --card-border: #e2ede5;
+  --table-border-color: #e2ede5;
+  --table-header-bg: #144722;
+  --table-header-color: #ffffff;
+  --table-hover-bg: #edf5ee;
+  --badge-manana-bg: #fef3c7;
+  --badge-manana-color: #78350f;
+  --badge-tarde-bg: #ffedd5;
+  --badge-tarde-color: #9a3412;
+}
+
+/* 2. MODO OSCURO INTEGRADO (Bootstrap 5.3 + Variables Propias) */
+[data-bs-theme="dark"] {
+  --bs-body-bg: #111814;          /* Gris carbón bosque elegante (no #000) */
+  --bs-body-color: #e2ede6;
+  --card-bg: #18221c;             /* Superficie oscura con tinte verde sutil */
+  --card-border: #24352b;
+  --aso-primary: #1b5e20;
+  --aso-secondary: #4ade80;
+  --aso-secondary-light: #18291f;
+  --aso-accent: #fbbf24;
+  --aso-sky-light: #162a36;
+  --table-border-color: #24352b;
+  --table-header-bg: #0b2914;
+  --table-header-color: #e2ede6;
+  --table-hover-bg: #1f2d24;
+  --badge-manana-bg: #451a03;
+  --badge-manana-color: #fde68a;
+  --badge-tarde-bg: #431407;
+  --badge-tarde-color: #fdba74;
+  --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 10px 25px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 18px 45px rgba(0, 0, 0, 0.45);
+}
+
+/* 3. RESET Y ELEMENTOS BASE */
+body {
+  font-family: var(--font-body);
+  background-color: var(--bs-body-bg);
+  color: var(--bs-body-color);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* 4. NAVBAR GLASSMORFISM */
+.navbar-asoagro {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--card-border);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+}
+
+[data-bs-theme="dark"] .navbar-asoagro {
+  background: rgba(24, 34, 28, 0.92);
+  border-bottom: 1px solid var(--card-border);
+}
+
+.brand-logo-img {
+  max-height: 48px;
+  width: auto;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
+
+.brand-logo-img:hover {
+  transform: scale(1.05);
+}
+
+.nav-link-custom {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--bs-body-color) !important;
+  padding: 0.5rem 1rem !important;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.nav-link-custom:hover {
+  color: var(--aso-secondary) !important;
+  background-color: var(--aso-secondary-light);
+}
+
+/* 5. BOTONES TÁCTILES RURALES (Mínimo 48px de altura) */
+.btn-touch {
+  min-height: var(--btn-min-height);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1rem;
+  padding: 0.75rem 1.6rem;
+  border-radius: var(--radius-md);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  text-decoration: none;
+}
+
+.btn-touch:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-touch:active {
+  transform: translateY(0);
+}
+
+.btn-aso-primary {
+  background-color: var(--aso-primary);
+  border: 1px solid var(--aso-primary);
+  color: #ffffff !important;
+}
+
+.btn-aso-primary:hover {
+  background-color: var(--aso-primary-hover);
+  border-color: var(--aso-primary-hover);
+}
+
+.btn-aso-accent {
+  background-color: var(--aso-accent);
+  border: 1px solid var(--aso-accent);
+  color: #17281d !important;
+}
+
+.btn-aso-accent:hover {
+  background-color: var(--aso-accent-hover);
+  border-color: var(--aso-accent-hover);
+  color: #17281d !important;
+}
+
+/* 6. TARJETAS Y CONTENEDORES */
+.card-rural {
+  background-color: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.card-rural:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* 7. TARJETA FLOTANTE DIVIDIDA PARA LOGIN (Split-Card) */
+.login-split-card {
+  max-width: 960px;
+  width: 100%;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid var(--card-border);
+  background-color: var(--card-bg);
+}
+
+.login-brand-side {
+  background: linear-gradient(145deg, #0b2914 0%, #144722 60%, #1e5c30 100%);
+  color: #ffffff;
+  padding: 3rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-brand-side::after {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.22) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.login-form-side {
+  padding: 3rem 2.5rem;
+  background-color: var(--card-bg);
+}
+
+@media (max-width: 767.98px) {
+  .login-brand-side {
+    padding: 2rem 1.5rem;
+    text-align: center;
+    align-items: center;
+  }
+  .login-form-side {
+    padding: 2rem 1.5rem;
+  }
+}
+
+/* 8. BADGES DE TURNOS */
+.badge-turno-manana {
+  background-color: var(--badge-manana-bg);
+  color: var(--badge-manana-color);
+  font-weight: 700;
+  border-radius: var(--radius-pill);
+  padding: 0.35rem 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+}
+
+.badge-turno-tarde {
+  background-color: var(--badge-tarde-bg);
+  color: var(--badge-tarde-color);
+  font-weight: 700;
+  border-radius: var(--radius-pill);
+  padding: 0.35rem 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.82rem;
+}
+
+/* 9. CAMPOS DE FORMULARIO TÁCTILES */
+.form-control-touch, .form-select-touch {
+  min-height: var(--btn-min-height);
+  font-size: 1rem;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--card-border);
+  padding: 0.65rem 1rem;
+  background-color: var(--card-bg);
+  color: var(--bs-body-color);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-control-touch:focus, .form-select-touch:focus {
+  border-color: var(--aso-primary);
+  box-shadow: 0 0 0 0.25rem rgba(20, 71, 34, 0.15);
+  background-color: var(--card-bg);
+  color: var(--bs-body-color);
+}
+
+/* 10. ESTILOS DE TABLAS Y DATATABLES RESPONSIVE */
+.table-rural {
+  width: 100% !important;
+  margin-bottom: 0;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-rural thead th {
+  background-color: var(--table-header-bg) !important;
+  color: var(--table-header-color) !important;
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.9rem 1rem;
+  border: none;
+  white-space: nowrap;
+}
+
+.table-rural tbody td {
+  padding: 0.9rem 1rem;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--table-border-color);
+  font-size: 0.95rem;
+  background-color: var(--card-bg);
+  color: var(--bs-body-color);
+}
+
+.table-rural tbody tr:hover td {
+  background-color: var(--table-hover-bg) !important;
+}
+
+.table-rural tfoot th {
+  background-color: var(--card-bg);
+  color: var(--bs-body-color);
+  border-top: 2px solid var(--table-border-color);
+  font-weight: 800;
+  font-size: 1rem;
+  padding: 1rem;
+}
+
+/* DataTables Controles en Modo Oscuro */
+[data-bs-theme="dark"] .dataTables_wrapper .dataTables_length,
+[data-bs-theme="dark"] .dataTables_wrapper .dataTables_filter,
+[data-bs-theme="dark"] .dataTables_wrapper .dataTables_info,
+[data-bs-theme="dark"] .dataTables_wrapper .dataTables_paginate {
+  color: var(--bs-body-color) !important;
+}
+
+[data-bs-theme="dark"] .dataTables_wrapper .dataTables_filter input,
+[data-bs-theme="dark"] .dataTables_wrapper .dataTables_length select {
+  background-color: var(--card-bg);
+  color: var(--bs-body-color);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  padding: 0.4rem 0.6rem;
+}
+
+/* 11. MODAL Y SWEETALERT2 DARK COMPATIBILITY */
+[data-bs-theme="dark"] .swal2-popup {
+  background-color: #18221c !important;
+  color: #e2ede6 !important;
+  border: 1px solid #24352b !important;
+}
+
+[data-bs-theme="dark"] .swal2-title,
+[data-bs-theme="dark"] .swal2-html-container {
+  color: #e2ede6 !important;
+}
+
+/* 12. HERRAMIENTAS DE ANIMACIÓN Y SCROLL */
+.reveal-on-scroll {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal-on-scroll.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+

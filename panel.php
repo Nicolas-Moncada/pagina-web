@@ -1,486 +1,651 @@
 <?php
-require_once __DIR__ . '/api/db.php';
+/**
+ * =========================================================================================
+ * PLATAFORMA DE CONTROL LECHERO - ASOAGROALIZAL (CARMEN DE CARUPA)
+ * Archivo: panel.php
+ * Propósito: Portal del Ganadero Asociado (SSR con PDO, DataTables BS5, Reclamos 1xQ).
+ * =========================================================================================
+ */
 
+require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/includes/db.php';
+require_once __DIR__ . '/includes/helpers.php';
+require_once __DIR__ . '/includes/auth.php';
+
+// 1. CONTROL DE ACCESO ESTRICTO (ROL GANADERO O ADMIN)
 $usuario = requireAuth('GANADERO');
-if (!empty($usuario['debeCambiarPassword'])) {
-    header('Location: cambiar_password.php');
-    exit;
-}
 $pdo = getDB();
 
+// 2. DETECCIÓN O SELECCIÓN DEL PERIODO QUINCENAL
+$quincenaActual = calcularQuincenaActual();
+$fechaInicioSel = $_GET['fechaInicio'] ?? $quincenaActual['fechaInicio'];
+$fechaFinSel    = $_GET['fechaFin'] ?? $quincenaActual['fechaFin'];
+
+// Validar formato de fechas
+if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaInicioSel) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaFinSel)) {
+    $fechaInicioSel = $quincenaActual['fechaInicio'];
+    $fechaFinSel    = $quincenaActual['fechaFin'];
+}
+
+// 3. CONSULTAR PRECIO OFICIAL DE LA QUINCENA
+$stmtQ = $pdo->prepare("SELECT precioLitro, cerrada FROM quincena WHERE fechaInicio = ? AND fechaFin = ? LIMIT 1");
+$stmtQ->execute([$fechaInicioSel, $fechaFinSel]);
+$quincenaDB = $stmtQ->fetch();
+$precioLitro = ($quincenaDB && isset($quincenaDB['precioLitro'])) ? (float)$quincenaDB['precioLitro'] : 0.0;
+$quincenaCerrada = !empty($quincenaDB['cerrada']);
+
+// 4. PESAJES DE HOY PARA ESTE GANADERO (PROTECCIÓN IDOR: USO ESTRICTO DE $_SESSION)
 $hoyStr = date('Y-m-d');
-$diaHoy = (int)date('d');
-$anoHoy = (int)date('Y');
-$mesHoy = (int)date('m');
-$padM = str_pad($mesHoy, 2, '0', STR_PAD_LEFT);
-
-if ($diaHoy <= 15) {
-    $fIni = "{$anoHoy}-{$padM}-01";
-    $fFin = "{$anoHoy}-{$padM}-15";
-    $numQ = 1;
-} else {
-    $ultimoDia = date('t');
-    $fIni = "{$anoHoy}-{$padM}-16";
-    $fFin = "{$anoHoy}-{$padM}-{$ultimoDia}";
-    $numQ = 2;
-}
-
-$meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-$nombreMes = $meses[$mesHoy - 1];
-$nombreQuincena = ($numQ === 1 ? "1ra" : "2da") . " Quincena de {$nombreMes} {$anoHoy}";
-
-// 1. Entregas de Hoy
-try {
-    $stmtHoy = $pdo->prepare("SELECT turno, litros FROM registros_leche WHERE asociadoId = ? AND fecha = ?");
-    $stmtHoy->execute([$usuario['id'], $hoyStr]);
-    $entregasHoy = $stmtHoy->fetchAll();
-    if (empty($entregasHoy)) {
-        $stmtHoyOld = $pdo->prepare("SELECT turno, litros FROM entrega WHERE usuarioId = ? AND fecha = ?");
-        $stmtHoyOld->execute([$usuario['id'], $hoyStr]);
-        $entregasHoy = $stmtHoyOld->fetchAll();
-    }
-} catch (Exception $e) {
-    $entregasHoy = [];
-}
+$stmtHoy = $pdo->prepare("SELECT turno, litros FROM entrega WHERE usuarioId = ? AND fecha = ?");
+$stmtHoy->execute([$usuario['id'], $hoyStr]);
+$entregasHoy = $stmtHoy->fetchAll();
 
 $litrosMananaHoy = 0.0;
-$litrosTardeHoy = 0.0;
-foreach ($entregasHoy as $e) {
-    if ($e['turno'] === 'MANANA') $litrosMananaHoy = (float)$e['litros'];
-    if ($e['turno'] === 'TARDE') $litrosTardeHoy = (float)$e['litros'];
+$litrosTardeHoy  = 0.0;
+foreach ($entregasHoy as $eh) {
+    if ($eh['turno'] === 'MANANA') $litrosMananaHoy = (float)$eh['litros'];
+    if ($eh['turno'] === 'TARDE')  $litrosTardeHoy  = (float)$eh['litros'];
 }
-$totalDiaHoy = $litrosMananaHoy + $litrosTardeHoy;
+$totalHoy = $litrosMananaHoy + $litrosTardeHoy;
 
-// 2. Información Quincena Actual
-try {
-    $stmtQ = $pdo->prepare("SELECT precioLitro FROM configuracion_quincena WHERE fechaInicio = ? AND fechaFin = ? LIMIT 1");
-    $stmtQ->execute([$fIni, $fFin]);
-    $qRow = $stmtQ->fetch();
-    if (!$qRow) {
-        $stmtQOld = $pdo->prepare("SELECT precioLitro FROM quincena WHERE fechaInicio = ? AND fechaFin = ? LIMIT 1");
-        $stmtQOld->execute([$fIni, $fFin]);
-        $qRow = $stmtQOld->fetch();
-    }
-} catch (Exception $e) {
-    $qRow = null;
-}
-$precioLitro = $qRow && isset($qRow['precioLitro']) ? (float)$qRow['precioLitro'] : 0.0;
+// 5. LISTAR TODAS LAS ENTREGAS DE ESTE GANADERO EN LA QUINCENA
+$stmtEntregas = $pdo->prepare("SELECT fecha, turno, litros, creadoEn 
+                               FROM entrega 
+                               WHERE usuarioId = ? AND fecha >= ? AND fecha <= ? 
+                               ORDER BY fecha ASC, turno ASC");
+$stmtEntregas->execute([$usuario['id'], $fechaInicioSel, $fechaFinSel]);
+$entregasQuincena = $stmtEntregas->fetchAll();
 
-// 3. Litros Acumulados de la Quincena Actual
-try {
-    $stmtSum = $pdo->prepare("SELECT COALESCE(SUM(litros), 0) AS total FROM registros_leche WHERE asociadoId = ? AND fecha >= ? AND fecha <= ?");
-    $stmtSum->execute([$usuario['id'], $fIni, $fFin]);
-    $totalLitrosQuincena = (float)($stmtSum->fetch()['total'] ?? 0);
-    if ($totalLitrosQuincena == 0) {
-        $stmtSumOld = $pdo->prepare("SELECT COALESCE(SUM(litros), 0) AS total FROM entrega WHERE usuarioId = ? AND fecha >= ? AND fecha <= ?");
-        $stmtSumOld->execute([$usuario['id'], $fIni, $fFin]);
-        $totalLitrosQuincena = (float)($stmtSumOld->fetch()['total'] ?? 0);
+// Mapeo matricial por fecha y cálculo de totales acumulados
+$mapaPesajes = [];
+$totalLitrosQuincena = 0.0;
+$diasConRegistro = [];
+
+foreach ($entregasQuincena as $eq) {
+    $f = $eq['fecha'];
+    $t = $eq['turno'];
+    $l = (float)$eq['litros'];
+
+    if (!isset($mapaPesajes[$f])) {
+        $mapaPesajes[$f] = ['MANANA' => 0.0, 'TARDE' => 0.0, 'TOTAL' => 0.0];
     }
-} catch (Exception $e) {
-    $totalLitrosQuincena = 0.0;
+    $mapaPesajes[$f][$t] = $l;
+    $mapaPesajes[$f]['TOTAL'] += $l;
+    $totalLitrosQuincena += $l;
+    $diasConRegistro[$f] = true;
 }
-$pagoEstimado = $precioLitro ? ($totalLitrosQuincena * $precioLitro) : 0.0;
+
+$cantidadDiasConEntrega = count($diasConRegistro);
+$promedioDiario = ($cantidadDiasConEntrega > 0) ? ($totalLitrosQuincena / $cantidadDiasConEntrega) : 0.0;
+$totalPagarEstimado = $precioLitro ? ($totalLitrosQuincena * $precioLitro) : 0.0;
+
+// Generar días completos del periodo quincenal
+$diasQuincena = generarDiasQuincena($fechaInicioSel, $fechaFinSel);
+
+// 6. HISTORIAL DE QUINCENAS DISPONIBLES PARA EL SELECTOR
+$stmtListaQ = $pdo->query("SELECT fechaInicio, fechaFin, precioLitro, cerrada FROM quincena ORDER BY fechaInicio DESC LIMIT 24");
+$quincenasDisponibles = $stmtListaQ->fetchAll();
+
+// Si no hay quincenas en la BD, incluir al menos la actual
+if (empty($quincenasDisponibles)) {
+    $quincenasDisponibles = [[
+        'fechaInicio' => $quincenaActual['fechaInicio'],
+        'fechaFin'    => $quincenaActual['fechaFin'],
+        'precioLitro' => 0,
+        'cerrada'     => 0
+    ]];
+}
+
+// 7. VERIFICAR INCONFORMIDAD / RECLAMO DE ESTA QUINCENA (LÍMITE 1 POR QUINCENA)
+$stmtAlerta = $pdo->prepare("SELECT id, mensaje, litrosAlMomento, estado, creadoEn 
+                             FROM alertaquincena 
+                             WHERE usuarioId = ? AND fechaInicio = ? AND fechaFin = ? 
+                             LIMIT 1");
+$stmtAlerta->execute([$usuario['id'], $fechaInicioSel, $fechaFinSel]);
+$alertaExistente = $stmtAlerta->fetch();
+
+// 8. PROCESAR REGISTRO DE RECLAMO VÍA POST
+$errorReclamo = '';
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST' && isset($_POST['accion_reclamo'])) {
+    $tokenRecibido = $_POST['csrf_token'] ?? '';
+    if (!validarCsrfToken($tokenRecibido)) {
+        $errorReclamo = 'La sesión de seguridad ha expirado. Por favor recarga la página.';
+    } elseif ($alertaExistente) {
+        $errorReclamo = 'Ya existe una inconformidad registrada para este periodo quincenal.';
+    } else {
+        $mensajeReclamo = trim($_POST['mensaje_reclamo'] ?? '');
+        if (empty($mensajeReclamo) || strlen($mensajeReclamo) < 10) {
+            $errorReclamo = 'Por favor detalla tu reclamo con al menos 10 caracteres.';
+        } else {
+            try {
+                $altId = generarUUID('alt');
+                $stmtInsAlt = $pdo->prepare("INSERT INTO alertaquincena 
+                    (id, usuarioId, fechaInicio, fechaFin, mensaje, litrosAlMomento, estado, correoEnviado, atendida, creadoEn) 
+                    VALUES (?, ?, ?, ?, ?, ?, 'PENDIENTE', 0, 0, NOW())");
+                $stmtInsAlt->execute([
+                    $altId,
+                    $usuario['id'],
+                    $fechaInicioSel,
+                    $fechaFinSel,
+                    $mensajeReclamo,
+                    $totalLitrosQuincena
+                ]);
+
+                // Enviar notificación al correo de la administración
+                $adminEmail = EMPRESA_CORREO;
+                $asunto = "⚠️ [Reclamo de Pesaje] " . $usuario['nombre'] . " - C.C. " . $usuario['cedula'];
+                $cuerpo = "Se ha registrado una inconformidad quincenal:\n\n"
+                        . "Ganadero: " . $usuario['nombre'] . "\n"
+                        . "Cédula: " . $usuario['cedula'] . "\n"
+                        . "Periodo: {$fechaInicioSel} al {$fechaFinSel}\n"
+                        . "Litros al momento: " . formatoLitros($totalLitrosQuincena) . "\n\n"
+                        . "Detalle del reclamo:\n{$mensajeReclamo}\n\n"
+                        . "Fecha: " . date('Y-m-d H:i:s');
+                @mail($adminEmail, $asunto, $cuerpo, "From: no-reply@asoagroalizal.local\r\n");
+
+                setFlashAlert('success', '¡Inconformidad Registrada!', 'Tu reclamo ha sido enviado al administrador para su revisión.');
+                header("Location: panel.php?fechaInicio={$fechaInicioSel}&fechaFin={$fechaFinSel}");
+                exit;
+            } catch (Exception $e) {
+                error_log("Error guardando alerta: " . $e->getMessage());
+                $errorReclamo = 'Ocurrió un error al registrar el reclamo. Por favor intenta más tarde.';
+            }
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-bs-theme="light">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portal del Ganadero | Asociación de Ganaderos</title>
-  <link rel="stylesheet" href="./css/estilos.css">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Portal del Ganadero | <?php echo e(EMPRESA_SIGLA); ?></title>
+
+  <!-- Script Anti-Parpadeo (Anti-FOUC) -->
   <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            campo: {
-              50: '#f2f8f3', 100: '#e1efe4', 200: '#c4dfcb', 300: '#99c6a4',
-              400: '#6aa778', 500: '#498b58', 600: '#366e43', 700: '#2d5737',
-              800: '#26462e', 900: '#203a27', 950: '#0d1f13'
-            },
-            tierra: {
-              50: '#faf6f1', 100: '#f2eae0', 200: '#e4d3c0', 300: '#d3b79a',
-              400: '#c09774', 500: '#af7e56', 600: '#996748', 700: '#7c503b',
-              800: '#664234', 900: '#54372e'
-            },
-            leche: { 50: '#ffffff', 100: '#fcfbf7', 200: '#f7f5ed', 300: '#ede8d8' },
-            dorado: { 400: '#f59e0b', 500: '#d97706', 600: '#b45309' }
-          }
-        }
-      }
-    }
-    window.GANADERO_NOMBRE = <?php echo json_encode($usuario['nombre']); ?>;
-    window.GANADERO_CEDULA = <?php echo json_encode($usuario['cedula']); ?>;
-    window.PRECIO_LITRO_INICIAL = <?php echo json_encode($precioLitro); ?>;
+    (function() {
+      const savedTheme = localStorage.getItem('asoagro_theme');
+      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const theme = savedTheme ? savedTheme : (systemDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-bs-theme', theme);
+    })();
   </script>
+
+  <!-- Favicon Oficial -->
+  <link rel="icon" type="image/png" href="assets/img/logo.png">
+
+  <!-- Bootstrap 5.3 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  
+  <!-- Bootstrap Icons 1.11.3 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  
+  <!-- DataTables Bootstrap 5 CSS -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+
+  <!-- Estilos Globales de Marca AsoagroAlisal -->
+  <link rel="stylesheet" href="assets/css/estilos.css">
 </head>
-<body class="bg-leche-100 text-campo-950 min-h-screen flex flex-col font-sans antialiased">
+<body class="d-flex flex-column min-vh-100">
 
-  <!-- CABECERA DEL PANEL -->
-  <header class="bg-campo-900 text-white shadow-md sticky top-0 z-40">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between h-20">
-        <!-- Logo y Ganadero -->
-        <div class="flex items-center gap-3">
-          <div class="w-12 h-12 rounded-xl bg-campo-700 flex items-center justify-center text-2xl shadow">
-            🥛
+  <!-- ========================================================================
+       CABECERA DEL PANEL DEL GANADERO
+       ======================================================================== -->
+  <header class="navbar navbar-expand-lg navbar-asoagro sticky-top py-2">
+    <div class="container-fluid px-3 px-md-4">
+      <div class="d-flex align-items-center gap-3">
+        <a href="panel.php" class="d-flex align-items-center gap-2 text-decoration-none">
+          <img src="assets/img/logo.png" alt="Logo <?php echo e(EMPRESA_SIGLA); ?>" class="brand-logo-img">
+          <div class="d-none d-sm-block">
+            <span class="fw-bold fs-6 text-success lh-1 d-block"><?php echo e(EMPRESA_SIGLA); ?></span>
+            <small class="text-muted fw-semibold" style="font-size: 0.72rem;">Portal del Ganadero</small>
           </div>
-          <div>
-            <div class="flex items-center gap-2">
-              <span class="font-black text-base sm:text-lg text-white">
-                <?php echo htmlspecialchars($usuario['nombre']); ?>
-              </span>
-              <span class="bg-campo-800 text-dorado-300 text-[10px] font-black uppercase px-2 py-0.5 rounded-full border border-campo-600">
-                Ganadero
-              </span>
-            </div>
-            <p class="text-xs text-campo-200 font-mono">
-              C.C. <?php echo htmlspecialchars($usuario['cedula']); ?> &bull; Asociación de Ganaderos
-            </p>
-          </div>
+        </a>
+      </div>
+
+      <!-- Información del Ganadero y Acciones -->
+      <div class="d-flex align-items-center gap-2 gap-md-3">
+        <!-- Badge de Identidad -->
+        <div class="text-end d-none d-md-block">
+          <span class="fw-bold d-block text-success"><?php echo e($usuario['nombre']); ?></span>
+          <small class="text-muted font-monospace">C.C. <?php echo e($usuario['cedula']); ?> &bull; <?php echo e($usuario['finca'] ?? 'Vereda Alizal'); ?></small>
         </div>
 
-        <!-- Acciones -->
-        <div class="flex items-center gap-2.5">
-          <button type="button" onclick="abrirModalCambiarPasswordGanadero()" class="btn-touch bg-campo-800 hover:bg-campo-700 text-campo-100 text-xs font-bold px-3 py-2 rounded-xl transition-all flex items-center gap-1.5 border border-campo-700 shadow-sm" title="Cambiar mi contraseña">
-            <span>🔑</span>
-            <span class="hidden sm:inline">Cambiar Clave</span>
-          </button>
-          <a href="./index.php" class="hidden sm:inline-block text-xs font-bold text-campo-200 hover:text-white transition-colors">
-            Ver Sitio Público
-          </a>
-          <a href="./logout.php" class="btn-touch bg-red-700/80 hover:bg-red-800 text-white text-xs sm:text-sm font-bold px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 shadow">
-            <span>Cerrar Sesión</span>
-            <span>🚪</span>
-          </a>
-        </div>
+        <!-- Toggle Modo Oscuro -->
+        <button type="button" class="btn btn-touch btn-outline-success border-2 rounded-circle p-0 theme-toggle-btn" style="width: 42px; height: 42px;" aria-label="Alternar modo oscuro">
+          <i class="bi bi-moon-stars-fill fs-5"></i>
+        </button>
+
+        <!-- Cambiar Contraseña -->
+        <a href="cambiar_password.php" class="btn btn-touch btn-outline-secondary border-2 rounded-pill px-3 py-1 small" title="Cambiar mi clave">
+          <i class="bi bi-key-fill text-warning"></i>
+          <span class="d-none d-lg-inline">Clave</span>
+        </a>
+
+        <!-- Ver Sitio Público -->
+        <a href="index.php" class="btn btn-touch btn-outline-success border-2 rounded-pill px-3 py-1 small d-none d-sm-inline-flex" title="Ir a la página principal">
+          <i class="bi bi-globe"></i>
+          <span class="d-none d-lg-inline">Sitio</span>
+        </a>
+
+        <!-- Cerrar Sesión -->
+        <a href="logout.php" class="btn btn-touch btn-danger rounded-pill px-3 py-1 small fw-bold">
+          <i class="bi bi-box-arrow-right"></i>
+          <span class="d-none d-sm-inline">Salir</span>
+        </a>
       </div>
     </div>
   </header>
 
-  <!-- CONTENIDO PRINCIPAL -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+  <!-- ========================================================================
+       CONTENIDO PRINCIPAL
+       ======================================================================== -->
+  <main class="container-fluid px-3 px-md-4 py-4 flex-grow-1">
 
-    <!-- 1. TARJETA GRANDE: REGISTRO DEL DÍA (HOY) -->
-    <div class="bg-white rounded-3xl shadow-lg border-2 border-campo-200 overflow-hidden">
-      <div class="bg-gradient-to-r from-campo-800 to-campo-900 text-white p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div class="flex items-center gap-3">
-          <div class="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-2xl">
-            📅
-          </div>
-          <div>
-            <p class="text-xs uppercase font-bold tracking-wider text-campo-200">Pesaje Diario</p>
-            <h2 class="text-xl sm:text-2xl font-black text-white">Registro de Hoy</h2>
-          </div>
-        </div>
-        <div class="text-xs sm:text-sm font-bold text-campo-100 bg-black/20 px-3.5 py-1.5 rounded-xl border border-campo-700/50 w-max">
-          <?php echo date('d') . " de " . $nombreMes . " de " . date('Y'); ?>
-        </div>
-      </div>
-
-      <div class="p-6 sm:p-8 grid grid-cols-1 md:grid-cols-3 gap-6">
-        <!-- Mañana -->
-        <div class="bg-amber-50/60 rounded-2xl p-6 border-2 border-amber-200 shadow-sm flex flex-col justify-between">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-black uppercase tracking-wider text-amber-900">☀️ Turno Mañana</span>
-            <span class="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">Ordeño 5:00 AM</span>
-          </div>
-          <div>
-            <span id="litros-manana-hoy" class="text-4xl sm:text-5xl font-black text-amber-950">
-              <?php echo number_format($litrosMananaHoy, 1); ?>
-            </span>
-            <span class="ml-1 text-base font-bold text-amber-800">Litros</span>
-          </div>
-        </div>
-
-        <!-- Tarde -->
-        <div class="bg-orange-50/60 rounded-2xl p-6 border-2 border-orange-200 shadow-sm flex flex-col justify-between">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-black uppercase tracking-wider text-orange-900">🌅 Turno Tarde</span>
-            <span class="text-xs font-bold text-orange-700 bg-orange-100 px-2 py-0.5 rounded-full">Ordeño 3:00 PM</span>
-          </div>
-          <div>
-            <span id="litros-tarde-hoy" class="text-4xl sm:text-5xl font-black text-orange-950">
-              <?php echo number_format($litrosTardeHoy, 1); ?>
-            </span>
-            <span class="ml-1 text-base font-bold text-orange-800">Litros</span>
-          </div>
-        </div>
-
-        <!-- Total Hoy -->
-        <div class="bg-campo-50/80 rounded-2xl p-6 border-2 border-campo-300 shadow-sm flex flex-col justify-between">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-black uppercase tracking-wider text-campo-950">🥛 Total Entregado Hoy</span>
-            <span class="text-xs font-bold text-campo-700 bg-campo-200 px-2 py-0.5 rounded-full">Suma del Día</span>
-          </div>
-          <div>
-            <span id="total-dia-hoy" class="text-4xl sm:text-5xl font-black text-campo-900">
-              <?php echo number_format($totalDiaHoy, 1); ?>
-            </span>
-            <span class="ml-1 text-base font-bold text-campo-700">Litros</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 2. TARJETA PRINCIPAL: QUINCENA EN CURSO -->
-    <div class="bg-white rounded-3xl shadow-lg border-2 border-campo-200 overflow-hidden">
-      <!-- Cabecera Café Tierra -->
-      <div class="bg-gradient-to-r from-tierra-800 to-tierra-900 text-white p-5 sm:p-6">
-        <div class="flex items-center gap-3">
-          <div class="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-2xl text-tierra-200">
-            📊
-          </div>
-          <div>
-            <p class="text-xs uppercase font-bold tracking-wider text-tierra-200">Periodo Activo</p>
-            <h2 id="nombre-quincena-texto" class="text-2xl sm:text-3xl font-extrabold text-white">
-              <?php echo $nombreQuincena; ?>
-            </h2>
-            <p class="text-xs text-tierra-200 mt-0.5">
-              Periodo de entrega: <strong id="rango-fechas-texto" class="text-white underline"><?php echo $fIni . " al " . $fFin; ?></strong>
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Métricas -->
-      <div class="p-6 sm:p-8 space-y-6">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <!-- Litros Acumulados -->
-          <div class="bg-campo-50/70 rounded-2xl p-6 border-2 border-campo-200 shadow-sm flex flex-col justify-between">
-            <span class="text-xs font-black text-campo-950 uppercase tracking-wide">Litros Acumulados</span>
-            <div class="mt-2">
-              <span id="total-litros-display" class="text-4xl sm:text-5xl font-black text-campo-900">
-                <?php echo number_format($totalLitrosQuincena, 1); ?>
-              </span>
-              <span class="ml-1 text-base font-bold text-campo-700">Litros</span>
-              <p class="text-xs text-gray-500 mt-1">Suma de tus entregas en la quincena</p>
-            </div>
-          </div>
-
-          <!-- Precio por Litro -->
-          <div class="bg-campo-50/70 rounded-2xl p-6 border-2 border-campo-200 shadow-sm flex flex-col justify-between">
-            <span class="text-xs font-black text-campo-950 uppercase tracking-wide">Precio por Litro</span>
-            <div class="mt-2">
-              <span id="precio-litro-display" class="text-2xl sm:text-3xl font-black text-campo-900">
-                <?php echo $precioLitro ? "$" . number_format($precioLitro, 0, ',', '.') . " COP" : "Pendiente por fijar"; ?>
-              </span>
-              <p class="text-xs text-gray-500 mt-1">Tarifa oficial de la asociación</p>
-            </div>
-          </div>
-
-          <!-- Pago Estimado -->
-          <div class="bg-campo-50/70 rounded-2xl p-6 border-2 border-campo-200 shadow-sm flex flex-col justify-between">
-            <span class="text-xs font-black text-campo-950 uppercase tracking-wide">Pago Estimado</span>
-            <div class="mt-2">
-              <span id="pago-estimado-display" class="text-2xl sm:text-3xl font-black text-campo-900">
-                <?php echo $pagoEstimado ? "$" . number_format($pagoEstimado, 0, ',', '.') . " COP" : "$0 COP"; ?>
-              </span>
-              <p class="text-xs text-gray-500 mt-1">Liquidación sujeta al cierre quincenal</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- 3. PLANILLA DE EXCEL QUINCENAL (SOLO LECTURA ESTRICTA) -->
-        <div class="pt-6 border-t border-gray-200 space-y-4">
-          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <!-- BIENVENIDA Y ALERTA SI DEBE CAMBIAR CLAVE -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card card-rural p-3 p-md-4 bg-success text-white border-0 shadow position-relative overflow-hidden" style="background: linear-gradient(135deg, #144722 0%, #2e7d32 100%);">
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
             <div>
-              <h3 class="text-lg sm:text-xl font-black text-campo-950 flex items-center gap-2">
-                <span>📋 Historial Detallado de la Quincena</span>
-                <span class="text-xs font-bold bg-campo-100 text-campo-800 px-2.5 py-0.5 rounded-full border border-campo-300">
-                  Planilla Oficial (Solo Lectura)
-                </span>
-              </h3>
-              <p class="text-xs text-gray-500">
-                Consulta tus pesajes diarios por fecha en turnos de Mañana y Tarde.
+              <span class="badge bg-warning text-dark px-3 py-1 rounded-pill fw-bold mb-2">Asociado Oficial</span>
+              <h2 class="display-6 fw-bold mb-1">¡Hola, <?php echo e($usuario['nombre']); ?>!</h2>
+              <p class="mb-0 opacity-90">
+                <i class="bi bi-geo-alt-fill text-warning me-1"></i> Finca: <strong><?php echo e($usuario['finca'] ?? 'Vereda Alizal'); ?></strong> &bull; Cédula: <strong><?php echo e($usuario['cedula']); ?></strong>
               </p>
             </div>
-
-            <!-- Selector de Quincena -->
-            <div class="flex items-center gap-2">
-              <label for="selector-quincena-ganadero" class="text-xs font-bold text-gray-700 whitespace-nowrap">
-                Consultar Periodo:
-              </label>
-              <select id="selector-quincena-ganadero"
-                      class="px-3 py-2 text-xs font-bold border-2 border-campo-300 rounded-xl bg-white text-campo-950 focus:outline-none focus:border-campo-600">
-                <!-- Llenado dinámicamente por panel.js -->
-              </select>
+            <div class="text-md-end">
+              <span class="badge bg-white text-dark px-3 py-2 rounded-4 fw-bold shadow-sm">
+                <i class="bi bi-calendar3 me-1 text-success"></i> <?php echo formatoFechaEspanol($hoyStr); ?>
+              </span>
             </div>
-          </div>
-
-          <!-- Contenedor donde se dibuja la tabla matricial de 15 días -->
-          <div id="contenedor-tabla-ganadero" class="bg-white rounded-2xl border-2 border-campo-200 overflow-hidden">
-            <!-- Renderizado dinámicamente -->
-          </div>
-
-          <!-- SECCIÓN DE RECLAMOS / INCONFORMIDAD (LÍMITE 1 POR QUINCENA) -->
-          <div class="pt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div id="estado-queja-aviso" class="w-full hidden">
-              <!-- Aviso si ya envió reclamo para esta quincena -->
-            </div>
-
-            <button type="button" id="btn-abrir-queja"
-                    class="btn-touch px-6 py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs sm:text-sm shadow transition-all flex items-center gap-2">
-              <span>⚠️ ¿Tienes alguna inconformidad con tus litros registrados?</span>
-            </button>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- TARJETAS DE PESAJE DE HOY (MAÑANA / TARDE / TOTAL DÍA) -->
+    <div class="row g-3 mb-4">
+      <div class="col-12">
+        <h4 class="fw-bold text-success mb-2">
+          <i class="bi bi-sun-fill text-warning me-1"></i> Pesaje de Hoy (<?php echo date('d/m/Y'); ?>)
+        </h4>
+      </div>
+
+      <!-- Turno Mañana -->
+      <div class="col-md-4">
+        <div class="card card-rural p-4 border-start border-4 border-warning h-100">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="badge-turno-manana">
+              <i class="bi bi-brightness-high-fill"></i> Turno Mañana
+            </span>
+            <small class="text-muted fw-bold">Ordeño 5:00 AM</small>
+          </div>
+          <div class="d-flex align-items-baseline gap-2">
+            <span class="display-5 fw-extrabold text-warning-emphasis"><?php echo number_format($litrosMananaHoy, 1, ',', '.'); ?></span>
+            <span class="fs-5 fw-bold text-muted">Litros</span>
+          </div>
+          <small class="text-muted mt-2 d-block">Registrado en centro de acopio</small>
+        </div>
+      </div>
+
+      <!-- Turno Tarde -->
+      <div class="col-md-4">
+        <div class="card card-rural p-4 border-start border-4 border-danger h-100">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="badge-turno-tarde">
+              <i class="bi bi-sunset-fill"></i> Turno Tarde
+            </span>
+            <small class="text-muted fw-bold">Ordeño 3:00 PM</small>
+          </div>
+          <div class="d-flex align-items-baseline gap-2">
+            <span class="display-5 fw-extrabold text-danger-emphasis"><?php echo number_format($litrosTardeHoy, 1, ',', '.'); ?></span>
+            <span class="fs-5 fw-bold text-muted">Litros</span>
+          </div>
+          <small class="text-muted mt-2 d-block">Registrado en centro de acopio</small>
+        </div>
+      </div>
+
+      <!-- Total del Día -->
+      <div class="col-md-4">
+        <div class="card card-rural p-4 border-start border-4 border-success h-100" style="background: var(--aso-secondary-light);">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="badge bg-success text-white px-3 py-1 rounded-pill fw-bold">
+              <i class="bi bi-droplet-fill me-1"></i> Total Entregado Hoy
+            </span>
+            <small class="text-success fw-bold">Suma del Día</small>
+          </div>
+          <div class="d-flex align-items-baseline gap-2">
+            <span class="display-5 fw-extrabold text-success"><?php echo number_format($totalHoy, 1, ',', '.'); ?></span>
+            <span class="fs-5 fw-bold text-success">Litros</span>
+          </div>
+          <small class="text-muted mt-2 d-block">Cadena de frío activa a 4.0 °C</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- TARJETAS RESUMEN DE LA QUINCENA -->
+    <div class="row g-3 mb-4">
+      <div class="col-12 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+        <div>
+          <h4 class="fw-bold text-success mb-0">
+            <i class="bi bi-bar-chart-line-fill me-1"></i> Resumen de la Quincena Seleccionada
+          </h4>
+          <small class="text-muted">Periodo: <strong><?php echo formatoFechaEspanol($fechaInicioSel); ?></strong> al <strong><?php echo formatoFechaEspanol($fechaFinSel); ?></strong></small>
+        </div>
+
+        <!-- Selector de Quincena -->
+        <form action="panel.php" method="GET" class="d-flex align-items-center gap-2">
+          <label for="filtro-quincena" class="fw-bold small text-muted text-nowrap">Periodo:</label>
+          <select id="filtro-quincena" class="form-select form-select-touch form-select-sm" onchange="const p = this.value.split('|'); location.href='panel.php?fechaInicio=' + p[0] + '&fechaFin=' + p[1];">
+            <?php foreach ($quincenasDisponibles as $q): ?>
+              <?php $sel = ($q['fechaInicio'] === $fechaInicioSel && $q['fechaFin'] === $fechaFinSel) ? 'selected' : ''; ?>
+              <option value="<?php echo e($q['fechaInicio'] . '|' . $q['fechaFin']); ?>" <?php echo $sel; ?>>
+                <?php echo formatoFechaEspanol($q['fechaInicio']); ?> al <?php echo formatoFechaEspanol($q['fechaFin']); ?>
+                <?php echo !empty($q['cerrada']) ? ' (Cerrada)' : ' (En Curso)'; ?>
+              </option>
+            <?php endforeach; ?>
+          </select>
+        </form>
+      </div>
+
+      <!-- Tarjeta 1: Total Litros Quincena -->
+      <div class="col-md-3 col-6">
+        <div class="card card-rural p-3 p-md-4 text-center">
+          <small class="text-muted fw-bold text-uppercase">Litros Acumulados</small>
+          <div class="display-6 fw-extrabold text-success my-2">
+            <?php echo number_format($totalLitrosQuincena, 1, ',', '.'); ?>
+          </div>
+          <small class="text-muted">Suma de tus entregas</small>
+        </div>
+      </div>
+
+      <!-- Tarjeta 2: Promedio Diario -->
+      <div class="col-md-3 col-6">
+        <div class="card card-rural p-3 p-md-4 text-center">
+          <small class="text-muted fw-bold text-uppercase">Promedio Diario</small>
+          <div class="display-6 fw-extrabold text-primary my-2">
+            <?php echo number_format($promedioDiario, 1, ',', '.'); ?>
+          </div>
+          <small class="text-muted">Litros/día con entrega</small>
+        </div>
+      </div>
+
+      <!-- Tarjeta 3: Precio Oficial por Litro -->
+      <div class="col-md-3 col-6">
+        <div class="card card-rural p-3 p-md-4 text-center">
+          <small class="text-muted fw-bold text-uppercase">Precio Oficial Litro</small>
+          <div class="display-6 fw-extrabold text-warning-emphasis my-2">
+            <?php echo $precioLitro > 0 ? formatoMonedaCOP($precioLitro) : '<span class="fs-5 text-muted">Por Fijar</span>'; ?>
+          </div>
+          <small class="text-muted"><?php echo $quincenaCerrada ? 'Tarifa Liquidada' : 'Tarifa Vigente'; ?></small>
+        </div>
+      </div>
+
+      <!-- Tarjeta 4: Pago Estimado -->
+      <div class="col-md-3 col-6">
+        <div class="card card-rural p-3 p-md-4 text-center border-2 border-success">
+          <small class="text-muted fw-bold text-uppercase">Pago Estimado</small>
+          <div class="display-6 fw-extrabold text-success my-2">
+            <?php echo formatoMonedaCOP($totalPagarEstimado); ?>
+          </div>
+          <small class="text-muted"><?php echo $quincenaCerrada ? 'Valor Final Liquidado' : 'Sujeto al cierre quincenal'; ?></small>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN: TABLA DETALLADA DE PESAJES DÍA A DÍA (DATATABLES BS5 EN ESPAÑOL) -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card card-rural border-0 shadow overflow-hidden">
+          <div class="card-header bg-success text-white p-3 p-md-4 d-flex justify-content-between align-items-center">
+            <div>
+              <h5 class="fw-bold mb-0">
+                <i class="bi bi-calendar2-range me-2"></i> Planilla Detallada de Pesajes de la Quincena
+              </h5>
+              <small class="opacity-75">Tus pesajes registrados día a día en la Finca El Recuerdo</small>
+            </div>
+            <span class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold">
+              <?php echo count($entregasQuincena); ?> Registros en el Periodo
+            </span>
+          </div>
+
+          <div class="card-body p-3 p-md-4">
+            <?php if (empty($diasQuincena)): ?>
+              <div class="text-center py-5">
+                <i class="bi bi-inbox display-1 text-muted"></i>
+                <h5 class="fw-bold mt-3">No hay fechas configuradas para esta quincena</h5>
+                <p class="text-muted">Selecciona otro periodo en el menú superior.</p>
+              </div>
+            <?php else: ?>
+              <div class="table-responsive">
+                <table id="tabla-ganadero-pesajes" class="table table-rural table-hover align-middle w-100">
+                  <thead>
+                    <tr>
+                      <th>Fecha de Entrega</th>
+                      <th>Día</th>
+                      <th class="text-center">☀️ Turno Mañana</th>
+                      <th class="text-center">🌅 Turno Tarde</th>
+                      <th class="text-end">🥛 Total del Día</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <?php 
+                    $sumaTotalMañana = 0.0;
+                    $sumaTotalTarde  = 0.0;
+                    foreach ($diasQuincena as $diaObj): 
+                        $fStr = $diaObj['fecha'];
+                        $mVal = $mapaPesajes[$fStr]['MANANA'] ?? 0.0;
+                        $tVal = $mapaPesajes[$fStr]['TARDE']  ?? 0.0;
+                        $diaTotal = $mVal + $tVal;
+                        $sumaTotalMañana += $mVal;
+                        $sumaTotalTarde  += $tVal;
+                        $esHoy = ($fStr === $hoyStr);
+                    ?>
+                      <tr class="<?php echo $esHoy ? 'table-warning fw-bold' : ''; ?>">
+                        <td>
+                          <strong><?php echo formatoFechaEspanol($fStr); ?></strong>
+                          <?php if ($esHoy): ?>
+                            <span class="badge bg-warning text-dark ms-2">HOY</span>
+                          <?php endif; ?>
+                        </td>
+                        <td><?php echo e($diaObj['diaSemana']); ?></td>
+                        <td class="text-center">
+                          <?php if ($mVal > 0): ?>
+                            <span class="badge-turno-manana fs-6"><?php echo number_format($mVal, 1, ',', '.'); ?> L</span>
+                          <?php else: ?>
+                            <span class="text-muted opacity-50">-</span>
+                          <?php endif; ?>
+                        </td>
+                        <td class="text-center">
+                          <?php if ($tVal > 0): ?>
+                            <span class="badge-turno-tarde fs-6"><?php echo number_format($tVal, 1, ',', '.'); ?> L</span>
+                          <?php else: ?>
+                            <span class="text-muted opacity-50">-</span>
+                          <?php endif; ?>
+                        </td>
+                        <td class="text-end fw-extrabold text-success fs-6">
+                          <?php echo ($diaTotal > 0) ? number_format($diaTotal, 1, ',', '.') . ' L' : '<span class="text-muted opacity-50">-</span>'; ?>
+                        </td>
+                      </tr>
+                    <?php endforeach; ?>
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <th colspan="2" class="text-end text-uppercase">Totales de la Quincena:</th>
+                      <th class="text-center text-warning-emphasis fs-5">
+                        <?php echo number_format($sumaTotalMañana, 1, ',', '.'); ?> L
+                      </th>
+                      <th class="text-center text-danger-emphasis fs-5">
+                        <?php echo number_format($sumaTotalTarde, 1, ',', '.'); ?> L
+                      </th>
+                      <th class="text-end text-success fs-4">
+                        <?php echo number_format($totalLitrosQuincena, 1, ',', '.'); ?> L
+                      </th>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            <?php endif; ?>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECCIÓN DE INCONFORMIDAD / RECLAMOS (LÍMITE 1 POR QUINCENA) -->
+    <div class="row">
+      <div class="col-12">
+        <div class="card card-rural p-4 border-2 border-warning shadow-sm">
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+              <h5 class="fw-bold text-success mb-1">
+                <i class="bi bi-shield-exclamation text-warning me-2"></i> ¿Tienes alguna inconformidad con tus litros en este periodo?
+              </h5>
+              <small class="text-muted">
+                Por políticas de control lechero, solo se permite registrar <strong>UNA (1) inconformidad formal</strong> por cada quincena.
+              </small>
+            </div>
+
+            <div>
+              <?php if ($alertaExistente): ?>
+                <div class="alert alert-info rounded-4 py-2 px-3 mb-0 small fw-bold">
+                  <i class="bi bi-clock-history me-1"></i> Inconformidad radicada el <?php echo formatoFechaEspanol($alertaExistente['creadoEn']); ?>. 
+                  Estado: <span class="badge bg-primary"><?php echo e($alertaExistente['estado']); ?></span>
+                </div>
+              <?php else: ?>
+                <button type="button" class="btn btn-touch btn-warning text-dark fw-bold rounded-pill px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#modalReclamo">
+                  <i class="bi bi-chat-left-dots-fill me-1"></i> Radicar Inconformidad
+                </button>
+              <?php endif; ?>
+            </div>
+          </div>
+
+          <?php if ($alertaExistente): ?>
+            <div class="mt-3 p-3 bg-body-tertiary rounded-3 border small">
+              <strong class="text-success d-block mb-1">Detalle del reclamo presentado:</strong>
+              <p class="mb-0 text-muted fst-italic">"<?php echo e($alertaExistente['mensaje']); ?>"</p>
+              <small class="opacity-75 mt-1 d-block">Litros registrados al momento del reclamo: <?php echo formatoLitros($alertaExistente['litrosAlMomento']); ?></small>
+            </div>
+          <?php endif; ?>
+
+          <?php if (!empty($errorReclamo)): ?>
+            <div class="alert alert-danger rounded-4 py-2 small fw-bold mt-3 mb-0">
+              <i class="bi bi-exclamation-triangle-fill me-1"></i> <?php echo e($errorReclamo); ?>
+            </div>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
+
   </main>
 
-  <!-- MODAL DE QUEJA / INCONFORMIDAD -->
-  <div id="modal-queja" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border-2 border-campo-200 relative animate-in fade-in zoom-in duration-200">
-      <div class="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
-        <h3 class="text-xl font-black text-gray-900 flex items-center gap-2">
-          <span>⚠️ Registrar Inconformidad Quincenal</span>
-        </h3>
-        <button type="button" id="btn-cerrar-queja" class="text-gray-400 hover:text-gray-700 text-lg font-bold p-1">
-          ✕
-        </button>
-      </div>
+  <!-- MODAL PARA RADICAR RECLAMO -->
+  <?php if (!$alertaExistente): ?>
+    <div class="modal fade" id="modalReclamo" tabindex="-1" aria-labelledby="modalReclamoLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+          <div class="modal-header bg-success text-white p-4">
+            <h5 class="modal-title fw-bold" id="modalReclamoLabel">
+              <i class="bi bi-shield-exclamation text-warning me-2"></i> Radicar Inconformidad Quincenal
+            </h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <form action="panel.php?fechaInicio=<?php echo e($fechaInicioSel); ?>&fechaFin=<?php echo e($fechaFinSel); ?>" method="POST">
+            <?php echo campoCsrf(); ?>
+            <input type="hidden" name="accion_reclamo" value="1">
 
-      <p class="text-xs text-gray-600 mb-4">
-        Escribe con claridad el motivo de tu reclamo sobre el pesaje de esta quincena. El mensaje se guardará en el sistema y se enviará por correo electrónico a la administración (<strong>asoagroalisal@gmail.com</strong>).
-      </p>
+            <div class="modal-body p-4">
+              <p class="small text-muted mb-3">
+                Escribe detalladamente las fechas, turnos o diferencias que consideres que deben ser revisadas por el administrador de la asociación.
+              </p>
 
-      <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs font-bold text-amber-900 mb-4">
-        ℹ️ Restricción del sistema: Solo se permite registrar <strong>UNA (1) inconformidad</strong> por cada periodo quincenal.
-      </div>
+              <div class="mb-3">
+                <label for="mensaje_reclamo" class="form-label fw-bold small text-muted">Detalle de la Inconformidad *</label>
+                <textarea class="form-control form-control-touch" id="mensaje_reclamo" name="mensaje_reclamo" rows="4" required placeholder="Describe las fechas y litros que requieres verificar..."></textarea>
+                <small class="text-muted d-block mt-1">Mínimo 10 caracteres.</small>
+              </div>
 
-      <form id="form-queja" class="space-y-4">
-        <div>
-          <label for="queja-mensaje" class="block text-xs font-bold text-gray-700 mb-1">
-            Detalle del Reclamo *
-          </label>
-          <textarea id="queja-mensaje" rows="4" required
-                    placeholder="Describe las fechas o turnos con los que estás inconforme..."
-                    class="w-full px-3.5 py-2.5 text-sm border-2 border-gray-300 rounded-xl focus:outline-none focus:border-campo-600 focus:ring-2 focus:ring-campo-100"></textarea>
+              <div class="p-3 bg-warning-subtle rounded-3 small text-warning-emphasis">
+                <i class="bi bi-info-circle-fill me-1"></i> Al enviar, el mensaje quedará registrado en la base de datos y se notificará de inmediato a la administración.
+              </div>
+            </div>
+            <div class="modal-footer p-3 bg-body-tertiary">
+              <button type="button" class="btn btn-touch btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+              <button type="submit" class="btn btn-touch btn-aso-primary rounded-pill px-4">
+                <i class="bi bi-send-fill me-1"></i> Enviar Reclamo
+              </button>
+            </div>
+          </form>
         </div>
-
-        <div class="flex justify-end gap-3 pt-2">
-          <button type="button" onclick="document.getElementById('modal-queja').classList.add('hidden')"
-                  class="px-5 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-bold text-xs hover:bg-gray-100">
-            Cancelar
-          </button>
-          <button type="submit" id="btn-enviar-queja"
-                  class="px-6 py-2.5 rounded-xl bg-campo-700 hover:bg-campo-800 text-white font-bold text-xs shadow flex items-center gap-2">
-            <span>Enviar Inquietud al Administrador</span>
-            <span>✉️</span>
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
-  </div>
+  <?php endif; ?>
 
-  <!-- MODAL CAMBIAR CONTRASEÑA GANADERO -->
-  <div id="modal-cambiar-password-ganadero" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-    <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border-2 border-campo-200">
-      <div class="flex items-center justify-between mb-4 pb-2 border-b">
-        <h3 class="font-black text-lg text-gray-900 flex items-center gap-2">
-          <span>🔑</span>
-          <span>Cambiar mi Contraseña</span>
-        </h3>
-        <button type="button" onclick="cerrarModalCambiarPasswordGanadero()" class="text-gray-400 hover:text-black font-bold p-1">✕</button>
-      </div>
-      <div id="msg-modal-pass-ganadero" class="hidden p-3 rounded-xl text-xs font-bold mb-3"></div>
-      <form id="form-cambiar-password-ganadero" class="space-y-3">
-        <div>
-          <label class="block text-xs font-bold text-gray-700 mb-1">Contraseña Actual *</label>
-          <input type="password" name="passwordActual" required placeholder="Ingresa tu clave actual" class="w-full px-3 py-2 text-xs border-2 rounded-xl bg-white">
-        </div>
-        <div>
-          <label class="block text-xs font-bold text-gray-700 mb-1">Nueva Contraseña * (Mínimo 8 caracteres)</label>
-          <input type="password" name="passwordNueva" required placeholder="Escribe tu nueva contraseña" class="w-full px-3 py-2 text-xs border-2 rounded-xl bg-white">
-        </div>
-        <div>
-          <label class="block text-xs font-bold text-gray-700 mb-1">Confirmar Nueva Contraseña *</label>
-          <input type="password" name="passwordConfirm" required placeholder="Repite la nueva contraseña" class="w-full px-3 py-2 text-xs border-2 rounded-xl bg-white">
-        </div>
-        <div class="p-2.5 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-900">
-          ⚠️ Al cambiar tu contraseña, cualquier otra sesión abierta en otro dispositivo se cerrará automáticamente.
-        </div>
-        <div class="flex justify-end gap-2 pt-2">
-          <button type="button" onclick="cerrarModalCambiarPasswordGanadero()" class="px-4 py-2 border rounded-xl text-xs font-bold">Cancelar</button>
-          <button type="submit" id="btn-submit-modal-pass-g" class="px-5 py-2 bg-campo-700 hover:bg-campo-800 text-white rounded-xl text-xs font-bold shadow">Guardar Nueva Clave</button>
-        </div>
-      </form>
+  <!-- FOOTER -->
+  <footer class="py-3 text-center text-muted small mt-auto border-top">
+    <div class="container-fluid">
+      <?php echo e(EMPRESA_SIGLA); ?> &bull; Control Lechero Campesino &bull; Carmen de Carupa, Cundinamarca &copy; <?php echo date('Y'); ?>
     </div>
-  </div>
-
-  <footer class="bg-campo-950 text-white py-6 text-center text-xs text-campo-400 mt-auto border-t border-campo-900">
-    &copy; <?php echo date('Y'); ?> Asociación de Ganaderos Unión y Progreso Lechero &bull; XAMPP Native Edition
   </footer>
 
-  <script src="./js/app.js"></script>
-  <script src="./js/panel.js"></script>
+  <!-- Scripts: jQuery + Bootstrap Bundle + DataTables + SweetAlert2 + App.js -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+  
+  <!-- DataTables JS & Plugins -->
+  <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
+  <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+  <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="assets/js/app.js"></script>
+
   <script>
-    function abrirModalCambiarPasswordGanadero() {
-      const modal = document.getElementById("modal-cambiar-password-ganadero");
-      const form = document.getElementById("form-cambiar-password-ganadero");
-      const msg = document.getElementById("msg-modal-pass-ganadero");
-      if (form) form.reset();
-      if (msg) msg.classList.add("hidden");
-      if (modal) modal.classList.remove("hidden");
-    }
-
-    function cerrarModalCambiarPasswordGanadero() {
-      document.getElementById("modal-cambiar-password-ganadero")?.classList.add("hidden");
-    }
-
-    document.getElementById("form-cambiar-password-ganadero")?.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const form = e.target;
-      const btn = document.getElementById("btn-submit-modal-pass-g");
-      const msg = document.getElementById("msg-modal-pass-ganadero");
-
-      const pActual = form.passwordActual.value;
-      const pNueva = form.passwordNueva.value;
-      const pConf = form.passwordConfirm.value;
-
-      if (pNueva !== pConf) {
-        msg.className = "p-3 bg-red-100 text-red-800 rounded-xl text-xs font-bold block mb-3";
-        msg.textContent = "La nueva contraseña y su confirmación no coinciden.";
-        return;
-      }
-
-      btn.disabled = true;
-      btn.textContent = "Actualizando...";
-
-      try {
-        const res = await fetch("./api/cambiar_password.php", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            passwordActual: pActual,
-            passwordNueva: pNueva,
-            passwordConfirm: pConf
-          })
-        });
-
-        const data = await res.json();
-
-        if (res.ok) {
-          msg.className = "p-3 bg-green-100 text-green-800 rounded-xl text-xs font-bold block mb-3";
-          msg.textContent = "✅ " + data.mensaje;
-          setTimeout(() => {
-            cerrarModalCambiarPasswordGanadero();
-          }, 1800);
-        } else {
-          msg.className = "p-3 bg-red-100 text-red-800 rounded-xl text-xs font-bold block mb-3";
-          msg.textContent = "⚠️ " + (data.error || "Error al actualizar la contraseña.");
-        }
-      } catch (err) {
-        msg.className = "p-3 bg-red-100 text-red-800 rounded-xl text-xs font-bold block mb-3";
-        msg.textContent = "Error de conexión al servidor.";
-      } finally {
-        btn.disabled = false;
-        btn.textContent = "Guardar Nueva Clave";
-      }
+    $(document).ready(function() {
+      // Inicializar DataTables con idioma en español y botones de exportación
+      $('#tabla-ganadero-pesajes').DataTable({
+        language: {
+          url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json'
+        },
+        pageLength: 20,
+        responsive: true,
+        order: [[0, 'asc']],
+        dom: '<"d-flex flex-wrap justify-content-between align-items-center mb-3"Bf>rt<"d-flex flex-wrap justify-content-between align-items-center mt-3"ip>',
+        buttons: [
+          {
+            extend: 'excelHtml5',
+            text: '<i class="bi bi-file-earmark-excel-fill text-success me-1"></i> Excel',
+            className: 'btn btn-outline-success btn-sm rounded-pill shadow-sm me-1',
+            title: 'Mis_Pesajes_<?php echo e($usuario["cedula"]); ?>_<?php echo $fechaInicioSel; ?>'
+          },
+          {
+            extend: 'pdfHtml5',
+            text: '<i class="bi bi-file-earmark-pdf-fill text-danger me-1"></i> PDF',
+            className: 'btn btn-outline-danger btn-sm rounded-pill shadow-sm me-1',
+            title: 'Planilla_Lechera_<?php echo e($usuario["nombre"]); ?>'
+          },
+          {
+            extend: 'print',
+            text: '<i class="bi bi-printer-fill text-primary me-1"></i> Imprimir',
+            className: 'btn btn-outline-primary btn-sm rounded-pill shadow-sm'
+          }
+        ]
+      });
     });
   </script>
+
+  <!-- SweetAlert2 Flash Messages -->
+  <?php echo renderSweetAlert(); ?>
+
 </body>
 </html>
-

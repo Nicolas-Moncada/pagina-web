@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bpoBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f0f9ff" />
+      <stop offset="100%" stop-color="#e0f2fe" />
+    </linearGradient>
+  </defs>
+  <rect width="600" height="400" fill="url(#bpoBg)" rx="24"/>
+  <!-- Ícono Central: Cantina Lechera Brillante y Escudo de Sanidad -->
+  <path d="M250,150 L350,150 L340,300 L260,300 Z" fill="#94a3b8" stroke="#334155" stroke-width="4"/>
+  <ellipse cx="300" cy="150" rx="50" ry="14" fill="#cbd5e1" stroke="#334155" stroke-width="4"/>
+  <ellipse cx="300" cy="300" rx="40" ry="12" fill="#64748b"/>
+  <!-- Tapa Cantina -->
+  <rect x="280" y="125" width="40" height="20" rx="4" fill="#475569"/>
+  <!-- Asas Cantina -->
+  <path d="M250,180 C220,180 220,220 252,220" fill="none" stroke="#334155" stroke-width="6" stroke-linecap="round"/>
+  <path d="M350,180 C380,180 380,220 348,220" fill="none" stroke="#334155" stroke-width="6" stroke-linecap="round"/>
+  <!-- Escudo Verde BPO con Chulo / Check -->
+  <circle cx="360" cy="260" r="36" fill="#144722" stroke="#ffffff" stroke-width="3"/>
+  <path d="M346,260 L356,270 L376,250" fill="none" stroke="#f59e0b" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Gotas de leche / higiene -->
+  <path d="M210,130 C210,145 195,155 195,155 C195,155 180,145 180,130 C180,120 195,105 195,105 C195,105 210,120 210,130 Z" fill="#38bdf8"/>
+  <text x="300" y="65" font-family="sans-serif" font-size="22" font-weight="900" fill="#144722" text-anchor="middle">Buenas Prácticas de Ordeño (BPO)</text>
+  <text x="300" y="92" font-family="sans-serif" font-size="14" font-weight="bold" fill="#0284c7" text-anchor="middle">Desinfección de Pezones, Filtrado y Cadena de Frío</text>
+</svg>
+
