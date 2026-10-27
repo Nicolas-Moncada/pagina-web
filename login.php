@@ -273,7 +273,7 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
                     <span class="input-group-text border-2 bg-transparent text-success" style="border-radius: var(--radius-md) 0 0 var(--radius-md); border-right: none;">
                       <i class="bi bi-person-vcard fs-5"></i>
                     </span>
-                    <input type="text" class="form-control form-control-touch border-start-0" id="cedula" name="cedula" inputmode="numeric" required placeholder="Ej: 79164451" value="<?php echo e($cedulaRecordada); ?>" style="border-radius: 0 var(--radius-md) var(--radius-md) 0;">
+                    <input type="text" class="form-control form-control-touch border-start-0" id="cedula" name="cedula" inputmode="numeric" required placeholder="Ej: 10123456" value="<?php echo e($cedulaRecordada); ?>" style="border-radius: 0 var(--radius-md) var(--radius-md) 0;">
                   </div>
                 </div>
 

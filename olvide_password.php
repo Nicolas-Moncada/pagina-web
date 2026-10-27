@@ -105,7 +105,7 @@ require_once __DIR__ . '/includes/header.php';
             <span class="input-group-text bg-transparent text-success border-2" style="border-radius: var(--radius-md) 0 0 var(--radius-md); border-right: none;">
               <i class="bi bi-person-vcard fs-5"></i>
             </span>
-            <input type="text" class="form-control form-control-touch border-start-0" id="cedula" name="cedula" inputmode="numeric" required placeholder="Ej: 79164451" style="border-radius: 0 var(--radius-md) var(--radius-md) 0;" value="<?php echo e($_POST['cedula'] ?? ''); ?>">
+            <input type="text" class="form-control form-control-touch border-start-0" id="cedula" name="cedula" inputmode="numeric" required placeholder="Ej: 10123456" style="border-radius: 0 var(--radius-md) var(--radius-md) 0;" value="<?php echo e($_POST['cedula'] ?? ''); ?>">
           </div>
         </div>
 

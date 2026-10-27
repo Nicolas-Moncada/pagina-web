@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="100%" height="100%">
+  <defs>
+    <linearGradient id="famBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f0f7f2" />
+      <stop offset="100%" stop-color="#d9eadf" />
+    </linearGradient>
+  </defs>
+  <rect width="600" height="400" fill="url(#famBg)" rx="20"/>
+
+  <!-- Silueta comunitaria asociativa (figuras humanas estilizadas en equipo) -->
+  <g fill="#11501e">
+    <!-- Centro -->
+    <circle cx="300" cy="180" r="32"/>
+    <path d="M250,290 C250,230 350,230 350,290 Z"/>
+    <!-- Izquierda -->
+    <circle cx="210" cy="195" r="26" fill="#2d6e3d"/>
+    <path d="M170,295 C170,245 250,245 250,295 Z" fill="#2d6e3d"/>
+    <!-- Derecha -->
+    <circle cx="390" cy="195" r="26" fill="#2d6e3d"/>
+    <path d="M350,295 C350,245 430,245 430,295 Z" fill="#2d6e3d"/>
+  </g>
+
+  <!-- Insignia 32 Asociados -->
+  <rect x="220" y="315" width="160" height="34" rx="17" fill="#b46b00"/>
+  <text x="300" y="337" font-family="'Inter', sans-serif" font-size="13" font-weight="800" fill="#ffffff" text-anchor="middle">32 ASOCIADOS ACTIVOS</text>
+
+  <text x="300" y="60" font-family="'Fraunces', serif" font-size="22" font-weight="700" fill="#11501e" text-anchor="middle">Nuestra Familia Campesina</text>
+  <text x="300" y="86" font-family="'Inter', sans-serif" font-size="13" font-weight="500" fill="#435848" text-anchor="middle">Compromiso Comunitario en la Vereda Alizal</text>
+</svg>

@@ -22,7 +22,7 @@ Sistema web completo de gestión lechera, pesajes por turno (Mañana ☀️ y Ta
 
 ### 👤 Administrador General
 - **URL de Ingreso:** [http://localhost/asociacion/login.php](http://localhost/asociacion/login.php)
-- **Cédula Inicial:** `79164451` (Luis Hernando Moncada)
+- **Cédula Inicial:** `[CÉDULA-ADMIN-PROTEGIDA]`
 - **Contraseña Inicial:** Configurada de forma segura en la variable `ADMIN_INITIAL_PASSWORD` del archivo `.env`.
 - En el primer inicio de sesión se exige el cambio de contraseña por una segura de al menos 10 caracteres.
 - **Panel Administrativo:** `admin.php`

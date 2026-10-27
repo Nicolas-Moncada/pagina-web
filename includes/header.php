@@ -62,8 +62,8 @@ $tituloPagina = $tituloPagina ?? (EMPRESA_SIGLA . ' | Control Lechero');
       <a class="navbar-brand d-flex align-items-center gap-2" href="index.php">
         <img src="assets/img/logo.png" alt="Logo Oficial <?php echo e(EMPRESA_SIGLA); ?>" class="brand-logo-img">
         <div class="d-flex flex-column">
-          <span class="fw-bolder fs-5 text-success lh-1"><?php echo e(EMPRESA_SIGLA); ?></span>
-          <small class="text-muted fw-bold" style="font-size: 0.70rem;">Control Lechero &bull; Carmen de Carupa</small>
+          <span class="fw-bolder fs-5 text-success brand-text-title lh-1"><?php echo e(EMPRESA_SIGLA); ?></span>
+          <small class="text-muted fw-bold brand-text-sub" style="font-size: 0.70rem;">Control Lechero &bull; Carmen de Carupa</small>
         </div>
       </a>
 

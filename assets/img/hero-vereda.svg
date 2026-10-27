@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="100%" height="100%">
+  <defs>
+    <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1b3d24" />
+      <stop offset="45%" stop-color="#2d5e38" />
+      <stop offset="100%" stop-color="#4d8258" />
+    </linearGradient>
+    <linearGradient id="hill1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#174720" />
+      <stop offset="100%" stop-color="#0e2c14" />
+    </linearGradient>
+    <linearGradient id="hill2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#205929" />
+      <stop offset="100%" stop-color="#143c1b" />
+    </linearGradient>
+    <linearGradient id="hill3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2f783c" />
+      <stop offset="100%" stop-color="#1a4923" />
+    </linearGradient>
+    <radialGradient id="sunGlow" cx="70%" cy="25%" r="60%">
+      <stop offset="0%" stop-color="#8ce69e" stop-opacity="0.35" />
+      <stop offset="50%" stop-color="#3d8250" stop-opacity="0.1" />
+      <stop offset="100%" stop-color="#174720" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+
+  <!-- Cielo Andino Profundo -->
+  <rect width="1600" height="900" fill="url(#skyGrad)" />
+  <rect width="1600" height="900" fill="url(#sunGlow)" />
+
+  <!-- Montañas de la Cordillera Oriental / Carmen de Carupa -->
+  <path d="M0,520 Q320,380 640,480 T1280,450 Q1440,420 1600,480 L1600,900 L0,900 Z" fill="url(#hill1)" opacity="0.85"/>
+  <path d="M0,580 Q380,470 800,560 T1600,530 L1600,900 L0,900 Z" fill="url(#hill2)" opacity="0.9"/>
+  <path d="M0,660 Q440,560 920,630 T1600,600 L1600,900 L0,900 Z" fill="url(#hill3)" />
+
+  <!-- Praderas onduladas de la Vereda Alizal -->
+  <path d="M0,740 Q400,670 850,730 T1600,690 L1600,900 L0,900 Z" fill="#14421b" />
+  <path d="M0,820 Q500,760 1100,810 T1600,780 L1600,900 L0,900 Z" fill="#0d2e13" />
+
+  <!-- Siluetas de árboles de Aliso (Alnus acuminata) -->
+  <g fill="#0a240f" opacity="0.95">
+    <path d="M1350,780 Q1330,680 1350,560 Q1390,520 1430,560 Q1470,680 1450,780 Z" />
+    <circle cx="1400" cy="540" r="75" />
+    <circle cx="1360" cy="580" r="60" />
+    <circle cx="1440" cy="570" r="65" />
+    <circle cx="1400" cy="480" r="50" />
+    <rect x="1393" y="620" width="16" height="170" rx="4" fill="#06180a" />
+  </g>
+
+  <g fill="#0d2e13" opacity="0.75">
+    <circle cx="220" cy="610" r="65" />
+    <circle cx="180" cy="640" r="50" />
+    <circle cx="260" cy="635" r="55" />
+    <circle cx="220" cy="560" r="45" />
+    <rect x="214" y="660" width="14" height="120" rx="3" fill="#081e0c" />
+  </g>
+</svg>

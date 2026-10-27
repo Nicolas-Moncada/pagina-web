@@ -5,7 +5,7 @@
    Validado con WCAG 2.1 AA (Contraste >= 4.5:1 texto, >= 3.0:1 UI)
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;0,9..144,800;1,9..144,400&family=Inter:wght@400;500;600;700&display=swap');
 
 /* --------------------------------------------------------------------------
    1. TOKENS DE DISEÑO - TEMA CLARO (:root)
@@ -49,7 +49,7 @@
 
   /* Mapeo para Bootstrap 5.3 */
   --bs-body-font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --bs-heading-font-family: 'Poppins', sans-serif;
+  --bs-heading-font-family: 'Fraunces', Georgia, serif;
   --bs-body-bg: var(--bg);
   --bs-body-color: var(--text);
   --bs-border-color: var(--border-subtle);
@@ -671,3 +671,325 @@ select:-webkit-autofill {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--primary);
 }
+
+/* --------------------------------------------------------------------------
+   13. COMPONENTES CORPORATIVOS Y LANDING (ESTÉTICA AGRI-TECH INSPIRADA)
+   -------------------------------------------------------------------------- */
+.section-eyebrow {
+  display: inline-block;
+  font-family: var(--bs-body-font-family);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--primary);
+  margin-bottom: 0.6rem;
+}
+
+[data-bs-theme="dark"] .section-eyebrow {
+  color: #5fb343;
+}
+
+.section-title {
+  font-family: var(--bs-heading-font-family);
+  font-size: clamp(2rem, 3.5vw, 2.75rem);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--text);
+  margin-bottom: 1rem;
+}
+
+.section-lead {
+  font-size: 1.05rem;
+  color: var(--text-muted);
+  max-width: 680px;
+  line-height: 1.7;
+}
+
+/* Navbar Adaptable (Transparente sobre Hero y Sólido en Scroll) */
+.navbar-asoagro {
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease, backdrop-filter 0.3s ease;
+}
+
+.navbar-asoagro.navbar-transparent {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15) !important;
+  box-shadow: none !important;
+}
+
+.navbar-asoagro.navbar-transparent .brand-text-title {
+  color: #ffffff !important;
+}
+
+.navbar-asoagro.navbar-transparent .brand-text-sub {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.navbar-asoagro.navbar-transparent .nav-link-custom {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.navbar-asoagro.navbar-transparent .nav-link-custom:hover {
+  color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+.navbar-asoagro.navbar-transparent .theme-toggle-btn {
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.navbar-asoagro.navbar-scrolled {
+  background: var(--surface) !important;
+  border-bottom: 1px solid var(--border-subtle) !important;
+  box-shadow: var(--shadow-sm) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+/* Hero A Ancho Completo */
+.hero-fullwidth {
+  position: relative;
+  min-height: 90vh;
+  display: flex;
+  align-items: center;
+  background-color: #084d05;
+  background-image: url('../img/hero-vereda.svg');
+  background-size: cover;
+  background-position: center;
+  padding: 8rem 0 5rem 0;
+  overflow: hidden;
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(8, 77, 5, 0.92) 0%, rgba(17, 80, 30, 0.88) 60%, rgba(6, 40, 15, 0.94) 100%);
+  z-index: 1;
+}
+
+.hero-inner {
+  position: relative;
+  z-index: 2;
+}
+
+.hero-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 1.1rem;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.hero-title {
+  font-family: var(--bs-heading-font-family);
+  font-size: clamp(2.2rem, 5vw, 3.6rem);
+  font-weight: 800;
+  line-height: 1.15;
+  color: #ffffff;
+  margin-top: 1.25rem;
+  margin-bottom: 1.25rem;
+  letter-spacing: -0.02em;
+}
+
+.hero-support {
+  font-size: 1.15rem;
+  color: rgba(255, 255, 255, 0.92);
+  line-height: 1.7;
+  max-width: 720px;
+  margin-bottom: 2rem;
+}
+
+/* Tarjetas de Vidrio (Misión y Visión) */
+.glass-card-hero {
+  background: rgba(255, 255, 255, 0.10);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  color: #ffffff;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  height: 100%;
+}
+
+.glass-card-hero:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.35);
+}
+
+.glass-card-tag {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #fef08a;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.glass-card-title {
+  font-family: var(--bs-heading-font-family);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 0.85rem;
+}
+
+.glass-card-text {
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.92);
+  margin-bottom: 0;
+}
+
+/* Bloques Alternados Imagen + Texto */
+.feature-media-wrapper {
+  position: relative;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--surface-2);
+}
+
+.feature-media-img {
+  width: 100%;
+  height: 380px;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.feature-media-wrapper:hover .feature-media-img {
+  transform: scale(1.03);
+}
+
+/* Tarjetas de Tres Columnas */
+.card-feature-col {
+  background-color: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 2.2rem 1.85rem;
+  height: 100%;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.25s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-feature-col:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary);
+}
+
+.card-feature-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: var(--radius-md);
+  background-color: var(--surface-2);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  margin-bottom: 1.25rem;
+}
+
+[data-bs-theme="dark"] .card-feature-icon {
+  background-color: rgba(61, 214, 118, 0.12);
+  color: var(--primary);
+}
+
+/* Chips de Infraestructura */
+.infra-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-pill);
+  background-color: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-right: 0.4rem;
+  margin-bottom: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.infra-chip:hover {
+  background-color: var(--cell-edit-bg);
+  border-color: var(--primary);
+}
+
+/* Footer Corporativo Sobrio */
+.footer-corporate {
+  background-color: #082811;
+  color: #d1ded4;
+  border-top: 1px solid #144722;
+  font-size: 0.92rem;
+  line-height: 1.7;
+}
+
+.footer-corporate a {
+  color: #e5eee7;
+  transition: color 0.2s ease;
+}
+
+.footer-corporate a:hover {
+  color: #5fb343;
+}
+
+/* Portal de Login Dividido */
+.login-split-card {
+  background-color: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  max-width: 960px;
+  margin: 2.5rem auto;
+}
+
+.login-brand-panel,
+.login-brand-side {
+  background: linear-gradient(145deg, #084d05 0%, #11501e 50%, #06280e 100%);
+  color: #ffffff;
+  padding: 3rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.login-form-panel,
+.login-form-side {
+  padding: 3rem 2.5rem;
+  background-color: var(--surface);
+}
+
+/* Captcha Nativo GD */
+.captcha-container {
+  background-color: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.captcha-img {
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  height: 46px;
+}
+

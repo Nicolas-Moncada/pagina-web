@@ -82,19 +82,43 @@
     }
 
     // 3. CONTADOR ANIMADO (Nuestra Familia: 32 Asociados)
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const counters = document.querySelectorAll('.counter-animated');
-    if (counters.length > 0 && 'IntersectionObserver' in window) {
-      const counterObserver = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const target = parseInt(entry.target.getAttribute('data-target') || '32', 10);
-            animateCounter(entry.target, target, 1600);
-            counterObserver.unobserve(entry.target);
-          }
+    if (counters.length > 0) {
+      if (prefersReducedMotion || !('IntersectionObserver' in window)) {
+        counters.forEach((c) => {
+          c.textContent = c.getAttribute('data-target') || '32';
         });
-      }, { threshold: 0.3 });
+      } else {
+        const counterObserver = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              const target = parseInt(entry.target.getAttribute('data-target') || '32', 10);
+              animateCounter(entry.target, target, 1600);
+              counterObserver.unobserve(entry.target);
+            }
+          });
+        }, { threshold: 0.3 });
 
-      counters.forEach((c) => counterObserver.observe(c));
+        counters.forEach((c) => counterObserver.observe(c));
+      }
+    }
+
+    // 4. NAVBAR TRANSPARENTE SOBRE HERO Y SÓLIDO EN SCROLL
+    const nav = document.querySelector('.navbar-asoagro');
+    const heroFull = document.querySelector('.hero-fullwidth');
+    if (nav && heroFull) {
+      const handleNavScroll = () => {
+        if (window.scrollY > 40) {
+          nav.classList.add('navbar-scrolled');
+          nav.classList.remove('navbar-transparent');
+        } else {
+          nav.classList.add('navbar-transparent');
+          nav.classList.remove('navbar-scrolled');
+        }
+      };
+      window.addEventListener('scroll', handleNavScroll, { passive: true });
+      handleNavScroll();
     }
   });
 

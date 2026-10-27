@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="100%" height="100%">
+  <defs>
+    <linearGradient id="tierraBg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f0f7f2" />
+      <stop offset="100%" stop-color="#cce5d4" />
+    </linearGradient>
+  </defs>
+  <rect width="600" height="400" fill="url(#tierraBg)" rx="20"/>
+
+  <!-- Colinas y Terreno Propio de la Asociación -->
+  <path d="M0,240 Q150,180 300,210 T600,190 L600,400 L0,400 Z" fill="#5fb343" opacity="0.6"/>
+  <path d="M0,280 Q200,220 400,260 T600,240 L600,400 L0,400 Z" fill="#11501e"/>
+  
+  <!-- Hito / Mojón de Terreno Propio -->
+  <rect x="280" y="240" width="40" height="55" rx="6" fill="#ffffff" stroke="#65826b" stroke-width="2"/>
+  <text x="300" y="265" font-family="'Inter', sans-serif" font-size="10" font-weight="900" fill="#11501e" text-anchor="middle">FINCA</text>
+  <text x="300" y="280" font-family="'Inter', sans-serif" font-size="8" font-weight="700" fill="#435848" text-anchor="middle">EL RECUERDO</text>
+
+  <text x="300" y="60" font-family="'Fraunces', serif" font-size="22" font-weight="700" fill="#11501e" text-anchor="middle">Nuestra Tierra</text>
+  <text x="300" y="86" font-family="'Inter', sans-serif" font-size="13" font-weight="500" fill="#435848" text-anchor="middle">Vereda Alizal &bull; Carmen de Carupa &bull; Terreno Propio</text>
+</svg>

@@ -1,29 +1,44 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="100%" height="100%">
   <defs>
     <linearGradient id="labBg" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#f0fdf4" />
-      <stop offset="100%" stop-color="#dcfce7" />
+      <stop offset="0%" stop-color="#f0f7f2" />
+      <stop offset="100%" stop-color="#e0efe4" />
     </linearGradient>
   </defs>
-  <rect width="600" height="400" fill="url(#labBg)" rx="24"/>
-  <!-- Mesa de Laboratorio -->
-  <rect x="100" y="270" width="400" height="18" rx="4" fill="#1e293b"/>
-  <rect x="130" y="288" width="16" height="50" fill="#475569"/>
-  <rect x="454" y="288" width="16" height="50" fill="#475569"/>
-  <!-- Matraz Erlenmeyer con Leche / Reactivo -->
-  <polygon points="200,270 240,270 260,190 230,190 230,150 210,150 210,190 180,190" fill="#e2e8f0" stroke="#0f172a" stroke-width="3"/>
-  <polygon points="190,265 250,265 240,220 200,220" fill="#ffffff" opacity="0.95"/>
-  <!-- Tubos de Ensayo en Gradilla -->
-  <rect x="290" y="210" width="80" height="60" rx="4" fill="#94a3b8" stroke="#334155" stroke-width="2"/>
-  <rect x="305" y="160" width="14" height="90" rx="7" fill="#ffffff" stroke="#0284c7" stroke-width="2"/>
-  <rect x="325" y="150" width="14" height="100" rx="7" fill="#fef08a" stroke="#d97706" stroke-width="2"/>
-  <rect x="345" y="170" width="14" height="80" rx="7" fill="#bbf7d0" stroke="#16a34a" stroke-width="2"/>
-  <!-- Microscopio Estilizado -->
-  <rect x="410" y="240" width="50" height="30" rx="6" fill="#144722"/>
-  <path d="M435,240 C435,180 400,160 380,160" fill="none" stroke="#144722" stroke-width="10" stroke-linecap="round"/>
-  <rect x="365" y="145" width="22" height="40" rx="4" fill="#0f172a" transform="rotate(30, 376, 165)"/>
-  <circle cx="300" cy="115" r="4" fill="#22c55e"/>
-  <text x="300" y="65" font-family="sans-serif" font-size="22" font-weight="900" fill="#144722" text-anchor="middle">Control de Calidad y Laboratorio</text>
-  <text x="300" y="92" font-family="sans-serif" font-size="14" font-weight="bold" fill="#2e7d32" text-anchor="middle">Pruebas de Mastitis, Densidad, Acidez y Grasa</text>
-</svg>
+  <rect width="600" height="400" fill="url(#labBg)" rx="20"/>
+  
+  <!-- Frascos de cultivo in vitro con plántulas -->
+  <g transform="translate(140, 160)">
+    <!-- Frasco 1 -->
+    <rect x="0" y="40" width="70" height="90" rx="12" fill="#ffffff" stroke="#65826b" stroke-width="2.5" opacity="0.9"/>
+    <rect x="10" y="30" width="50" height="15" rx="4" fill="#11501e"/>
+    <rect x="5" y="100" width="60" height="24" rx="6" fill="#8fa993" opacity="0.4"/>
+    <!-- Brote vegetal -->
+    <path d="M35,100 Q30,65 35,55 Q40,65 35,100" fill="#5fb343" />
+    <path d="M35,75 Q20,68 18,58 Q28,62 35,75" fill="#5fb343" />
+    <path d="M35,70 Q50,62 52,52 Q42,58 35,70" fill="#5fb343" />
+  </g>
 
+  <g transform="translate(250, 140)">
+    <!-- Frasco 2 (Central) -->
+    <rect x="0" y="40" width="85" height="110" rx="14" fill="#ffffff" stroke="#65826b" stroke-width="2.5" opacity="0.95"/>
+    <rect x="12" y="28" width="61" height="16" rx="4" fill="#11501e"/>
+    <rect x="6" y="115" width="73" height="28" rx="8" fill="#8fa993" opacity="0.4"/>
+    <!-- Brotes de papa / tubérculo -->
+    <path d="M42,115 Q36,70 42,55 Q48,70 42,115" fill="#11501e" />
+    <path d="M42,85 Q22,78 20,65 Q34,70 42,85" fill="#5fb343" />
+    <path d="M42,80 Q62,72 65,58 Q52,65 42,80" fill="#5fb343" />
+  </g>
+
+  <g transform="translate(375, 160)">
+    <!-- Frasco 3 -->
+    <rect x="0" y="40" width="70" height="90" rx="12" fill="#ffffff" stroke="#65826b" stroke-width="2.5" opacity="0.9"/>
+    <rect x="10" y="30" width="50" height="15" rx="4" fill="#11501e"/>
+    <rect x="5" y="100" width="60" height="24" rx="6" fill="#8fa993" opacity="0.4"/>
+    <path d="M35,100 Q30,65 35,55 Q40,65 35,100" fill="#5fb343" />
+    <path d="M35,75 Q20,68 18,58 Q28,62 35,75" fill="#5fb343" />
+  </g>
+
+  <text x="300" y="60" font-family="'Fraunces', serif" font-size="22" font-weight="700" fill="#11501e" text-anchor="middle">Laboratorio de Cultivo</text>
+  <text x="300" y="86" font-family="'Inter', sans-serif" font-size="13" font-weight="500" fill="#435848" text-anchor="middle">Propagación y Biotecnología de Tejidos Vegetales</text>
+</svg>

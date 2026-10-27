@@ -3,8 +3,11 @@
  * =========================================================================================
  * PLATAFORMA DE CONTROL LECHERO - ASOAGROALIZAL (CARMEN DE CARUPA, CUNDINAMARCA)
  * Archivo: index.php
- * Propósito: Landing page corporativa, inmersiva, accesible y 100% fiel a la ficha oficial.
- * Fuente Oficial: docs/FICHA_OFICIAL_ASOAGROALIZAL.md
+ * Propósito: Landing page corporativa institucional con estética agri-tech, inspirada en
+ *            principios editoriales contemporáneos: ritmo vertical amplio, tipografía serif/sans,
+ *            héroe a ancho completo con tarjetas de vidrio, bloques alternados imagen/texto
+ *            y fidelidad absoluta a la Ficha Oficial de ASOAGROALIZAL.
+ * Fuente de Datos Oficial: docs/FICHA_OFICIAL_ASOAGROALIZAL.md
  * =========================================================================================
  */
 
@@ -12,11 +15,12 @@ require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/helpers.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/includes/csrf.php';
 
 $usuarioActual = getCurrentUser();
-$tituloPagina = EMPRESA_SIGLA . ' | Control Lechero y Desarrollo Asociativo';
+$tituloPagina = EMPRESA_SIGLA . ' · Control Lechero y Desarrollo Asociativo | Carmen de Carupa';
 
-// Manejo de envío síncrono si el navegador no tiene JavaScript activo
+// Manejo de envío alternativo por POST directo (Fallback si el navegador no tiene JavaScript activo)
 $errorContacto = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion_contacto'])) {
     if (!empty($_POST['website_hp'])) {
@@ -36,9 +40,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion_contacto'])) {
     $nombre = trim($_POST['nombre'] ?? '');
     $contacto = trim($_POST['contacto'] ?? '');
     $mensaje = trim($_POST['mensaje'] ?? '');
+    $aceptaDatos = !empty($_POST['acepta_datos']);
 
-    if (empty($nombre) || empty($contacto) || empty($mensaje)) {
-        setFlashAlert('warning', 'Campos Requeridos', 'Por favor diligencia todos los campos obligatorios.');
+    if (empty($nombre) || empty($contacto) || empty($mensaje) || !$aceptaDatos) {
+        setFlashAlert('warning', 'Campos Requeridos', 'Por favor diligencia todos los campos y autoriza el tratamiento de datos.');
         header('Location: index.php#contacto');
         exit;
     }
@@ -48,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion_contacto'])) {
         $conId = generarUUID('con');
         $stmt = $pdo->prepare("INSERT INTO consulta (id, nombre, contacto, mensaje, fecha, atendida) VALUES (?, ?, ?, ?, NOW(), 0)");
         $stmt->execute([$conId, $nombre, $contacto, $mensaje]);
-        setFlashAlert('success', '¡Consulta Enviada!', 'Gracias por comunicarte con ASOAGROALIZAL. Nuestro equipo atenderá tu solicitud.');
+        setFlashAlert('success', '¡Consulta Enviada!', 'Gracias por comunicarte con ASOAGROALIZAL. Tu mensaje ha sido registrado.');
         header('Location: index.php#contacto');
         exit;
     } catch (Exception $e) {
@@ -59,722 +64,575 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion_contacto'])) {
     }
 }
 
-// Carga del encabezado unificado
+// Inclusión del encabezado global unificado
 require_once __DIR__ . '/includes/header.php';
 ?>
-
-<style>
-  /* Hero Visual y Estilos Específicos de Landing */
-  .hero-section {
-    padding-top: 5rem;
-    padding-bottom: 5rem;
-    background: radial-gradient(circle at 85% 15%, rgba(96, 196, 248, 0.15) 0%, transparent 45%),
-                radial-gradient(circle at 10% 85%, rgba(245, 158, 11, 0.12) 0%, transparent 40%),
-                linear-gradient(180deg, rgba(232, 245, 233, 0.6) 0%, var(--bs-body-bg) 100%);
-  }
-
-  [data-bs-theme="dark"] .hero-section {
-    background: radial-gradient(circle at 85% 15%, rgba(96, 196, 248, 0.08) 0%, transparent 45%),
-                radial-gradient(circle at 10% 85%, rgba(245, 158, 11, 0.06) 0%, transparent 40%),
-                linear-gradient(180deg, #131c16 0%, var(--bs-body-bg) 100%);
-  }
-
-  .hero-badge {
-    background: var(--aso-secondary-light);
-    border: 1px solid rgba(46, 125, 50, 0.25);
-    color: var(--aso-primary);
-    font-weight: 700;
-    font-size: 0.85rem;
-    padding: 0.4rem 1rem;
-    border-radius: var(--radius-pill);
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  [data-bs-theme="dark"] .hero-badge {
-    background: #18291f;
-    color: var(--aso-secondary);
-    border-color: #24352b;
-  }
-
-  .hero-emblem-card {
-    background: var(--card-bg);
-    border: 2px solid var(--card-border);
-    border-radius: 28px;
-    padding: 2.5rem 2rem;
-    box-shadow: var(--shadow-lg);
-    text-align: center;
-    position: relative;
-  }
-
-  .hero-logo-img {
-    max-width: 250px;
-    width: 100%;
-    height: auto;
-    filter: drop-shadow(0 12px 24px rgba(20, 71, 34, 0.20));
-    transition: transform 0.4s ease;
-  }
-
-  .hero-logo-img:hover {
-    transform: scale(1.03);
-  }
-
-  .bento-container {
-    background: var(--bs-body-bg);
-  }
-
-  .bento-highlight {
-    background: linear-gradient(145deg, rgba(20, 71, 34, 0.05) 0%, rgba(46, 125, 50, 0.12) 100%);
-    border: 1px solid rgba(46, 125, 50, 0.3);
-  }
-
-  [data-bs-theme="dark"] .bento-highlight {
-    background: linear-gradient(145deg, rgba(20, 71, 34, 0.25) 0%, rgba(46, 125, 50, 0.15) 100%);
-    border-color: rgba(74, 222, 128, 0.25);
-  }
-
-  .bpo-step-badge {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    background: var(--aso-primary);
-    color: #ffffff;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.25rem;
-    font-weight: 800;
-    margin-bottom: 1rem;
-    box-shadow: 0 4px 10px rgba(20, 71, 34, 0.25);
-  }
-
-  .ally-pill {
-    background-color: var(--card-bg);
-    border: 1px solid var(--card-border);
-    padding: 1rem 1.75rem;
-    border-radius: var(--radius-pill);
-    font-weight: 700;
-    color: var(--bs-body-color);
-    box-shadow: var(--shadow-sm);
-    display: inline-flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .honeypot-field {
-    display: none !important;
-    visibility: hidden !important;
-    position: absolute !important;
-    left: -9999px !important;
-  }
-</style>
 
 <main id="contenido-principal">
 
   <!-- ========================================================================
-       SECCIÓN 1: HERO ASIMÉTRICO CON DOBLE LLAMADO A LA ACCIÓN
+       1. HÉROE A ANCHO COMPLETO (INMERSIVO CON OVERLAY VERDE Y TARJETAS DE VIDRIO)
        ======================================================================== -->
-  <section class="hero-section position-relative overflow-hidden">
-    <div class="container">
-      <div class="row align-items-center g-5">
-        <div class="col-lg-7 text-center text-lg-start">
-          <div class="hero-badge mb-3">
-            <i class="bi bi-patch-check-fill text-success"></i>
-            <span>ECONOMÍA CAMPESINA &bull; CARMEN DE CARUPA</span>
+  <section class="hero-fullwidth position-relative">
+    <div class="hero-overlay"></div>
+    <div class="container hero-inner py-4">
+      
+      <div class="row align-items-center g-5 mb-5">
+        <div class="col-lg-8">
+          <div class="hero-tag mb-3">
+            <i class="bi bi-geo-alt-fill text-warning"></i>
+            <span><?php echo e(EMPRESA_SIGLA); ?> &bull; Carmen de Carupa, Cundinamarca</span>
           </div>
 
-          <h1 class="display-4 fw-extrabold text-success mb-3" style="line-height: 1.15;">
-            Control Lechero y Progreso Asociativo en la Vereda <span class="text-warning">Alizal</span>
+          <h1 class="hero-title">
+            Uniendo Esfuerzos para la Producción Sostenible y el Progreso Campesino
           </h1>
 
-          <p class="lead text-muted mb-4 fs-5" style="max-width: 620px;">
-            Plataforma oficial de <strong><?php echo e(EMPRESA_SIGLA); ?></strong> para el registro sistemático de pesajes diarios, liquidaciones quincenales transparentes y fomento de Buenas Prácticas de Ordeño.
+          <p class="hero-support">
+            Plataforma oficial de control lechero, pesajes diarios sistemáticos por turnos (☀️ Mañana y 🌅 Tarde) y fomento de Buenas Prácticas de Ordeño en la Vereda Alizal.
           </p>
 
-          <div class="d-flex flex-wrap gap-3 justify-content-center justify-content-lg-start mb-5">
+          <div class="d-flex flex-wrap gap-3 align-items-center">
             <?php if ($usuarioActual): ?>
               <?php $urlDestino = ($usuarioActual['rol'] === 'ADMIN') ? 'admin.php' : 'panel.php'; ?>
-              <a href="<?php echo $urlDestino; ?>" class="btn btn-touch btn-aso-primary btn-lg px-4 shadow">
+              <a href="<?php echo $urlDestino; ?>" class="btn btn-touch btn-aso-accent btn-lg px-4 shadow">
                 <i class="bi bi-speedometer2"></i>
-                <span>Ir a Mi Panel de Control</span>
+                <span>Mi Panel de Control</span>
               </a>
             <?php else: ?>
-              <a href="login.php" class="btn btn-touch btn-aso-primary btn-lg px-4 shadow">
+              <a href="login.php" class="btn btn-touch btn-aso-accent btn-lg px-4 shadow">
                 <i class="bi bi-box-arrow-in-right"></i>
-                <span>Ingresar a la Plataforma</span>
+                <span>Acceso al Sistema</span>
               </a>
             <?php endif; ?>
-            
-            <a href="#quienes-somos" class="btn btn-touch btn-outline-success btn-lg px-4 border-2">
+
+            <a href="#quienes-somos" class="btn btn-touch btn-outline-light btn-lg px-4">
               <i class="bi bi-info-circle"></i>
-              <span>Conocer Más</span>
+              <span>Conocer la Asociación</span>
             </a>
           </div>
-
-          <!-- Métricas Destacadas Oficiales -->
-          <div class="row g-3 border-top border-success-subtle pt-4 text-start">
-            <div class="col-6 col-sm-4">
-              <div class="fw-bold fs-3 text-success counter-animated" data-target="<?php echo e(EMPRESA_ASOCIADOS_TOTAL); ?>">0</div>
-              <small class="text-muted fw-semibold d-block">Asociados Vinculados</small>
-            </div>
-            <div class="col-6 col-sm-4">
-              <div class="fw-bold fs-3 text-success">25+ Años</div>
-              <small class="text-muted fw-semibold d-block">Trayectoria (Año 2000)</small>
-            </div>
-            <div class="col-12 col-sm-4">
-              <div class="fw-bold fs-3 text-warning">2 Turnos</div>
-              <small class="text-muted fw-semibold d-block">Mañana ☀️ y Tarde 🌅</small>
-            </div>
-          </div>
         </div>
 
-        <div class="col-lg-5">
-          <div class="hero-emblem-card reveal-on-scroll">
-            <img src="assets/img/logo.png" alt="Emblema Oficial <?php echo e(EMPRESA_SIGLA); ?>" class="hero-logo-img mb-3">
-            <h4 class="fw-bold text-success mb-1"><?php echo e(EMPRESA_SIGLA); ?></h4>
-            <p class="text-muted small mb-3">Vereda Alizal &bull; Finca El Recuerdo</p>
-            <div class="badge bg-warning text-dark px-3 py-2 rounded-pill fw-bold">
-              NIT <?php echo e(EMPRESA_NIT); ?>
-            </div>
+        <div class="col-lg-4 d-none d-lg-block text-center">
+          <div class="p-4 rounded-4" style="background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2);">
+            <img src="assets/img/logo.png" alt="Emblema Institucional <?php echo e(EMPRESA_SIGLA); ?>" class="img-fluid mb-3" style="max-height: 200px; filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));">
+            <h5 class="fw-bold text-white mb-1"><?php echo e(EMPRESA_SIGLA); ?></h5>
+            <small class="text-white-50 d-block mb-2">Vereda Alizal &bull; Finca El Recuerdo</small>
+            <span class="badge bg-warning text-dark px-3 py-1 rounded-pill fw-bold">NIT <?php echo e(EMPRESA_NIT); ?></span>
           </div>
         </div>
       </div>
+
+      <!-- Tarjetas de Vidrio Inferiores: MISIÓN Y VISIÓN (Texto Exacto de la Ficha) -->
+      <div class="row g-4 pt-4 border-top border-white border-opacity-20" id="mision-vision">
+        <div class="col-md-6">
+          <div class="glass-card-hero">
+            <span class="glass-card-tag"><i class="bi bi-compass me-1"></i> Misión Institucional</span>
+            <h3 class="glass-card-title">Nuestro Propósito Colectivo</h3>
+            <p class="glass-card-text">
+              "Asoagroalizal es una organización que busca unir esfuerzos para la producción sostenible de alimentos que permita el mejoramiento de la calidad de vida de las familias de la vereda de Alizal."
+            </p>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="glass-card-hero">
+            <span class="glass-card-tag"><i class="bi bi-eye me-1"></i> Visión Hacia el 2030</span>
+            <h3 class="glass-card-title">Nuestro Horizonte Productivo</h3>
+            <p class="glass-card-text">
+              "Para el año 2030 Asoagroalizal busca llegar a transformar el 50% de su producción láctea y darle valor agregado a otros productos como la papa y los tubérculos andinos, así como buscar nuevos mercados que le generen ingresos a los asociados y sus familias."
+            </p>
+          </div>
+        </div>
+      </div>
+
     </div>
   </section>
 
   <!-- ========================================================================
-       SECCIÓN 2: QUIÉNES SOMOS
+       2. SECCIÓN QUIÉNES SOMOS (BLOQUE IMAGEN + TEXTO)
        ======================================================================== -->
   <section id="quienes-somos" class="py-5">
-    <div class="container py-4">
-      <div class="row justify-content-center text-center mb-5">
-        <div class="col-lg-10">
-          <span class="badge bg-success-subtle text-success fw-bold px-3 py-2 rounded-pill uppercase mb-2">Identidad y Personería</span>
-          <h2 class="display-6 fw-bold text-success">Quiénes Somos</h2>
-          <div class="mx-auto" style="width: 70px; height: 4px; background: var(--aso-accent); border-radius: 2px;"></div>
-        </div>
-      </div>
-
-      <div class="row align-items-stretch g-4">
-        <div class="col-md-6 reveal-on-scroll">
-          <div class="card card-rural p-4 p-lg-5 h-100">
-            <div class="d-flex align-items-center gap-3 mb-3">
-              <div class="rounded-4 bg-success text-white p-3 d-flex align-items-center justify-content-center fs-3" style="width: 56px; height: 56px;">
-                <i class="bi bi-bank2"></i>
-              </div>
-              <div>
-                <h5 class="fw-bold mb-0">Razón Social y Naturaleza</h5>
-                <small class="text-muted">Constitución Legal y Formal</small>
-              </div>
+    <div class="container py-lg-4">
+      <div class="row align-items-center g-5">
+        
+        <div class="col-lg-6">
+          <div class="feature-media-wrapper p-4 p-md-5 text-center d-flex flex-column align-items-center justify-content-center" style="min-height: 420px; background: radial-gradient(circle, var(--surface-2) 0%, var(--surface) 100%);">
+            <img src="assets/img/logo.png" alt="Emblema Oficial <?php echo e(EMPRESA_SIGLA); ?>" class="img-fluid mb-4" style="max-height: 220px; filter: drop-shadow(0 12px 24px rgba(17,80,30,0.18));">
+            <div class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2 rounded-pill fw-bold">
+              Constitución Legal: Año <?php echo e(EMPRESA_ANO_CONSTITUCION); ?> (Más de 25 Años)
             </div>
-            <p class="text-muted mb-3">
-              Somos legalmente la <strong><?php echo e(EMPRESA_NOMBRE); ?></strong>, identificada con NIT <strong><?php echo e(EMPRESA_NIT); ?></strong>, con personería jurídica y reconocida bajo la sigla <strong><?php echo e(EMPRESA_SIGLA); ?></strong>.
-            </p>
-            <p class="text-muted mb-0">
-              Constituida en el año <strong><?php echo e(EMPRESA_ANO_CONSTITUCION); ?></strong>, la asociación acumula más de 25 años de trayectoria ininterrumpida, consolidando la unión solidaria de las familias trabajadoras del campo en Carmen de Carupa, Cundinamarca.
-            </p>
           </div>
         </div>
 
-        <div class="col-md-6 reveal-on-scroll">
-          <div class="card card-rural p-4 p-lg-5 h-100">
-            <div class="d-flex align-items-center gap-3 mb-3">
-              <div class="rounded-4 bg-warning text-dark p-3 d-flex align-items-center justify-content-center fs-3" style="width: 56px; height: 56px;">
-                <i class="bi bi-geo-alt-fill"></i>
-              </div>
-              <div>
-                <h5 class="fw-bold mb-0">Arraigo y Territorio</h5>
-                <small class="text-muted">Carmen de Carupa, Cundinamarca</small>
-              </div>
-            </div>
-            <p class="text-muted mb-3">
-              Nuestra sede se encuentra ubicada en la <strong>Vereda Alizal, Finca El Recuerdo</strong>. Operamos en un ecosistema andino de alta montaña propicio para el pastoreo sostenible y el bienestar de los hatos lecheros.
-            </p>
-            <p class="text-muted mb-0">
-              La asociación canaliza la producción lechera comunitaria mediante pesajes sistemáticos por turnos, facilitando a cada productor un registro ordenado y liquidaciones equitativas con estricto sentido cooperativo.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+        <div class="col-lg-6">
+          <span class="section-eyebrow">Trayectoria Asociativa</span>
+          <h2 class="section-title">Más de 25 Años de Vocación y Trabajo Solidario</h2>
+          <p class="section-lead mb-4">
+            Somos legalmente la <strong><?php echo e(EMPRESA_NOMBRE); ?></strong>, identificada con NIT <strong><?php echo e(EMPRESA_NIT); ?></strong>, con personería jurídica reconocida ante la Cámara de Comercio y representada bajo la sigla <strong><?php echo e(EMPRESA_SIGLA); ?></strong>.
+          </p>
+          <p class="text-muted mb-4">
+            Fundada en el año 2000 en el municipio de Carmen de Carupa, la asociación reúne el esfuerzo de familias campesinas dedicadas a la producción lechera de alta montaña y a la agricultura andina, consolidando una organización comunitaria basada en la ayuda mutua, la honestidad y la sostenibilidad económica.
+          </p>
 
-  <!-- ========================================================================
-       SECCIÓN 3: NUESTRA FAMILIA (CONTADOR ANIMADO 32 ASOCIADOS)
-       ======================================================================== -->
-  <section id="familia" class="py-5" style="background: var(--aso-secondary-light);">
-    <div class="container py-4">
-      <div class="card card-rural border-0 shadow-lg p-4 p-md-5 text-center reveal-on-scroll">
-        <div class="row align-items-center justify-content-center">
-          <div class="col-lg-8">
-            <span class="badge bg-warning text-dark fw-bold px-3 py-2 rounded-pill uppercase mb-2">Comunidad y Cooperación</span>
-            <h2 class="display-5 fw-extrabold text-success mb-3">Nuestra Familia Campesina</h2>
-            <p class="lead text-muted mb-4">
-              Cada entrega de leche diaria refleja el esfuerzo, la constancia y la vocación lechera de nuestras familias asociadas en la vereda.
-            </p>
-
-            <div class="d-inline-flex flex-column align-items-center justify-content-center p-4 rounded-4 mb-4" style="background: var(--aso-primary); color: #ffffff; min-width: 250px; box-shadow: var(--shadow-md);">
-              <span class="display-2 fw-extrabold text-warning counter-animated" data-target="<?php echo e(EMPRESA_ASOCIADOS_TOTAL); ?>">0</span>
-              <span class="fs-5 fw-bold text-uppercase tracking-wider">Asociados Vinculados</span>
-              <small class="opacity-75">Productores de la Vereda Alizal</small>
-            </div>
-
-            <p class="small text-muted mb-0">
-              <i class="bi bi-shield-check text-success me-1"></i> Participación democrática, equidad en las liquidaciones quincenales y acompañamiento técnico constante.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ========================================================================
-       SECCIÓN 4: MISIÓN Y VISIÓN (TEXTOS EXACTOS DE LA FICHA OFICIAL)
-       ======================================================================== -->
-  <section id="mision-vision" class="py-5">
-    <div class="container py-4">
-      <div class="row justify-content-center text-center mb-5">
-        <div class="col-lg-8">
-          <span class="badge bg-success-subtle text-success fw-bold px-3 py-2 rounded-pill uppercase mb-2">Horizonte Institucional</span>
-          <h2 class="display-6 fw-bold text-success">Misión y Visión</h2>
-          <div class="mx-auto mt-2" style="width: 70px; height: 4px; background: var(--aso-accent); border-radius: 2px;"></div>
-        </div>
-      </div>
-
-      <div class="row g-4 align-items-stretch">
-        <div class="col-md-6 reveal-on-scroll">
-          <div class="card card-rural p-4 p-lg-5 h-100 border-top border-4 border-success">
-            <div class="d-flex align-items-center gap-3 mb-3">
-              <div class="rounded-circle bg-success text-white p-3 d-flex align-items-center justify-content-center fs-3" style="width: 56px; height: 56px;">
-                <i class="bi bi-compass"></i>
-              </div>
-              <h3 class="fw-bold mb-0 text-success">Misión</h3>
-            </div>
-            <p class="text-muted fs-5 leading-relaxed mb-0">
-              Asoagroalizal es una organización que busca unir esfuerzos para la producción sostenible de alimentos que permita el mejoramiento de la calidad de vida de las familias de la vereda de Alizal.
-            </p>
-          </div>
-        </div>
-
-        <div class="col-md-6 reveal-on-scroll">
-          <div class="card card-rural p-4 p-lg-5 h-100 border-top border-4 border-warning">
-            <div class="d-flex align-items-center gap-3 mb-3">
-              <div class="rounded-circle bg-warning text-dark p-3 d-flex align-items-center justify-content-center fs-3" style="width: 56px; height: 56px;">
-                <i class="bi bi-eye-fill"></i>
-              </div>
-              <h3 class="fw-bold mb-0 text-success">Visión</h3>
-            </div>
-            <p class="text-muted fs-5 leading-relaxed mb-0">
-              Para el año 2030 Asoagroalizal busca llegar a transformar el 50% de su producción láctea y darle valor agregado a otros productos como la papa y los tubérculos andinos, así como buscar nuevos mercados que le generen ingresos a los asociados y sus familias.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ========================================================================
-       SECCIÓN 5: INFRAESTRUCTURA PRODUCTIVA (GRID TIPO BENTO)
-       ======================================================================== -->
-  <section id="infraestructura" class="py-5 bento-container">
-    <div class="container py-4">
-      <div class="row justify-content-center text-center mb-5">
-        <div class="col-lg-8">
-          <span class="badge bg-success-subtle text-success fw-bold px-3 py-2 rounded-pill uppercase mb-2">Capacidad y Recursos</span>
-          <h2 class="display-6 fw-bold text-success">Infraestructura y Equipamiento</h2>
-          <p class="text-muted">Equipos y activos comunitarios al servicio de la producción agropecuaria de la vereda.</p>
-          <div class="mx-auto" style="width: 70px; height: 4px; background: var(--aso-accent); border-radius: 2px;"></div>
-        </div>
-      </div>
-
-      <!-- Bento Grid Responsive -->
-      <div class="row g-4">
-        <!-- Bento 1 (Grande): Tanques de Enfriamiento -->
-        <div class="col-lg-8 reveal-on-scroll">
-          <div class="bento-card bento-highlight">
-            <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
-              <div class="bento-icon-wrapper bg-success text-white">
-                <i class="bi bi-snow2"></i>
-              </div>
-              <span class="badge bg-success px-3 py-2 rounded-pill">Cadena de Frío Colectiva</span>
-            </div>
+          <!-- Contador Animado de 32 Asociados -->
+          <div class="d-flex align-items-center gap-4 p-4 rounded-4" style="background-color: var(--surface-2); border: 1px solid var(--border-subtle);">
+            <div class="display-3 fw-bold text-success counter-animated" data-target="<?php echo e(EMPRESA_ASOCIADOS_TOTAL); ?>">0</div>
             <div>
-              <h4 class="fw-bold text-success mb-2">Tanques de Enfriamiento</h4>
-              <p class="text-muted mb-0">
-                Instalaciones dedicadas a la recepción y conservación inmediata de la leche proveniente de los ordeños matutino y vespertino. Mantienen la inocuidad y detienen el desarrollo de acidez en el producto antes de su recolección industrial.
-              </p>
+              <h5 class="fw-bold mb-1 text-success">Asociados Activos</h5>
+              <small class="text-muted d-block">Familias vinculadas a la plataforma oficial de pesaje y liquidación quincenal.</small>
             </div>
           </div>
         </div>
 
-        <!-- Bento 2: Laboratorio de Cultivo de Tejidos -->
-        <div class="col-lg-4 col-md-6 reveal-on-scroll">
-          <div class="bento-card">
-            <div class="bento-icon-wrapper bg-warning text-dark">
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================
+       3. BLOQUES ALTERNADOS: NUESTRA TIERRA Y NUESTRA FAMILIA
+       ======================================================================== -->
+  <section class="py-5" style="background-color: var(--surface-2);" id="territorio-comunidad">
+    <div class="container py-lg-4">
+
+      <!-- Bloque 1: Nuestra Tierra (Imagen Izquierda, Texto Derecha) -->
+      <div class="row align-items-center g-5 mb-5 pb-4">
+        <div class="col-lg-6">
+          <div class="feature-media-wrapper">
+            <img src="assets/img/tierra.svg" alt="Terreno propio de ASOAGROALIZAL en Vereda Alizal" class="feature-media-img" loading="lazy">
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <span class="section-eyebrow">Territorio y Arraigo</span>
+          <h2 class="section-title">Nuestra Tierra: Vereda Alizal</h2>
+          <p class="section-lead mb-3">
+            Sede principal en la Finca El Recuerdo, Carmen de Carupa, Cundinamarca.
+          </p>
+          <p class="text-muted mb-0">
+            La asociación cuenta con <strong>terreno propio</strong> destinado a la infraestructura de acopio, enfriamiento de leche y módulos de biotecnología. Enclavada en los paisajes fértiles de Carmen de Carupa, la vereda Alizal ofrece condiciones óptimas para el pastoreo, rodeada de alisos nativos y praderas de ladera que dan origen a una leche fresca, inocua y de sobresalientes características nutritivas.
+          </p>
+        </div>
+      </div>
+
+      <!-- Bloque 2: Nuestra Familia (Texto Izquierda, Imagen Derecha) -->
+      <div class="row align-items-center g-5 pt-4">
+        <div class="col-lg-6 order-2 order-lg-1">
+          <span class="section-eyebrow">Comunidad y Cooperación</span>
+          <h2 class="section-title">Nuestra Familia Campesina</h2>
+          <p class="section-lead mb-3">
+            32 asociados comprometidos con el trabajo colaborativo y la calidad diaria.
+          </p>
+          <p class="text-muted mb-4">
+            Detrás de cada cantina de leche entregada hay una familia campesina que madruga con disciplina. Promovemos la participación equitativa, la capacitación técnica continua y la transparencia absoluta en cada pesaje de los turnos de mañana y tarde, fortaleciendo el tejido social de la vereda sin intermediarios.
+          </p>
+          <div class="d-flex align-items-center gap-2 text-success fw-bold small">
+            <i class="bi bi-shield-check fs-5"></i>
+            <span>Participación democrática y registro formal de entregas lecheras</span>
+          </div>
+        </div>
+        <div class="col-lg-6 order-1 order-lg-2">
+          <div class="feature-media-wrapper">
+            <img src="assets/img/familia.svg" alt="32 Familias Campesinas Asociadas en Carmen de Carupa" class="feature-media-img" loading="lazy">
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ========================================================================
+       4. SECCIÓN INFRAESTRUCTURA PROPIA
+       ======================================================================== -->
+  <section id="infraestructura" class="py-5">
+    <div class="container py-lg-4">
+      
+      <div class="text-center mb-5">
+        <span class="section-eyebrow">Capacidad Colectiva</span>
+        <h2 class="section-title">Infraestructura Propia de la Asociación</h2>
+        <p class="section-lead mx-auto">
+          Equipamiento tecnológico e instalaciones comunitarias al servicio de los 32 asociados para la preservación de la leche y el impulso de la agricultura local.
+        </p>
+      </div>
+
+      <!-- 3 Tarjetas de Columnas Principales -->
+      <div class="row g-4 mb-4">
+        <div class="col-md-4">
+          <div class="card-feature-col">
+            <div class="mb-3">
+              <img src="assets/img/infra-tanques.svg" alt="Tanque de Enfriamiento en Acero Inoxidable" class="img-fluid rounded-4 mb-3 border border-subtle" loading="lazy">
+            </div>
+            <div class="card-feature-icon">
+              <i class="bi bi-snow2"></i>
+            </div>
+            <h4 class="fw-bold mb-2">Tanques de Enfriamiento</h4>
+            <p class="text-muted small mb-0">
+              Tanque colectivo de enfriamiento en acero inoxidable para la recepción y conservación inmediata de la leche de los turnos de mañana y tarde, asegurando la cadena de frío e inocuidad alimentaria.
+            </p>
+          </div>
+        </div>
+
+        <div class="col-md-4">
+          <div class="card-feature-col">
+            <div class="mb-3">
+              <img src="assets/img/infra-laboratorio.svg" alt="Laboratorio de Cultivo de Tejidos Vegetales" class="img-fluid rounded-4 mb-3 border border-subtle" loading="lazy">
+            </div>
+            <div class="card-feature-icon">
               <i class="bi bi-flower1"></i>
             </div>
-            <div>
-              <h5 class="fw-bold text-success mb-2">Laboratorio de Tejidos</h5>
-              <p class="text-muted small mb-0">
-                Espacio técnico orientado a la propagación vegetal, sanidad de semillas y mejoramiento de cultivos andinos para la sostenibilidad agrícola de la comunidad.
-              </p>
-            </div>
+            <h4 class="fw-bold mb-2">Laboratorio de Tejidos</h4>
+            <p class="text-muted small mb-0">
+              Laboratorio de cultivo de tejidos vegetales para la propagación limpia y biotecnología aplicada a semillas de papa y tubérculos andinos con valor agregado para las familias productoras.
+            </p>
           </div>
         </div>
 
-        <!-- Bento 3: Invernaderos -->
-        <div class="col-lg-4 col-md-6 reveal-on-scroll">
-          <div class="bento-card">
-            <div class="bento-icon-wrapper bg-info text-dark">
-              <i class="bi bi-houses-fill"></i>
+        <div class="col-md-4">
+          <div class="card-feature-col">
+            <div class="mb-3">
+              <img src="assets/img/infra-invernadero.svg" alt="Invernaderos y Módulos Forrajeros" class="img-fluid rounded-4 mb-3 border border-subtle" loading="lazy">
             </div>
-            <div>
-              <h5 class="fw-bold text-success mb-2">Invernaderos</h5>
-              <p class="text-muted small mb-0">
-                Ambientes protegidos para el desarrollo de cultivos controlados, producción tecnificada y adaptación agroclimática de plántulas frente a las heladas de la zona.
-              </p>
+            <div class="card-feature-icon">
+              <i class="bi bi-tree"></i>
             </div>
-          </div>
-        </div>
-
-        <!-- Bento 4: Cantinas y Equipos de Recolección -->
-        <div class="col-lg-4 col-md-6 reveal-on-scroll">
-          <div class="bento-card">
-            <div class="bento-icon-wrapper bg-secondary text-white">
-              <i class="bi bi-bucket-fill"></i>
-            </div>
-            <div>
-              <h5 class="fw-bold text-success mb-2">Cantinas de Transporte</h5>
-              <p class="text-muted small mb-0">
-                Recipientes sanitarios para el traslado higiénico de la leche recién ordeñada desde cada finca hasta los tanques de recepción veredal.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Bento 5: Nevera de Muestras -->
-        <div class="col-lg-4 col-md-6 reveal-on-scroll">
-          <div class="bento-card">
-            <div class="bento-icon-wrapper bg-primary text-white">
-              <i class="bi bi-thermometer-snow"></i>
-            </div>
-            <div>
-              <h5 class="fw-bold text-success mb-2">Nevera de Conservación</h5>
-              <p class="text-muted small mb-0">
-                Refrigeración para la preservación de reactivos, muestras biológicas y suministros sanitarios de control veterinario.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Bento 6: Carguero (Logística Veredal) -->
-        <div class="col-lg-6 col-md-6 reveal-on-scroll">
-          <div class="bento-card">
-            <div class="bento-icon-wrapper bg-warning text-dark">
-              <i class="bi bi-truck"></i>
-            </div>
-            <div>
-              <h5 class="fw-bold text-success mb-2">Carguero Veredal</h5>
-              <p class="text-muted small mb-0">
-                Vehículo de transporte y apoyo logístico para la movilización de insumos, cantinas y forrajes entre las fincas y el punto central de acopio en la Vereda Alizal.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Bento 7: Terreno Propio -->
-        <div class="col-lg-6 col-md-6 reveal-on-scroll">
-          <div class="bento-card">
-            <div class="bento-icon-wrapper bg-success text-white">
-              <i class="bi bi-signpost-2-fill"></i>
-            </div>
-            <div>
-              <h5 class="fw-bold text-success mb-2">Terreno Propio</h5>
-              <p class="text-muted small mb-0">
-                Predio perteneciente a la asociación en la Finca El Recuerdo, base territorial para la consolidación de la sede comunitaria y futuros proyectos de transformación láctea.
-              </p>
-            </div>
+            <h4 class="fw-bold mb-2">Invernaderos y Forrajes</h4>
+            <p class="text-muted small mb-0">
+              Invernaderos y módulos forrajeros adaptados al clima de Carmen de Carupa, facilitando la evaluación de pastos de corte, nutrición bovina sustentable y protección de cultivos bajo cubierta.
+            </p>
           </div>
         </div>
       </div>
+
+      <!-- Chips de Equipamiento Complementario de la Ficha -->
+      <div class="p-4 rounded-4" style="background-color: var(--surface-2); border: 1px solid var(--border-subtle);">
+        <h6 class="fw-bold text-success mb-3">
+          <i class="bi bi-tools me-2"></i> Equipamiento y Dotación Colectiva Adicional:
+        </h6>
+        <div class="d-flex flex-wrap">
+          <span class="infra-chip"><i class="bi bi-box-seam text-success"></i> Cantinas lecheras de recolección</span>
+          <span class="infra-chip"><i class="bi bi-thermometer-snow text-primary"></i> Nevera de conservación</span>
+          <span class="infra-chip"><i class="bi bi-truck text-warning"></i> Carguero de transporte</span>
+          <span class="infra-chip"><i class="bi bi-geo-alt-fill text-danger"></i> Terreno propio de la asociación</span>
+          <span class="infra-chip"><i class="bi bi-display text-info"></i> Computadores e impresoras para administración</span>
+        </div>
+      </div>
+
     </div>
   </section>
 
   <!-- ========================================================================
-       SECCIÓN 6: ENFOQUE BPO (LÍNEAS DE TRABAJO EN CALIDAD DE LECHE)
+       5. SECCIÓN CALIDAD Y BUENAS PRÁCTICAS DE ORDEÑO (BPO)
        ======================================================================== -->
-  <section id="enfoque-bpo" class="py-5" style="background: var(--aso-secondary-light);">
-    <div class="container py-4">
-      <div class="row justify-content-center text-center mb-5">
-        <div class="col-lg-8">
-          <span class="badge bg-success text-white fw-bold px-3 py-2 rounded-pill uppercase mb-2">Enfoque Operativo</span>
-          <h2 class="display-6 fw-bold text-success">Líneas de Trabajo en Calidad de Leche (BPO)</h2>
-          <p class="text-muted">Directrices y buenas prácticas promovidas en los predios de nuestros asociados.</p>
-          <div class="mx-auto" style="width: 70px; height: 4px; background: var(--aso-accent); border-radius: 2px;"></div>
-        </div>
+  <section id="enfoque-bpo" class="py-5" style="background-color: var(--surface-2);">
+    <div class="container py-lg-4">
+      
+      <div class="text-center mb-5">
+        <span class="section-eyebrow">Mejora Continua</span>
+        <h2 class="section-title">Líneas de Trabajo en Buenas Prácticas de Ordeño (BPO)</h2>
+        <p class="section-lead mx-auto">
+          Implementación sistemática de directrices técnicas para promover la inocuidad, la higiene y el bienestar ganadero en cada finca campesina.
+        </p>
       </div>
 
       <div class="row g-4">
-        <!-- Paso 1 -->
-        <div class="col-md-6 col-lg-3 reveal-on-scroll">
-          <div class="bpo-step-card">
-            <div class="bpo-step-badge">1</div>
-            <h5 class="fw-bold text-success mb-2">Higiene en el Ordeño</h5>
+        <div class="col-md-6 col-lg-3">
+          <div class="card-feature-col bg-surface">
+            <div class="card-feature-icon">
+              <i class="bi bi-clock-history"></i>
+            </div>
+            <h5 class="fw-bold mb-2">Ordeño a Hora Fija</h5>
             <p class="text-muted small mb-0">
-              Protocolos de aseo personal del ordeñador, limpieza cuidadosa de pezones y desinfección preventiva del instrumental de ordeño.
+              Rutinas consistentes de ordeño diario en turnos fijos de mañana y tarde, favoreciendo la estabilidad fisiológica del hato y la regularidad del acopio.
             </p>
           </div>
         </div>
 
-        <!-- Paso 2 -->
-        <div class="col-md-6 col-lg-3 reveal-on-scroll">
-          <div class="bpo-step-card">
-            <div class="bpo-step-badge">2</div>
-            <h5 class="fw-bold text-success mb-2">Filtrado y Aseo</h5>
+        <div class="col-md-6 col-lg-3">
+          <div class="card-feature-col bg-surface">
+            <div class="card-feature-icon">
+              <i class="bi bi-stars"></i>
+            </div>
+            <h5 class="fw-bold mb-2">Incentivo por Calidad</h5>
             <p class="text-muted small mb-0">
-              Filtrado higiénico inmediato del líquido en lienzos o mallas sanitarias para eliminar impurezas físicas tras la recolección.
+              Esquemas de estímulo basados en inocuidad y parámetros composicionales de la leche, premiando el esmero y cumplimiento técnico de cada productor.
             </p>
           </div>
         </div>
 
-        <!-- Paso 3 -->
-        <div class="col-md-6 col-lg-3 reveal-on-scroll">
-          <div class="bpo-step-card">
-            <div class="bpo-step-badge">3</div>
-            <h5 class="fw-bold text-success mb-2">Conservación en Frío</h5>
+        <div class="col-md-6 col-lg-3">
+          <div class="card-feature-col bg-surface">
+            <div class="card-feature-icon">
+              <i class="bi bi-clipboard2-pulse"></i>
+            </div>
+            <h5 class="fw-bold mb-2">Diagnósticos en Finca</h5>
             <p class="text-muted small mb-0">
-              Traslado expedito hacia los tanques comunitarios para ingresar el producto al sistema de refrigeración y proteger sus cualidades organolépticas.
+              Pruebas rutinarias individuales para el monitoreo de la leche en cada predio, previniendo mastitis y garantizando altos estándares de acopio.
             </p>
           </div>
         </div>
 
-        <!-- Paso 4 -->
-        <div class="col-md-6 col-lg-3 reveal-on-scroll">
-          <div class="bpo-step-card">
-            <div class="bpo-step-badge">4</div>
-            <h5 class="fw-bold text-success mb-2">Registro y Trazabilidad</h5>
+        <div class="col-md-6 col-lg-3">
+          <div class="card-feature-col bg-surface">
+            <div class="card-feature-icon">
+              <i class="bi bi-mortarboard"></i>
+            </div>
+            <h5 class="fw-bold mb-2">Capacitación Continua</h5>
             <p class="text-muted small mb-0">
-              Anotación sistemática del volumen entregado en cada turno (mañana y tarde) en la plataforma para control y transparencia comunitaria.
+              Talleres comunitarios permanentes, fertilización técnica de praderas y adopción rigurosa del reglamento interno lácteo entre los asociados.
             </p>
           </div>
         </div>
       </div>
+
     </div>
   </section>
 
   <!-- ========================================================================
-       SECCIÓN 7: ALIADOS INSTITUCIONALES (SOLO TEXTO OFICIAL)
+       6. SECCIÓN ALIADOS INSTITUCIONALES (SOLO TEXTO)
        ======================================================================== -->
   <section id="aliados" class="py-5">
-    <div class="container py-3">
-      <div class="row justify-content-center text-center mb-4">
-        <div class="col-lg-8">
-          <span class="badge bg-success-subtle text-success fw-bold px-3 py-2 rounded-pill uppercase mb-2">Cooperación y Alianzas</span>
-          <h2 class="display-6 fw-bold text-success">Aliados Estratégicos</h2>
-          <p class="text-muted">Organizaciones que han acompañado procesos de fortalecimiento y desarrollo asociativo.</p>
-        </div>
-      </div>
+    <div class="container py-4 text-center">
+      <span class="section-eyebrow">Cooperación y Fortalecimiento</span>
+      <h2 class="section-title">Aliados Institucionales</h2>
+      <p class="section-lead mx-auto mb-4">
+        Agradecemos el acompañamiento técnico, organizativo y de desarrollo rural brindado por entidades aliadas en nuestra trayectoria asociativa:
+      </p>
 
-      <div class="d-flex flex-wrap justify-content-center align-items-center gap-3 reveal-on-scroll">
-        <div class="ally-pill">
-          <i class="bi bi-people-fill text-success fs-4"></i>
-          <span>Corporación PBA</span>
+      <div class="d-flex flex-wrap justify-content-center gap-4 align-items-center">
+        <div class="p-3 px-4 rounded-pill border border-subtle bg-surface fw-bold text-success fs-5 shadow-sm">
+          <i class="bi bi-building me-2 text-muted"></i> Corporación PBA
         </div>
-        <div class="ally-pill">
-          <i class="bi bi-award-fill text-warning fs-4"></i>
-          <span>Fundación Bolívar Davivienda</span>
+        <div class="p-3 px-4 rounded-pill border border-subtle bg-surface fw-bold text-success fs-5 shadow-sm">
+          <i class="bi bi-heart-fill me-2 text-danger"></i> Fundación Bolívar Davivienda
         </div>
       </div>
     </div>
   </section>
 
   <!-- ========================================================================
-       SECCIÓN 8: CONTACTO Y UBICACIÓN
+       7. SECCIÓN CONTACTO Y UBICACIÓN OFICIAL
        ======================================================================== -->
-  <section id="contacto" class="py-5" style="background: var(--bs-body-bg);">
-    <div class="container py-4">
-      <div class="row justify-content-center text-center mb-5">
-        <div class="col-lg-8">
-          <span class="badge bg-success-subtle text-success fw-bold px-3 py-2 rounded-pill uppercase mb-2">Canales Oficiales</span>
-          <h2 class="display-6 fw-bold text-success">Contacto y Atención</h2>
-          <p class="text-muted">Comunícate con la administración de ASOAGROALIZAL o visítanos en la Vereda Alizal.</p>
-          <div class="mx-auto" style="width: 70px; height: 4px; background: var(--aso-accent); border-radius: 2px;"></div>
-        </div>
+  <section id="contacto" class="py-5" style="background-color: var(--surface-2);">
+    <div class="container py-lg-4">
+
+      <div class="text-center mb-5">
+        <span class="section-eyebrow">Canal Abierto</span>
+        <h2 class="section-title">Canales de Contacto y Ubicación</h2>
+        <p class="section-lead mx-auto">
+          Comunícate directamente con la administración de ASOAGROALIZAL o radica tus consultas comunitarias mediante el formulario web.
+        </p>
       </div>
 
-      <div class="row g-4 align-items-stretch">
-        <!-- Columna 1: Formulario con Floating Labels -->
-        <div class="col-lg-6 reveal-on-scroll">
-          <div class="card card-rural p-4 p-lg-5 h-100">
-            <h4 class="fw-bold text-success mb-4">Radicar una Consulta o Mensaje</h4>
+      <div class="row g-5">
+        
+        <!-- Columna 1: Formulario con Floating Labels y Protección Ley 1581 -->
+        <div class="col-lg-6">
+          <div class="card card-rural p-4 p-md-5 h-100">
+            <h4 class="fw-bold mb-3 text-success">
+              <i class="bi bi-envelope-paper me-2"></i> Envíanos un Mensaje
+            </h4>
+            <p class="text-muted small mb-4">
+              Diligencia tus datos de contacto y mensaje. Recibirás respuesta de la administración de la asociación.
+            </p>
 
-            <form id="formContacto" action="index.php#contacto" method="POST">
+            <form action="index.php#contacto" method="POST" id="form-contacto">
               <?php echo campoCsrf(); ?>
-              <input type="hidden" name="accion_contacto" value="1">
-              
-              <!-- Honeypot anti-spam invisible para humanos -->
-              <input type="text" name="website_hp" class="honeypot-field" tabindex="-1" autocomplete="off">
 
-              <!-- Floating Label 1: Nombre -->
+              <!-- Campo Honeypot Oculto Anti-Spam -->
+              <div class="d-none" aria-hidden="true">
+                <label for="website_hp">Si eres humano deja este campo vacío</label>
+                <input type="text" id="website_hp" name="website_hp" tabindex="-1" autocomplete="off">
+              </div>
+
+              <!-- Floating Label: Nombre Completo -->
               <div class="form-floating mb-3">
-                <input type="text" class="form-control form-control-touch" id="cNombre" name="nombre" placeholder="Nombre completo" required minlength="3">
-                <label for="cNombre" class="text-muted">Nombre completo *</label>
+                <input type="text" class="form-control" id="nombre" name="nombre" placeholder="Nombre completo" required>
+                <label for="nombre">Nombre y Apellidos *</label>
               </div>
 
-              <!-- Floating Label 2: Contacto -->
+              <!-- Floating Label: Correo o Teléfono -->
               <div class="form-floating mb-3">
-                <input type="text" class="form-control form-control-touch" id="cContacto" name="contacto" placeholder="Teléfono o correo" required minlength="6">
-                <label for="cContacto" class="text-muted">Teléfono celular o correo de contacto *</label>
+                <input type="text" class="form-control" id="contacto" name="contacto" placeholder="Correo o celular" required>
+                <label for="contacto">Correo Electrónico o Teléfono de Contacto *</label>
               </div>
 
-              <!-- Floating Label 3: Mensaje -->
-              <div class="form-floating mb-4">
-                <textarea class="form-control form-control-touch" id="cMensaje" name="mensaje" placeholder="Mensaje" style="height: 130px;" required minlength="10"></textarea>
-                <label for="cMensaje" class="text-muted">Mensaje o inquietud *</label>
+              <!-- Floating Label: Mensaje o Consulta -->
+              <div class="form-floating mb-3">
+                <textarea class="form-control" placeholder="Escribe tu mensaje aquí" id="mensaje" name="mensaje" style="height: 140px;" required></textarea>
+                <label for="mensaje">Motivo de tu consulta o mensaje *</label>
               </div>
 
-              <button type="submit" id="btnEnviarContacto" class="btn btn-touch btn-aso-primary w-100 shadow">
-                <i class="bi bi-send-fill"></i>
+              <!-- Checkbox Obligatorio Tratamiento de Datos (Ley 1581 de 2012) -->
+              <div class="form-check mb-4">
+                <input class="form-check-input" type="checkbox" value="1" id="acepta_datos" name="acepta_datos" required>
+                <label class="form-check-label small text-muted" for="acepta_datos">
+                  Autorizo el tratamiento de mis datos personales de acuerdo con la 
+                  <a href="javascript:void(0)" class="text-success fw-bold text-decoration-underline" data-bs-toggle="modal" data-bs-target="#modalPoliticaDatos">
+                    Política de Tratamiento de Datos (Ley 1581 de 2012)
+                  </a>.
+                </label>
+              </div>
+
+              <button type="submit" name="accion_contacto" id="btn-enviar-contacto" class="btn btn-touch btn-aso-primary w-100 shadow">
+                <i class="bi bi-send-fill me-1"></i>
                 <span>Enviar Mensaje</span>
               </button>
             </form>
           </div>
         </div>
 
-        <!-- Columna 2: Datos Oficiales y Mapa Embebido -->
-        <div class="col-lg-6 reveal-on-scroll">
-          <div class="card card-rural p-4 p-lg-5 h-100 d-flex flex-column justify-content-between">
+        <!-- Columna 2: Tarjeta Institucional y Mapa Embebido -->
+        <div class="col-lg-6">
+          <div class="card card-rural p-4 p-md-5 h-100 d-flex flex-column justify-content-between">
             <div>
-              <h4 class="fw-bold text-success mb-4">Datos Institucionales</h4>
+              <h4 class="fw-bold mb-4 text-success">
+                <i class="bi bi-geo-alt-fill me-2"></i> Información Oficial
+              </h4>
 
               <div class="d-flex flex-column gap-3 mb-4">
                 <div class="d-flex align-items-start gap-3">
                   <div class="rounded-circle bg-success-subtle text-success p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                    <i class="bi bi-geo-alt-fill fs-5"></i>
+                    <i class="bi bi-pin-map-fill"></i>
                   </div>
                   <div>
-                    <span class="d-block fw-bold small text-muted">Sede Operativa</span>
-                    <span class="fw-semibold"><?php echo e(EMPRESA_UBICACION); ?></span>
+                    <strong class="d-block text-dark">Sede Principal</strong>
+                    <span class="text-muted small"><?php echo e(EMPRESA_UBICACION); ?></span>
                   </div>
                 </div>
 
                 <div class="d-flex align-items-start gap-3">
                   <div class="rounded-circle bg-success-subtle text-success p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                    <i class="bi bi-telephone-fill fs-5"></i>
+                    <i class="bi bi-envelope-fill"></i>
                   </div>
                   <div>
-                    <span class="d-block fw-bold small text-muted">Teléfono Único Oficial</span>
-                    <a href="tel:<?php echo e(EMPRESA_TELEFONO); ?>" class="fw-semibold text-decoration-none text-success">
-                      +57 <?php echo e(EMPRESA_TELEFONO); ?>
-                    </a>
-                  </div>
-                </div>
-
-                <div class="d-flex align-items-start gap-3">
-                  <div class="rounded-circle bg-success-subtle text-success p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                    <i class="bi bi-envelope-fill fs-5"></i>
-                  </div>
-                  <div>
-                    <span class="d-block fw-bold small text-muted">Correo Electrónico</span>
-                    <a href="mailto:<?php echo e(EMPRESA_CORREO); ?>" class="fw-semibold text-decoration-none text-success">
+                    <strong class="d-block text-dark">Correo Electrónico Institucional</strong>
+                    <a href="mailto:<?php echo e(EMPRESA_CORREO); ?>" class="text-success small fw-bold text-decoration-none">
                       <?php echo e(EMPRESA_CORREO); ?>
                     </a>
                   </div>
                 </div>
+
+                <div class="d-flex align-items-start gap-3">
+                  <div class="rounded-circle bg-success-subtle text-success p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                    <i class="bi bi-telephone-fill"></i>
+                  </div>
+                  <div>
+                    <strong class="d-block text-dark">Teléfono Oficial Único</strong>
+                    <a href="tel:<?php echo e(EMPRESA_TELEFONO); ?>" class="text-success small fw-bold text-decoration-none">
+                      <?php echo e(EMPRESA_TELEFONO); ?>
+                    </a>
+                  </div>
+                </div>
+
+                <?php if (WHATSAPP_ACTIVO): ?>
+                  <div class="d-flex align-items-start gap-3">
+                    <div class="rounded-circle bg-success text-white p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                      <i class="bi bi-whatsapp"></i>
+                    </div>
+                    <div>
+                      <strong class="d-block text-dark">Canal WhatsApp</strong>
+                      <span class="text-muted small">Canal habilitado para asociados</span>
+                    </div>
+                  </div>
+                <?php endif; ?>
               </div>
 
-              <!-- Integración Condicional de WhatsApp según WHATSAPP_ACTIVO -->
-              <?php if (WHATSAPP_ACTIVO): ?>
-                <div class="mb-4">
-                  <a href="https://wa.me/57<?php echo e(EMPRESA_TELEFONO); ?>?text=Hola%20AsoagroAlisal,%20deseo%20comunicarme%20con%20ustedes." target="_blank" rel="noopener noreferrer" class="btn btn-touch w-100 rounded-pill shadow text-white" style="background-color: #25D366;">
-                    <i class="bi bi-whatsapp fs-5"></i>
-                    <span>Contactar por WhatsApp</span>
-                  </a>
-                </div>
-              <?php endif; ?>
+              <div class="alert alert-success-subtle border border-success-subtle rounded-4 p-3 small mb-4">
+                <i class="bi bi-info-circle-fill text-success me-1"></i>
+                <em>Por políticas de bioseguridad, reserva operativa y protección comunitaria, la asociación no publica horarios de acopio ni de atención al público en canales web abiertos.</em>
+              </div>
             </div>
 
-            <!-- Mapa Embebido de la Vereda Alizal / Carmen de Carupa -->
-            <div class="rounded-4 overflow-hidden border border-success-subtle" style="height: 240px;">
+            <!-- Mapa Embebido de la Vereda Alizal, Carmen de Carupa -->
+            <div class="rounded-4 overflow-hidden border border-subtle shadow-sm" style="height: 220px;">
               <iframe 
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d31742.618685157143!2d-73.93189914447477!3d5.348624136450629!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8e404e902b485521%3A0xcdbc901e855734c5!2sCarmen%20de%20Carupa%2C%20Cundinamarca!5e0!3m2!1ses!2sco!4v1714500000000!5m2!1ses!2sco" 
+                title="Ubicación Vereda Alizal, Carmen de Carupa"
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15893.59381640947!2d-73.9168435!3d5.3524675!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8e40428d0e7408f9%3A0xb6ee08945a898b9a!2sCarmen%20de%20Carupa%2C%20Cundinamarca!5e0!3m2!1ses!2sco!4v1714000000000!5m2!1ses!2sco" 
                 width="100%" 
                 height="100%" 
                 style="border:0;" 
                 allowfullscreen="" 
                 loading="lazy" 
-                referrerpolicy="no-referrer-when-downgrade"
-                title="Mapa de ubicación Vereda Alizal, Carmen de Carupa">
+                referrerpolicy="no-referrer-when-downgrade">
               </iframe>
             </div>
+
           </div>
         </div>
+
       </div>
+
     </div>
   </section>
 
 </main>
 
 <script>
-  // Manejo de envío asíncrono para el formulario de contacto con SweetAlert2
-  document.addEventListener('DOMContentLoaded', function () {
-    const form = document.getElementById('formContacto');
-    const btn = document.getElementById('btnEnviarContacto');
+document.addEventListener('DOMContentLoaded', function () {
+  // Manejo de envío asíncrono con fetch y SweetAlert2 para el formulario de contacto
+  const formContacto = document.getElementById('form-contacto');
+  if (formContacto) {
+    formContacto.addEventListener('submit', async function (e) {
+      e.preventDefault();
 
-    if (form && btn) {
-      form.addEventListener('submit', async function (e) {
-        // Si Fetch API está disponible, enviar asíncronamente a api/consultas.php
-        if (window.fetch && window.AsoagroUI) {
-          e.preventDefault();
+      const btn = document.getElementById('btn-enviar-contacto');
+      const nombre = document.getElementById('nombre').value.trim();
+      const contacto = document.getElementById('contacto').value.trim();
+      const mensaje = document.getElementById('mensaje').value.trim();
+      const aceptaDatos = document.getElementById('acepta_datos').checked;
+      const honeypot = document.getElementById('website_hp').value;
+      const csrfToken = formContacto.querySelector('input[name="csrf_token"]').value;
 
-          const nombre = document.getElementById('cNombre').value.trim();
-          const contacto = document.getElementById('cContacto').value.trim();
-          const mensaje = document.getElementById('cMensaje').value.trim();
-          const honeypot = form.querySelector('input[name="website_hp"]').value;
-          const csrf = form.querySelector('input[name="csrf_token"]').value;
+      if (!nombre || !contacto || !mensaje) {
+        AsoagroUI.showWarning('Campos Incompletos', 'Por favor diligencia todos los campos requeridos.');
+        return;
+      }
 
-          btn.disabled = true;
-          btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Enviando...';
+      if (!aceptaDatos) {
+        AsoagroUI.showWarning('Autorización Requerida', 'Debes autorizar el tratamiento de datos personales para continuar.');
+        return;
+      }
 
-          try {
-            const resp = await fetch('api/consultas.php', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-              },
-              body: JSON.stringify({
-                nombre: nombre,
-                contacto: contacto,
-                mensaje: mensaje,
-                website_hp: honeypot,
-                csrf_token: csrf
-              })
-            });
+      btn.disabled = true;
+      btn.innerHTML = `<span class="spinner-border spinner-border-sm me-2"></span> Enviando mensaje...`;
 
-            const data = await resp.json();
+      try {
+        const formData = new FormData();
+        formData.append('csrf_token', csrfToken);
+        formData.append('nombre', nombre);
+        formData.append('contacto', contacto);
+        formData.append('mensaje', mensaje);
+        formData.append('website_hp', honeypot);
 
-            if (data && data.success) {
-              window.AsoagroUI.showSuccess('¡Consulta Enviada!', data.message || 'Tu inquietud ha sido registrada en el sistema.');
-              form.reset();
-            } else {
-              window.AsoagroUI.showError('No se pudo enviar', data.message || 'Por favor revisa los datos e intenta de nuevo.');
-            }
-          } catch (err) {
-            // Fallback: Si la API arroja error de conexión o parseo, enviar el form normalmente
-            form.submit();
-          } finally {
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-send-fill"></i> <span>Enviar Mensaje</span>';
-          }
+        const res = await fetch('api/consultas.php', {
+          method: 'POST',
+          headers: {
+            'Accept': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: formData
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.ok) {
+          AsoagroUI.showSuccess('¡Mensaje Enviado!', data.message || 'Tu consulta ha sido registrada exitosamente.');
+          formContacto.reset();
+        } else {
+          AsoagroUI.showError('Error al Enviar', data.message || 'Ocurrió un error registrando tu consulta.');
         }
-      });
-    }
-  });
+      } catch (err) {
+        // En caso de corte de red, enviar por formulario tradicional
+        formContacto.submit();
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i class="bi bi-send-fill me-1"></i> <span>Enviar Mensaje</span>`;
+      }
+    });
+  }
+});
 </script>
 
 <?php
-// Pie de página unificado
+// Inclusión del pie de página global legal y scripts
 require_once __DIR__ . '/includes/footer.php';
 ?>
