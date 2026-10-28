@@ -66,8 +66,8 @@ require_once __DIR__ . '/includes/header.php';
 
 <main class="container my-auto py-5" style="max-width: 580px;">
   <div class="card card-rural border-0 shadow-lg overflow-hidden">
-    <div class="p-4 text-center text-white" style="background: linear-gradient(135deg, #0b2914 0%, #144722 100%);">
-      <div class="rounded-circle bg-warning text-dark mx-auto d-flex align-items-center justify-content-center mb-3 shadow" style="width: 58px; height: 58px; font-size: 1.6rem;">
+    <div class="p-4 text-center text-white" style="background: var(--grad-primary);">
+      <div class="rounded-circle text-white mx-auto d-flex align-items-center justify-content-center mb-3" style="width: 58px; height: 58px; font-size: 1.6rem; background: var(--grad-accent); box-shadow: var(--shadow-glow-gold);">
         <i class="bi bi-key-fill"></i>
       </div>
       <h3 class="fw-bold mb-1">Recuperar Acceso</h3>
@@ -90,7 +90,7 @@ require_once __DIR__ . '/includes/header.php';
       <?php endif; ?>
 
       <div class="p-3 mb-4 rounded-4 small" style="background: var(--aso-secondary-light); border: 1px solid var(--card-border);">
-        <strong class="text-success"><i class="bi bi-shield-lock me-1"></i> Protocolo de Seguridad</strong>
+        <strong class="text-primary"><i class="bi bi-shield-lock me-1"></i> Protocolo de Seguridad</strong>
         <p class="text-muted mb-0 mt-1" style="font-size: 0.85rem;">
           Para proteger la confidencialidad de las planillas de pesajes y liquidaciones, las solicitudes de cambio de clave son verificadas por la administración asociativa.
         </p>
@@ -102,7 +102,7 @@ require_once __DIR__ . '/includes/header.php';
         <div class="mb-3">
           <label for="cedula" class="form-label fw-bold small text-muted">Número de Cédula Registrada *</label>
           <div class="input-group">
-            <span class="input-group-text bg-transparent text-success border-2" style="border-radius: var(--radius-md) 0 0 var(--radius-md); border-right: none;">
+            <span class="input-group-text bg-transparent text-primary border-2" style="border-radius: var(--radius-md) 0 0 var(--radius-md); border-right: none;">
               <i class="bi bi-person-vcard fs-5"></i>
             </span>
             <input type="text" class="form-control form-control-touch border-start-0" id="cedula" name="cedula" inputmode="numeric" required placeholder="Ej: 10123456" style="border-radius: 0 var(--radius-md) var(--radius-md) 0;" value="<?php echo e($_POST['cedula'] ?? ''); ?>">
@@ -112,10 +112,10 @@ require_once __DIR__ . '/includes/header.php';
         <!-- CAPTCHA GD NATIVO -->
         <div class="mb-4 p-3 rounded-4" style="background: var(--aso-secondary-light); border: 1px solid var(--card-border);">
           <div class="d-flex justify-content-between align-items-center mb-2">
-            <label for="captcha" class="form-label fw-bold small mb-0 text-success">
+            <label for="captcha" class="form-label fw-bold small mb-0 text-primary">
               <i class="bi bi-shield-check me-1"></i> Verificación de Seguridad *
             </label>
-            <button type="button" class="btn btn-sm btn-link text-success fw-bold text-decoration-none p-0" onclick="AsoagroUI.refreshCaptcha('#captcha-img', '#captcha')">
+            <button type="button" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none p-0" onclick="AsoagroUI.refreshCaptcha('#captcha-img', '#captcha')">
               <i class="bi bi-arrow-clockwise"></i> Cambiar
             </button>
           </div>
@@ -132,7 +132,7 @@ require_once __DIR__ . '/includes/header.php';
       </form>
 
       <div class="text-center pt-3 border-top border-secondary-subtle">
-        <a href="login.php" class="small fw-bold text-success text-decoration-none hover-underline">
+        <a href="login.php" class="small fw-bold text-primary text-decoration-none hover-underline">
           <i class="bi bi-arrow-left me-1"></i> Volver a Iniciar Sesión
         </a>
       </div>

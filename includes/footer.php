@@ -97,13 +97,6 @@
           </div>
           <h6 class="fw-bold text-dark">1. Naturaleza del Sistema</h6>
           <p>La plataforma tecnológica de <strong><?php echo e(EMPRESA_SIGLA); ?></strong> es una herramienta interna de gestión asociativa destinada al registro de pesajes de leche, seguimiento de Buenas Prácticas de Ordeño (BPO) y liquidaciones quincenales para sus 32 asociados.</p>
-        </div>
-        <div class="modal-footer p-3 bg-light">
-          <button type="button" class="btn btn-touch btn-aso-primary px-4" data-bs-dismiss="modal">Entendido</button>
-        </div>
-      </div>
-    </div>
-  </div>
 
           <h6 class="fw-bold text-dark">2. Uso de Credenciales y Reserva Operativa</h6>
           <p>El usuario y contraseña asignados a cada asociado son personales e intransferibles. Queda prohibida la divulgación de credenciales a terceros. Toda liquidación mostrada tiene carácter de planilla y liquidación interna de control lechero.</p>
@@ -111,13 +104,12 @@
           <h6 class="fw-bold text-dark">3. Reserva de Información y Bioseguridad</h6>
           <p>Por razones de seguridad comunitaria y bioseguridad sanitaria, no se publican en canales abiertos horarios de acopio ni cifras financieras privadas de la comunidad campesina.</p>
         </div>
-        <div class="modal-footer p-3 bg-body-tertiary">
-          <button type="button" class="btn btn-touch btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Entendido</button>
+        <div class="modal-footer p-3 bg-light">
+          <button type="button" class="btn btn-touch btn-aso-primary px-4" data-bs-dismiss="modal">Entendido</button>
         </div>
       </div>
     </div>
   </div>
-
   <!-- Scripts Globales Optimizados (Defer y CDN Fijado) -->
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>

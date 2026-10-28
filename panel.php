@@ -159,7 +159,7 @@ require_once __DIR__ . '/includes/header.php';
   <!-- BIENVENIDA Y RESUMEN DEL GANADERO EN AZUL MARINO SÓLIDO -->
   <div class="row mb-4">
     <div class="col-12">
-      <div class="card card-rural p-4 border-0 shadow text-white" style="background-color: var(--primary);">
+      <div class="card card-rural p-4 border-0 shadow text-white" style="background: var(--grad-primary); border: none;">
         <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
           <div>
             <span class="badge px-3 py-1.5 rounded-pill fw-bold mb-2" style="background-color: var(--accent); color: #ffffff;">Asociado Oficial</span>
@@ -352,7 +352,7 @@ require_once __DIR__ . '/includes/header.php';
   <div class="row mb-4">
     <div class="col-12">
       <div class="card card-rural border-0 shadow overflow-hidden p-0">
-        <div class="p-4 d-flex justify-content-between align-items-center text-white" style="background-color: var(--primary);">
+        <div class="p-4 d-flex justify-content-between align-items-center text-white" style="background: var(--grad-primary);">
           <div>
             <h4 class="fw-bold mb-0 text-white">
               <i class="bi bi-calendar2-range me-2"></i> Planilla Detallada de Pesajes de la Quincena

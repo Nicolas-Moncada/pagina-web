@@ -285,26 +285,26 @@ require_once __DIR__ . '/includes/header.php';
 ?>
 
 <!-- BARRA DE PESTAÑAS PRINCIPALES (MÓDULOS DEL ADMINISTRADOR) -->
-<div class="bg-body-tertiary border-bottom py-2">
+<div class="tabbar-premium bg-body-tertiary border-bottom py-2">
   <div class="container-fluid px-3 px-md-4">
     <ul class="nav nav-pills gap-2 flex-wrap" id="pills-tab" role="tablist">
       <li class="nav-item">
-        <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'planilla') ? 'active text-white' : ''; ?> fw-bold" style="<?php echo ($pestañaActiva === 'planilla') ? 'background-color: var(--primary) !important;' : ''; ?>" href="admin.php?tab=planilla&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>">
+        <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'planilla') ? 'active text-white' : ''; ?> fw-bold" href="admin.php?tab=planilla&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>">
           <i class="bi bi-grid-3x3-gap-fill me-1"></i> Planilla Matricial de Pesajes
         </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'ganaderos') ? 'active text-white' : ''; ?> fw-bold" style="<?php echo ($pestañaActiva === 'ganaderos') ? 'background-color: var(--primary) !important;' : ''; ?>" href="admin.php?tab=ganaderos">
+        <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'ganaderos') ? 'active text-white' : ''; ?> fw-bold" href="admin.php?tab=ganaderos">
           <i class="bi bi-people-fill me-1"></i> Gestión de Asociados (<?php echo count($listaTodosGanaderos); ?>)
         </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'quincenas') ? 'active text-white' : ''; ?> fw-bold" style="<?php echo ($pestañaActiva === 'quincenas') ? 'background-color: var(--primary) !important;' : ''; ?>" href="admin.php?tab=quincenas&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>">
+        <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'quincenas') ? 'active text-white' : ''; ?> fw-bold" href="admin.php?tab=quincenas&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>">
           <i class="bi bi-cash-coin me-1"></i> Precios de Quincena
         </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'buzon') ? 'active text-white' : ''; ?> fw-bold position-relative" style="<?php echo ($pestañaActiva === 'buzon') ? 'background-color: var(--primary) !important;' : ''; ?>" href="admin.php?tab=buzon">
+        <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'buzon') ? 'active text-white' : ''; ?> fw-bold position-relative" href="admin.php?tab=buzon">
           <i class="bi bi-inbox-fill me-1"></i> Buzón de Inconformidades y Consultas
           <?php if (count($listaAlertas) > 0): ?>
             <span class="badge rounded-pill bg-danger ms-1"><?php echo count($listaAlertas); ?></span>
@@ -325,9 +325,9 @@ require_once __DIR__ . '/includes/header.php';
     <!-- TARJETAS DE RESUMEN SUPERIORES -->
     <div class="row g-3 mb-4">
       <div class="col-md-3 col-6">
-        <div class="card card-rural p-3 text-center border-start border-4 border-primary">
-          <small class="text-muted fw-bold text-uppercase">Litros Recolectados</small>
-          <div class="display-6 fw-extrabold text-primary my-1" id="kpi-gran-total">
+        <div class="kpi-card text-center">
+          <small class="kpi-label">Litros Recolectados</small>
+          <div class="kpi-value my-1" id="kpi-gran-total">
             <?php echo number_format($granTotalMatriz, 1, ',', '.'); ?> L
           </div>
           <small class="text-muted">Total quincena en acopio</small>
@@ -335,9 +335,9 @@ require_once __DIR__ . '/includes/header.php';
       </div>
 
       <div class="col-md-3 col-6">
-        <div class="card card-rural p-3 text-center border-start border-4 border-primary">
-          <small class="text-muted fw-bold text-uppercase">Promedio Diario</small>
-          <div class="display-6 fw-extrabold text-primary my-1" id="kpi-promedio-diario">
+        <div class="kpi-card text-center">
+          <small class="kpi-label">Promedio Diario</small>
+          <div class="kpi-value my-1" id="kpi-promedio-diario">
             <?php echo number_format($promedioDiarioGeneral, 1, ',', '.'); ?> L
           </div>
           <small class="text-muted"><?php echo $cantDias; ?> días en el periodo</small>
@@ -345,9 +345,9 @@ require_once __DIR__ . '/includes/header.php';
       </div>
 
       <div class="col-md-3 col-6">
-        <div class="card card-rural p-3 text-center border-start border-4 border-warning">
-          <small class="text-muted fw-bold text-uppercase">Total a Liquidar</small>
-          <div class="display-6 fw-extrabold text-warning-emphasis my-1" id="kpi-liquidacion">
+        <div class="kpi-card kpi-gold text-center">
+          <small class="kpi-label">Total a Liquidar</small>
+          <div class="kpi-value my-1" id="kpi-liquidacion" style="color: var(--accent);">
             <?php echo formatoMonedaCOP($totalLiquidacionGeneral); ?>
           </div>
           <small class="text-muted">Tarifa: <?php echo $precioLitroActual ? formatoMonedaCOP($precioLitroActual) . ' / L' : 'Por fijar'; ?></small>
@@ -355,9 +355,9 @@ require_once __DIR__ . '/includes/header.php';
       </div>
 
       <div class="col-md-3 col-6">
-        <div class="card card-rural p-3 text-center border-start border-4 border-info">
-          <small class="text-muted fw-bold text-uppercase">Asociados en Planilla</small>
-          <div class="display-6 fw-extrabold text-info-emphasis my-1">
+        <div class="kpi-card text-center">
+          <small class="kpi-label">Asociados en Planilla</small>
+          <div class="kpi-value counter-animated" data-target="<?php echo (int)$totalGanaderosActivos; ?>" style="color: #0e7490;">
             <?php echo $totalGanaderosActivos; ?>
           </div>
           <small class="text-muted">Ganaderos activos registrados</small>

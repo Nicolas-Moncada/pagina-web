@@ -75,11 +75,14 @@ require_once __DIR__ . '/includes/header.php';
   <!-- ========================================================================
        1. HÉROE PRINCIPAL SÓLIDO EN AZUL MARINO (ALTO CONTRASTE, CERO GLASSMORPHISM)
        ======================================================================== -->
-  <section class="py-5 text-white position-relative" style="background-color: var(--primary);">
-    <div class="container py-4">
+  <section class="hero-grad text-white position-relative">
+    <span class="hero-blob blob-1" aria-hidden="true"></span>
+    <span class="hero-blob blob-2" aria-hidden="true"></span>
+    <span class="hero-blob blob-3" aria-hidden="true"></span>
+    <div class="container py-4 position-relative">
       
       <div class="row align-items-center g-5 mb-5">
-        <div class="col-lg-8">
+        <div class="col-lg-8 reveal">
           <div class="d-inline-flex align-items-center gap-2 px-3 py-1.5 rounded-pill mb-3 fw-bold" style="background-color: rgba(255, 255, 255, 0.15); border: 1.5px solid rgba(255, 255, 255, 0.3);">
             <i class="bi bi-geo-alt-fill text-warning"></i>
             <span class="text-white"><?php echo e(EMPRESA_SIGLA); ?> &bull; Carmen de Carupa, Cundinamarca</span>
@@ -114,7 +117,7 @@ require_once __DIR__ . '/includes/header.php';
           </div>
         </div>
 
-        <div class="col-lg-4 text-center">
+        <div class="col-lg-4 text-center reveal" style="--reveal-delay: 140ms;">
           <div class="card p-4 rounded-4 shadow-lg border-2 text-dark" style="background-color: #ffffff; border-color: var(--border);">
             <img src="assets/img/logo.png" alt="Emblema Institucional <?php echo e(EMPRESA_SIGLA); ?>" class="img-fluid mx-auto mb-3" style="max-height: 200px;">
             <h4 class="fw-bold mb-1 text-primary"><?php echo e(EMPRESA_SIGLA); ?></h4>
@@ -135,7 +138,7 @@ require_once __DIR__ . '/includes/header.php';
                 <i class="bi bi-people-fill"></i>
               </div>
               <div>
-                <span class="display-6 fw-bold text-primary d-block">32</span>
+                <span class="display-6 fw-bold text-primary d-block counter-animated" data-target="32">32</span>
                 <span class="fw-bold text-dark">Asociados Activos</span>
               </div>
             </div>
@@ -149,7 +152,7 @@ require_once __DIR__ . '/includes/header.php';
                 <i class="bi bi-award-fill"></i>
               </div>
               <div>
-                <span class="display-6 fw-bold text-dark d-block">25+ Años</span>
+                <span class="display-6 fw-bold text-dark d-block counter-animated" data-target="25" data-suffix="+">25+</span>
                 <span class="fw-bold text-dark">Constituida en el Año 2000</span>
               </div>
             </div>
@@ -163,7 +166,7 @@ require_once __DIR__ . '/includes/header.php';
                 <i class="bi bi-clock-history"></i>
               </div>
               <div>
-                <span class="display-6 fw-bold text-primary d-block">2 Turnos</span>
+                <span class="display-6 fw-bold text-primary d-block">2 <small class="fw-bold fs-4">Turnos</small></span>
                 <span class="fw-bold text-dark">☀️ Mañana y 🌅 Tarde</span>
               </div>
             </div>
@@ -173,6 +176,11 @@ require_once __DIR__ . '/includes/header.php';
 
     </div>
   </section>
+
+  <!-- Ola divisoria entre héroe y sección de misión (decorativa) -->
+  <svg class="wave-divider" viewBox="0 0 1440 64" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0,34 C240,62 460,6 720,18 C980,30 1220,10 1440,30 L1440,64 L0,64 Z" fill="#eee9dd"></path>
+  </svg>
 
   <!-- ========================================================================
        2. MISIÓN Y VISIÓN (TARJETAS BLANCAS SÓLIDAS DE ALTO CONTRASTE)
@@ -255,7 +263,7 @@ require_once __DIR__ . '/includes/header.php';
 
           <div class="card p-4 rounded-4 border-2" style="background-color: var(--surface-2); border-color: var(--border);">
             <div class="d-flex align-items-center gap-4">
-              <span class="display-3 fw-bold text-primary">32</span>
+              <span class="display-3 fw-bold text-primary counter-animated" data-target="32">32</span>
               <div>
                 <h4 class="fw-bold mb-1 text-dark">Asociados Activos</h4>
                 <span class="text-muted">Familias vinculadas al sistema de acopio y pesaje quincenal.</span>
@@ -277,7 +285,7 @@ require_once __DIR__ . '/includes/header.php';
       <div class="row align-items-center g-5 mb-5">
         <div class="col-lg-6">
           <div class="card card-rural p-0 overflow-hidden border-2">
-            <img src="assets/img/tierra.svg" alt="Terreno propio de ASOAGROALIZAL en Vereda Alizal" class="img-fluid w-100" style="max-height: 380px; object-fit: cover;" loading="lazy">
+            <img src="assets/img/tierra.svg" width="800" height="500" alt="Terreno propio de ASOAGROALIZAL en Vereda Alizal" class="img-fluid w-100" style="max-height: 380px; object-fit: cover;" loading="lazy">
           </div>
         </div>
         <div class="col-lg-6">
@@ -309,7 +317,7 @@ require_once __DIR__ . '/includes/header.php';
         </div>
         <div class="col-lg-6 order-1 order-lg-2">
           <div class="card card-rural p-0 overflow-hidden border-2">
-            <img src="assets/img/familia.svg" alt="32 Familias Campesinas Asociadas en Carmen de Carupa" class="img-fluid w-100" style="max-height: 380px; object-fit: cover;" loading="lazy">
+            <img src="assets/img/familia.svg" width="600" height="400" alt="32 Familias Campesinas Asociadas en Carmen de Carupa" class="img-fluid w-100" style="max-height: 380px; object-fit: cover;" loading="lazy">
           </div>
         </div>
       </div>
@@ -335,7 +343,7 @@ require_once __DIR__ . '/includes/header.php';
       <div class="row g-4 mb-4">
         <div class="col-md-4">
           <div class="card card-feature-col">
-            <img src="assets/img/infra-tanques.svg" alt="Tanque de Enfriamiento en Acero Inoxidable" class="img-fluid rounded-4 mb-3 border border-2" loading="lazy">
+            <img src="assets/img/infra-tanques.svg" width="600" height="400" alt="Tanque de Enfriamiento en Acero Inoxidable" class="img-fluid rounded-4 mb-3 border border-2" loading="lazy">
             <div class="d-flex align-items-center gap-2 mb-2">
               <i class="bi bi-snow2 text-primary fs-3"></i>
               <h4 class="fw-bold mb-0 text-dark">Tanques de Enfriamiento</h4>
@@ -348,7 +356,7 @@ require_once __DIR__ . '/includes/header.php';
 
         <div class="col-md-4">
           <div class="card-feature-col">
-            <img src="assets/img/infra-laboratorio.svg" alt="Laboratorio de Cultivo de Tejidos Vegetales" class="img-fluid rounded-4 mb-3 border border-2" loading="lazy">
+            <img src="assets/img/infra-laboratorio.svg" width="600" height="400" alt="Laboratorio de Cultivo de Tejidos Vegetales" class="img-fluid rounded-4 mb-3 border border-2" loading="lazy">
             <div class="d-flex align-items-center gap-2 mb-2">
               <i class="bi bi-flower1 text-primary fs-3"></i>
               <h4 class="fw-bold mb-0 text-dark">Laboratorio de Tejidos</h4>
@@ -361,7 +369,7 @@ require_once __DIR__ . '/includes/header.php';
 
         <div class="col-md-4">
           <div class="card-feature-col">
-            <img src="assets/img/infra-invernadero.svg" alt="Invernaderos y Módulos Forrajeros" class="img-fluid rounded-4 mb-3 border border-2" loading="lazy">
+            <img src="assets/img/infra-invernadero.svg" width="600" height="400" alt="Invernaderos y Módulos Forrajeros" class="img-fluid rounded-4 mb-3 border border-2" loading="lazy">
             <div class="d-flex align-items-center gap-2 mb-2">
               <i class="bi bi-tree text-primary fs-3"></i>
               <h4 class="fw-bold mb-0 text-dark">Invernaderos y Forrajes</h4>

@@ -48,7 +48,7 @@ $tituloPagina = $tituloPagina ?? (EMPRESA_SIGLA . ' | Control Lechero');
   <!-- Estilos del Sistema de Diseño Premium Accesible (Azul Marino / Crema / Atkinson) -->
   <link rel="stylesheet" href="assets/css/theme.css">
 </head>
-<body class="d-flex flex-column min-vh-100">
+<body class="d-flex flex-column min-vh-100 auth-bg">
 
   <!-- 1. BARRA SUPERIOR FIJA DE ACCESIBILIDAD (CONTROL DE TAMAÑO DE LETRA: A  A+  A++) -->
   <aside class="top-accessibility-bar" aria-label="Controles de accesibilidad">

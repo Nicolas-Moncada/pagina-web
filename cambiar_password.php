@@ -89,13 +89,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Actualizar Contraseña | <?php echo e(EMPRESA_SIGLA); ?></title>
 
-  <!-- Script Anti-Parpadeo (Anti-FOUC) -->
+  <!-- Script Anti-Parpadeo: Forzar Modo Claro Único -->
   <script>
     (function() {
-      const savedTheme = localStorage.getItem('asoagro_theme');
-      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const theme = savedTheme ? savedTheme : (systemDark ? 'dark' : 'light');
-      document.documentElement.setAttribute('data-bs-theme', theme);
+      document.documentElement.setAttribute('data-bs-theme', 'light');
+      document.documentElement.style.colorScheme = 'light';
     })();
   </script>
 
@@ -108,16 +106,16 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
   <!-- Bootstrap Icons 1.11.3 -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   
-  <!-- Estilos Globales de Marca AsoagroAlisal -->
-  <link rel="stylesheet" href="assets/css/estilos.css">
+  <!-- Sistema de Diseño Premium AsoagroAlisal (theme.css) -->
+  <link rel="stylesheet" href="assets/css/theme.css">
 </head>
 <body class="d-flex flex-column min-vh-100 justify-content-center py-5">
 
   <div class="container" style="max-width: 560px;">
     <div class="card card-rural border-0 shadow-lg overflow-hidden">
       <!-- Cabecera Institucional -->
-      <div class="card-header p-4 text-center text-white" style="background: linear-gradient(135deg, #0b2914 0%, #144722 100%);">
-        <div class="rounded-circle bg-warning text-dark mx-auto d-flex align-items-center justify-content-center mb-3 shadow" style="width: 60px; height: 60px; font-size: 1.8rem;">
+      <div class="card-header p-4 text-center text-white" style="background: var(--grad-primary); border-radius: 0;">
+        <div class="rounded-circle text-white mx-auto d-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px; font-size: 1.8rem; background: var(--grad-accent); box-shadow: var(--shadow-glow-gold);">
           <i class="bi bi-shield-lock-fill"></i>
         </div>
         <h3 class="fw-bold mb-1">
@@ -209,7 +207,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
   <!-- Scripts: Bootstrap Bundle + SweetAlert2 + App.js -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script src="assets/js/app.js"></script>
+  <script src="assets/js/theme.js"></script>
 
   <!-- SweetAlert2 Flash Messages -->
   <?php echo renderSweetAlert(); ?>
