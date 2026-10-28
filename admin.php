@@ -412,9 +412,16 @@ require_once __DIR__ . '/includes/header.php';
             <input type="text" id="filtro-matriz" class="form-control form-control-touch form-control-sm border-start-0" placeholder="Buscar por nombre o cédula...">
           </div>
 
-          <button type="button" id="btn-exportar-csv" class="btn btn-touch btn-outline-primary btn-sm rounded-pill">
-            <i class="bi bi-file-earmark-excel-fill me-1"></i> Descargar CSV
-          </button>
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" id="btn-importar-excel" class="btn btn-touch btn-aso-primary btn-sm rounded-pill px-3 shadow-sm" <?php echo $quincenaEstaCerrada ? 'disabled' : ''; ?> title="Importar pesajes desde Excel (.xlsx, .xls) o CSV">
+              <i class="bi bi-file-earmark-arrow-up-fill me-1"></i> Importar Excel
+            </button>
+            <input type="file" id="input-importar-excel" accept=".xlsx, .xls, .csv" class="d-none">
+
+            <button type="button" id="btn-exportar-csv" class="btn btn-touch btn-outline-primary btn-sm rounded-pill px-3" title="Descargar planilla en formato CSV">
+              <i class="bi bi-file-earmark-excel-fill me-1"></i> Descargar CSV
+            </button>
+          </div>
         </div>
       </div>
 
@@ -478,7 +485,7 @@ require_once __DIR__ . '/includes/header.php';
             <?php else: ?>
               <?php foreach ($ganaderosPlanilla as $idx => $g): ?>
                 <?php $totG = $totalesPorGanadero[$g['id']] ?? 0.0; ?>
-                <tr class="fila-matriz" data-uid="<?php echo e($g['id']); ?>" data-idx="<?php echo $idx; ?>" data-texto="<?php echo strtolower(e($g['nombre'] . ' ' . $g['cedula'])); ?>">
+                <tr class="fila-matriz" data-uid="<?php echo e($g['id']); ?>" data-cedula="<?php echo e($g['cedula']); ?>" data-idx="<?php echo $idx; ?>" data-texto="<?php echo strtolower(e($g['nombre'] . ' ' . $g['cedula'])); ?>">
                   <!-- Columna Asociado Fija a la Izquierda -->
                   <td class="col-sticky-name">
                     <div class="fw-bold text-truncate" style="max-width: 210px;" title="<?php echo e($g['nombre']); ?>">
@@ -529,25 +536,23 @@ require_once __DIR__ . '/includes/header.php';
               <?php endforeach; ?>
             <?php endif; ?>
           </tbody>
-          <!-- Fila de Totales de Columna Fija Abajo -->
+          <!-- Fila de Totales de Columna Fija Abajo (Totales Diarios Unificados con Colspan 2) -->
           <tfoot>
             <tr>
-              <td class="col-sticky-name text-uppercase">
-                TOTALES POR TURNO (L)
+              <td class="col-sticky-name text-uppercase fw-bold">
+                TOTAL POR DÍA (L)
               </td>
               <?php foreach ($diasQuincena as $d): ?>
                 <?php 
                   $totColM = $totalesPorColumna["{$d['fecha']}_MANANA"] ?? 0.0;
                   $totColT = $totalesPorColumna["{$d['fecha']}_TARDE"] ?? 0.0;
+                  $totDia  = $totColM + $totColT;
                 ?>
-                <td class="text-center" id="tot-col-<?php echo e($d['fecha']); ?>_MANANA">
-                  <?php echo $totColM > 0 ? number_format($totColM, 1, ',', '.') : '-'; ?>
-                </td>
-                <td class="text-center col-border-day" id="tot-col-<?php echo e($d['fecha']); ?>_TARDE">
-                  <?php echo $totColT > 0 ? number_format($totColT, 1, ',', '.') : '-'; ?>
+                <td colspan="2" class="text-center fw-bold col-border-day total-dia-cell" id="tot-dia-<?php echo e($d['fecha']); ?>" data-fecha="<?php echo e($d['fecha']); ?>">
+                  <?php echo $totDia > 0 ? number_format($totDia, 1, ',', '.') : '-'; ?>
                 </td>
               <?php endforeach; ?>
-              <td class="col-sticky-total text-end" id="gran-total-matriz">
+              <td class="col-sticky-total text-end fw-bold" id="gran-total-matriz">
                 <?php echo number_format($granTotalMatriz, 1, ',', '.'); ?> L
               </td>
             </tr>
@@ -912,6 +917,9 @@ require_once __DIR__ . '/includes/header.php';
   </div>
 </div>
 
+<!-- SheetJS para importación de Excel/CSV en cliente -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
 <!-- SCRIPTS DE LA PLANILLA MATRICIAL Y LISTAS -->
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -1188,12 +1196,10 @@ document.addEventListener('DOMContentLoaded', function () {
             if (el) el.textContent = formatLitros(totG);
           }
         }
-        if (res.totalesColumnas) {
-          for (const [colKey, totC] of Object.entries(res.totalesColumnas)) {
-            const el = document.getElementById(`tot-col-${colKey}`);
-            if (el) el.textContent = totC > 0 ? totC.toFixed(1) : '-';
-          }
-        }
+        // Actualizar celdas unificadas de cada día
+        const fechasLote = new Set(itemsLote.map(i => i.fecha));
+        fechasLote.forEach(f => recalcularTotalDiaDOM(f));
+
         if (res.granTotal !== undefined) {
           actualizarGranTotalUI(res.granTotal);
         }
@@ -1214,6 +1220,21 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
+  // Recalcular y actualizar la celda unificada de un día en el pie de tabla
+  function recalcularTotalDiaDOM(fecha) {
+    const elTotDia = document.getElementById(`tot-dia-${fecha}`);
+    if (!elTotDia || !tablaMatriz) return;
+    let suma = 0;
+    const celdas = tablaMatriz.querySelectorAll(`td[data-fecha="${fecha}"] input`);
+    celdas.forEach(inp => {
+      const v = parseFloat(inp.value);
+      if (!isNaN(v) && v > 0) {
+        suma += v;
+      }
+    });
+    elTotDia.textContent = suma > 0 ? (suma.toFixed(1)).replace('.', ',') : '-';
+  }
+
   // Actualizar totales en DOM
   function actualizarTotalesUI(uId, colKey, totalG, totalCol, granTot) {
     const elTotG = document.getElementById(`tot-g-${uId}`);
@@ -1221,9 +1242,9 @@ document.addEventListener('DOMContentLoaded', function () {
       elTotG.textContent = formatLitros(totalG);
     }
 
-    const elTotC = document.getElementById(`tot-col-${colKey}`);
-    if (elTotC && totalCol !== undefined) {
-      elTotC.textContent = totalCol > 0 ? totalCol.toFixed(1) : '-';
+    if (colKey) {
+      const fecha = colKey.split('_')[0];
+      recalcularTotalDiaDOM(fecha);
     }
 
     if (granTot !== undefined) {
@@ -1308,6 +1329,243 @@ document.addEventListener('DOMContentLoaded', function () {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+    });
+  }
+
+  // 5. IMPORTAR PLANILLA MATRICIAL DESDE EXCEL (.XLSX, .XLS, .CSV)
+  const btnImportarExcel = document.getElementById('btn-importar-excel');
+  const inputImportarExcel = document.getElementById('input-importar-excel');
+
+  if (btnImportarExcel && inputImportarExcel && tablaMatriz && !QUINCENA_CERRADA) {
+    btnImportarExcel.addEventListener('click', () => {
+      inputImportarExcel.value = '';
+      inputImportarExcel.click();
+    });
+
+    inputImportarExcel.addEventListener('change', async function (e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (!['xlsx', 'xls', 'csv'].includes(ext)) {
+        if (window.AsoagroUI) {
+          window.AsoagroUI.showWarning('Formato No Soportado', 'Por favor seleccione un archivo .xlsx, .xls o .csv');
+        } else {
+          alert('Por favor seleccione un archivo .xlsx, .xls o .csv');
+        }
+        return;
+      }
+
+      btnImportarExcel.disabled = true;
+      const originalHtml = btnImportarExcel.innerHTML;
+      btnImportarExcel.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Procesando...';
+
+      try {
+        let rows = [];
+
+        if (ext === 'csv') {
+          const text = await file.text();
+          const lines = text.split(/\r\n|\r|\n/);
+          rows = lines.map(line => {
+            if (!line.trim()) return [];
+            const sep = line.includes(';') ? ';' : ',';
+            const regex = new RegExp(`(?:^|${sep})(?:"([^"]*(?:""[^"]*)*)"|([^"${sep}]*))`, 'g');
+            const cols = [];
+            let m;
+            while ((m = regex.exec(line)) !== null) {
+              cols.push((m[1] !== undefined ? m[1].replace(/""/g, '"') : m[2] || '').trim());
+            }
+            return cols;
+          }).filter(r => r.length > 0);
+        } else {
+          if (typeof XLSX === 'undefined') {
+            throw new Error('Librería SheetJS aún no ha cargado. Verifique su conexión a internet.');
+          }
+          const data = await file.arrayBuffer();
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          rows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+        }
+
+        if (!rows || rows.length === 0) {
+          throw new Error('El archivo seleccionado no contiene filas o está vacío.');
+        }
+
+        const diasQuincenaList = <?php echo json_encode(array_values($diasQuincena)); ?>;
+        const totalDias = diasQuincenaList.length;
+
+        // Mapa de ganaderos en el DOM
+        const filasAsociados = Array.from(tablaMatriz.querySelectorAll('tbody tr.fila-matriz'));
+        const mapaGanaderos = new Map();
+
+        filasAsociados.forEach(tr => {
+          const uId = tr.dataset.uid;
+          const cedula = (tr.dataset.cedula || '').trim();
+          if (cedula) mapaGanaderos.set(cedula, { uId, tr });
+
+          const divNombre = tr.querySelector('.col-sticky-name div.fw-bold');
+          if (divNombre) {
+            const nomLimpio = divNombre.textContent.trim().toLowerCase();
+            mapaGanaderos.set(nomLimpio, { uId, tr });
+          }
+        });
+
+        const itemsLote = [];
+        const celdasAfectadas = [];
+        let asociadosIdentificados = 0;
+
+        rows.forEach(row => {
+          if (!row || row.length === 0) return;
+          const textoFila = row.join(' ').toLowerCase();
+
+          // Omitir filas de encabezado o pie de totales
+          if (textoFila.includes('asociado') || textoFila.includes('cédula') || textoFila.includes('cedula') || textoFila.includes('totales por') || textoFila.includes('total por día') || textoFila.includes('total por dia')) {
+            return;
+          }
+
+          let ganaderoEncontrado = null;
+          const col0 = String(row[0] || '').trim();
+
+          // Buscar cédula numérica en columna 0
+          const matchCed = col0.match(/\b(\d{6,11})\b/);
+          if (matchCed && mapaGanaderos.has(matchCed[1])) {
+            ganaderoEncontrado = mapaGanaderos.get(matchCed[1]);
+          } else if (mapaGanaderos.has(col0)) {
+            ganaderoEncontrado = mapaGanaderos.get(col0);
+          } else if (row[1] && mapaGanaderos.has(String(row[1]).trim())) {
+            ganaderoEncontrado = mapaGanaderos.get(String(row[1]).trim());
+          } else {
+            for (const [key, val] of mapaGanaderos.entries()) {
+              if (col0.toLowerCase().includes(key) || key.includes(col0.toLowerCase())) {
+                ganaderoEncontrado = val;
+                break;
+              }
+            }
+          }
+
+          if (!ganaderoEncontrado) return;
+          asociadosIdentificados++;
+
+          const uId = ganaderoEncontrado.uId;
+          const tr = ganaderoEncontrado.tr;
+
+          let cOffset = 1;
+          if (row.length > (totalDias * 2 + 1) && !isNaN(parseFloat(String(row[2]).replace(',', '.')))) {
+            cOffset = 2;
+          }
+
+          diasQuincenaList.forEach((d, dIdx) => {
+            const fecha = d.fecha;
+            const valM_raw = row[cOffset + (dIdx * 2)];
+            const valT_raw = row[cOffset + (dIdx * 2) + 1];
+
+            const procesarValor = (raw, turno) => {
+              if (raw === undefined || raw === null) return;
+              const strVal = String(raw).trim().replace(',', '.');
+              const td = tr.querySelector(`td[data-fecha="${fecha}"][data-turno="${turno}"]`);
+              if (!td) return;
+              const inp = td.querySelector('input');
+
+              if (strVal === '-' || strVal === '') {
+                itemsLote.push({ usuarioId: uId, fecha: fecha, turno: turno, litros: null });
+                celdasAfectadas.push({ td, inp, litrosVal: null });
+              } else {
+                const num = parseFloat(strVal);
+                if (!isNaN(num) && num >= 0 && num <= 9999) {
+                  itemsLote.push({ usuarioId: uId, fecha: fecha, turno: turno, litros: num });
+                  celdasAfectadas.push({ td, inp, litrosVal: num });
+                }
+              }
+            };
+
+            procesarValor(valM_raw, 'MANANA');
+            procesarValor(valT_raw, 'TARDE');
+          });
+        });
+
+        if (itemsLote.length === 0) {
+          throw new Error('No se encontraron registros de pesajes coincidentes con los asociados de esta quincena.');
+        }
+
+        // Marcar celdas como guardando
+        celdasAfectadas.forEach(({ td }) => td.classList.add('is-saving'));
+
+        // Enviar lote al backend
+        const resp = await fetch('api/guardar_pesaje_matriz.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            csrf_token: CSRF_TOKEN,
+            action: 'batch',
+            fechaInicio: FECHA_INICIO,
+            fechaFin: FECHA_FIN,
+            items: itemsLote
+          })
+        });
+
+        const res = await resp.json();
+
+        celdasAfectadas.forEach(({ td, inp, litrosVal }) => {
+          td.classList.remove('is-saving');
+          if (resp.ok && res.ok) {
+            td.classList.add('is-saved');
+            if (litrosVal !== null) {
+              inp.value = litrosVal.toFixed(1);
+              inp.dataset.prev = inp.value;
+              inp.className = (litrosVal === 0) ? 'matrix-input is-zero' : 'matrix-input';
+            } else {
+              inp.value = '';
+              inp.dataset.prev = '';
+              inp.className = 'matrix-input is-empty';
+            }
+          } else {
+            td.classList.add('is-error');
+          }
+        });
+
+        if (resp.ok && res.ok) {
+          if (res.totalesGanaderos) {
+            for (const [gId, totG] of Object.entries(res.totalesGanaderos)) {
+              const el = document.getElementById(`tot-g-${gId}`);
+              if (el) el.textContent = formatLitros(totG);
+            }
+          }
+
+          const fechasLote = new Set(itemsLote.map(i => i.fecha));
+          fechasLote.forEach(f => recalcularTotalDiaDOM(f));
+
+          if (res.granTotal !== undefined) {
+            actualizarGranTotalUI(res.granTotal);
+          }
+
+          if (window.AsoagroUI) {
+            window.AsoagroUI.showSuccess(
+              'Importación Exitosa',
+              `Se procesaron y guardaron ${res.actualizados || itemsLote.length} pesajes correspondientes a ${asociadosIdentificados} asociados.`
+            );
+          } else {
+            alert(`Importación Exitosa: Se guardaron ${res.actualizados || itemsLote.length} pesajes de ${asociadosIdentificados} asociados.`);
+          }
+        } else {
+          throw new Error(res.error || 'Error al guardar los datos importados.');
+        }
+
+      } catch (err) {
+        console.error('Error importando archivo:', err);
+        celdasAfectadas.forEach(({ td }) => {
+          td.classList.remove('is-saving');
+          td.classList.add('is-error');
+        });
+        if (window.AsoagroUI) {
+          window.AsoagroUI.showError('Error en Importación', err.message || 'No fue posible importar el archivo.');
+        } else {
+          alert('Error en importación: ' + (err.message || 'No fue posible procesar el archivo.'));
+        }
+      } finally {
+        btnImportarExcel.disabled = false;
+        btnImportarExcel.innerHTML = originalHtml;
+      }
     });
   }
 });
