@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /**
  * =========================================================================================
  * PLATAFORMA DE CONTROL LECHERO - ASOAGROALIZAL (CARMEN DE CARUPA)
