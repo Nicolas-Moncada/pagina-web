@@ -2,63 +2,30 @@
  * =========================================================================================
  * PLATAFORMA DE CONTROL LECHERO - ASOAGROALIZAL (CARMEN DE CARUPA)
  * Archivo: assets/js/theme.js
- * Propósito: Motor de experiencia PREMIUM:
- *            - Control de tamaño de letra (A, A+, A++) persistente en localStorage.
+ * Propósito: Motor de experiencia visual y animaciones interactivas:
  *            - Modo claro forzado (color-scheme: light).
- *            - Reveals al hacer scroll (IntersectionObserver).
- *            - Contadores animados reales (requestAnimationFrame).
- *            - ScrollSpy para el navbar del sitio público.
- *            - Navbar con sombra dinámica + ondas (ripple) en botones.
- *            - SweetAlert2 adaptado a la paleta azul marino/oro.
- *            - Helpers de formato COP y Litros + diccionario DataTables.
+ *            - Reveals suaves al hacer scroll (IntersectionObserver con efecto fade-up).
+ *            - Contadores animados reales con aceleración fluida (requestAnimationFrame).
+ *            - ScrollSpy dinámico para resaltar sección activa en la barra de navegación.
+ *            - Barra de navegación con elevación y desenfoque dinámico al deslizar.
+ *            - Micro-interacciones táctiles (ripple effect en botones).
+ *            - Helpers de formato COP y Litros + notificaciones SweetAlert2.
  * =========================================================================================
  */
 
 (function () {
   'use strict';
 
-  // Respecto a preferencias de movimiento reducido del sistema
+  // Respeto a preferencias de movimiento reducido del sistema
   const REDUCE_MOTION = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // 1. FORZADO DE TEMA CLARO ÚNICO (PREVIENE MODO OSCURO DE CELULARES)
+  // 1. FORZADO DE TEMA CLARO ÚNICO (PREVIENE INVERSIONES INDESEADAS EN CELULARES)
   document.documentElement.setAttribute('data-bs-theme', 'light');
   document.documentElement.style.colorScheme = 'light';
 
-  // 2. CONTROL ACCESIBLE DE TAMAÑO DE FUENTE: A  A+  A++
-  const FONT_STORAGE_KEY = 'asoagro_font_size';
-
-  function applyFontSize(size) {
-    document.documentElement.classList.remove('font-size-normal', 'font-size-large', 'font-size-xlarge');
-
-    if (size === 'large') {
-      document.documentElement.classList.add('font-size-large');
-    } else if (size === 'xlarge') {
-      document.documentElement.classList.add('font-size-xlarge');
-    } else {
-      document.documentElement.classList.add('font-size-normal');
-      size = 'normal';
-    }
-
-    try {
-      localStorage.setItem(FONT_STORAGE_KEY, size);
-    } catch (e) {}
-
-    // Actualizar botones en la interfaz
-    document.querySelectorAll('.btn-font-size').forEach((btn) => {
-      const btnSize = btn.getAttribute('data-size');
-      if (btnSize === size) {
-        btn.classList.add('active');
-        btn.setAttribute('aria-pressed', 'true');
-      } else {
-        btn.classList.remove('active');
-        btn.setAttribute('aria-pressed', 'false');
-      }
-    });
-  }
-
-  // 3. CONTADOR ANIMADO REAL (rAF con easing easeOutCubic)
+  // 2. CONTADOR ANIMADO REAL (rAF con curva de desaceleración cúbica suave)
   function animateCounter(el) {
-    const raw = el.getAttribute('data-target') ?? el.textContent;
+    const raw = el.getAttribute('data-target') || el.getAttribute('data-counter-target') || el.textContent;
     const target = parseFloat(String(raw).replace(/[^\d.,-]/g, '').replace(',', '.'));
 
     if (isNaN(target)) {
@@ -66,10 +33,10 @@
     }
 
     const decimals = parseInt(el.getAttribute('data-decimals') || '0', 10);
-    const prefix = el.getAttribute('data-prefix') || '';
-    const suffix = el.getAttribute('data-suffix') || '';
+    const prefix = el.getAttribute('data-prefix') || el.getAttribute('data-counter-prefix') || '';
+    const suffix = el.getAttribute('data-suffix') || el.getAttribute('data-counter-suffix') || '';
     const separator = el.getAttribute('data-separator') !== 'off';
-    const duration = REDUCE_MOTION ? 0 : (parseInt(el.getAttribute('data-duration') || '1400', 10) || 1400);
+    const duration = REDUCE_MOTION ? 0 : (parseInt(el.getAttribute('data-duration') || '1500', 10) || 1500);
 
     const formatter = new Intl.NumberFormat('es-CO', {
       minimumFractionDigits: decimals,
@@ -78,7 +45,7 @@
     });
 
     function render(value) {
-      el.textContent = prefix + formatter.format(value) + suffix;
+      el.textContent = prefix + formatter.format(Math.round(value)) + suffix;
     }
 
     if (duration === 0) {
@@ -90,7 +57,8 @@
 
     function step(now) {
       const progress = Math.min((now - startTime) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3); // easeOutCubic
+      // Easing cúbico de desaceleración suave: easeOutCubic
+      const eased = 1 - Math.pow(1 - progress, 3);
       render(target * eased);
       if (progress < 1) {
         requestAnimationFrame(step);
@@ -103,7 +71,7 @@
   }
 
   function setupCounters() {
-    const counters = document.querySelectorAll('.counter-animated');
+    const counters = document.querySelectorAll('.counter-animated, [data-counter-target]');
     if (counters.length === 0) return;
 
     if (!('IntersectionObserver' in window) || REDUCE_MOTION) {
@@ -118,16 +86,16 @@
           observer.unobserve(entry.target);
         }
       });
-    }, { threshold: 0.4 });
+    }, { threshold: 0.35 });
 
     counters.forEach((c) => observer.observe(c));
   }
 
-  // 4. REVEALS AL HACER SCROLL
+  // 3. REVEALS AL HACER SCROLL (APARICIÓN ESCALONADA Y FLUIDA)
   function setupReveals() {
-    // Auto-etiquetado de bloqueos visuales característicos del sistema
+    // Auto-etiquetado de elementos clave para animaciones suaves
     document.querySelectorAll(
-      'main .card, main .card-solid, main .kpi-card, main .section-eyebrow, main .section-title'
+      'main .card, .card-elevate, .kpi-card, .section-eyebrow, .section-title, .hero-badge, .workflow-step'
     ).forEach((el) => {
       if (!el.classList.contains('reveal')) {
         el.classList.add('reveal');
@@ -137,29 +105,22 @@
     const items = document.querySelectorAll('.reveal, [data-reveal]');
     if (items.length === 0) return;
 
-    // Converter data-reveal a clase para unificar
-    items.forEach((el) => {
-      if (!el.classList.contains('reveal')) el.classList.add('reveal');
-      const delay = el.getAttribute('data-reveal-delay');
-      if (delay) el.style.setProperty('--reveal-delay', delay + 'ms');
+    // Escalonar tarjetas dentro de filas Bootstrap para efecto cascada (stagger)
+    document.querySelectorAll('.row').forEach((row) => {
+      const kids = row.querySelectorAll(':scope > .col [class*="card"], :scope > * > .reveal, :scope > .col');
+      let i = 0;
+      kids.forEach((kid) => {
+        if (kid.classList.contains('reveal')) {
+          kid.style.setProperty('--reveal-delay', Math.min(i * 100, 500) + 'ms');
+          i++;
+        }
+      });
     });
 
     if (!('IntersectionObserver' in window) || REDUCE_MOTION) {
       items.forEach((el) => el.classList.add('reveal-visible'));
       return;
     }
-
-    // Escalonar tarjetas dentro de filas Bootstrap para efecto cascada
-    document.querySelectorAll('.row').forEach((row) => {
-      const kids = row.querySelectorAll(':scope > .col [class*="card"], :scope > * > .reveal');
-      let i = 0;
-      kids.forEach((kid) => {
-        if (kid.classList.contains('reveal')) {
-          kid.style.setProperty('--reveal-delay', Math.min(i * 90, 450) + 'ms');
-          i++;
-        }
-      });
-    });
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
@@ -168,63 +129,71 @@
           observer.unobserve(entry.target);
         }
       });
-    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
 
     items.forEach((el) => observer.observe(el));
   }
 
-  // 5. SCROLLSPY DEL NAVBAR (solo index con anclas)
+  // 4. SCROLLSPY DEL NAVBAR (RESALTADO AUTOMÁTICO DE SECCIÓN ACTIVA)
   function setupScrollSpy() {
     const links = document.querySelectorAll('.nav-link-custom[href^="#"]');
     if (links.length === 0) return;
 
     const sections = [];
     links.forEach((link) => {
-      const id = link.getAttribute('href').slice(1);
-      const section = document.getElementById(id);
-      if (section) sections.push({ id, link, section });
+      const href = link.getAttribute('href');
+      if (href && href.length > 1) {
+        const id = href.slice(1);
+        const section = document.getElementById(id);
+        if (section) sections.push({ id, link, section });
+      }
     });
     if (sections.length === 0) return;
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
-          sections.forEach((s) => s.link.classList.toggle('active', s.id === entry.target.id));
+          sections.forEach((s) => {
+            const isActive = s.id === entry.target.id;
+            s.link.classList.toggle('active', isActive);
+          });
         }
       });
-    }, { rootMargin: '-35% 0px -55% 0px', threshold: 0 });
+    }, { rootMargin: '-30% 0px -60% 0px', threshold: 0 });
 
     sections.forEach((s) => observer.observe(s.section));
 
-    // Cierre del menú móvil al pulsar un ancla
+    // Cierre suave del menú móvil al pulsar un ancla
     links.forEach((link) => {
       link.addEventListener('click', () => {
         const collapse = document.getElementById('navbarContenido');
         if (collapse && collapse.classList.contains('show')) {
-          bootstrap.Collapse.getOrCreateInstance(collapse).hide();
+          if (typeof bootstrap !== 'undefined' && bootstrap.Collapse) {
+            bootstrap.Collapse.getOrCreateInstance(collapse).hide();
+          }
         }
       });
     });
   }
 
-  // 6. NAVBAR CON SOMBRA DINÁMICA AL HACER SCROLL
+  // 5. NAVBAR CON SOMBRA Y ELEVACIÓN DINÁMICA AL HACER SCROLL
   function setupNavbarScroll() {
     const navbar = document.querySelector('.navbar-asoagro');
     if (!navbar) return;
 
     const update = () => {
-      navbar.classList.toggle('navbar-scrolled', window.scrollY > 10);
+      navbar.classList.toggle('navbar-scrolled', window.scrollY > 20);
     };
 
     window.addEventListener('scroll', update, { passive: true });
     update();
   }
 
-  // 7. ONDA (RIPPLE) EN BOTONES GRANDES
+  // 6. ONDA (RIPPLE EFFECT) EN BOTONES
   function setupRipple() {
     if (REDUCE_MOTION) return;
 
-    document.querySelectorAll('.btn-touch, .btn-aso-primary, .btn-aso-accent').forEach((btn) => {
+    document.querySelectorAll('.btn-touch, .btn-aso-primary, .btn-aso-accent, .btn-hero-primary, .btn-hero-secondary').forEach((btn) => {
       btn.addEventListener('click', function (e) {
         const rect = this.getBoundingClientRect();
         const x = e.clientX ? e.clientX - rect.left : rect.width / 2;
@@ -241,23 +210,8 @@
     });
   }
 
-  // 8. INICIALIZAR AL CARGAR EL DOM
+  // 7. INICIALIZAR AL CARGAR EL DOM
   document.addEventListener('DOMContentLoaded', () => {
-    // Preferencia guardada (por defecto 'normal' que ya es 20px)
-    let savedSize = 'normal';
-    try {
-      savedSize = localStorage.getItem(FONT_STORAGE_KEY) || 'normal';
-    } catch (e) {}
-    applyFontSize(savedSize);
-
-    // Listeners de los botones de tamaño de fuente
-    document.querySelectorAll('.btn-font-size').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        applyFontSize(btn.getAttribute('data-size'));
-      });
-    });
-
     setupCounters();
     setupReveals();
     setupScrollSpy();
@@ -265,7 +219,7 @@
     setupRipple();
   });
 
-  // 9. HELPERS GLOBALES EXPUESTOS EN WINDOW (AsoagroUI)
+  // 8. HELPERS GLOBALES EXPUESTOS EN WINDOW (AsoagroUI)
   window.AsoagroUI = {
     // Formato de moneda colombiana COP
     formatCOP: function (val) {
@@ -362,7 +316,7 @@
       }
     },
 
-    // Mostrar/Ocultar Contraseña (acepta selector o elemento como botón)
+    // Mostrar/Ocultar Contraseña
     togglePassword: function (inputSelector, buttonSelector) {
       const input = inputSelector instanceof Element
         ? inputSelector

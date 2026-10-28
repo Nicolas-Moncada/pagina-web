@@ -5,7 +5,6 @@
  * Archivo: includes/header.php
  * Propósito: Encabezado institucional accesible para adultos mayores rurales:
  *            - Forzado exclusivo de modo claro (<meta name="color-scheme" content="light">).
- *            - Control de tamaño de letra fijo (A, A+, A++).
  *            - Navegación responsive sólida, de alto contraste y compatible cross-browser.
  * =========================================================================================
  */
@@ -45,38 +44,34 @@ $tituloPagina = $tituloPagina ?? (EMPRESA_SIGLA . ' | Control Lechero');
     <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
   <?php endif; ?>
 
-  <!-- Estilos del Sistema de Diseño Premium Accesible (Azul Marino / Crema / Atkinson) -->
+  <!-- Estilos del Sistema de Diseño Premium Accesible (Azul Marino / Crema / Oro) -->
   <link rel="stylesheet" href="assets/css/theme.css">
 </head>
 <body class="d-flex flex-column min-vh-100 auth-bg">
 
-  <!-- 1. BARRA SUPERIOR FIJA DE ACCESIBILIDAD (CONTROL DE TAMAÑO DE LETRA: A  A+  A++) -->
-  <aside class="top-accessibility-bar" aria-label="Controles de accesibilidad">
-    <div class="container<?php echo (!empty($navbarFluido)) ? '-fluid px-3 px-md-4' : ''; ?> d-flex flex-wrap justify-content-between align-items-center gap-2">
+  <!-- 1. BARRA SUPERIOR INSTITUCIONAL (DATOS OFICIALES, SIN SELECTOR DE TAMAÑO) -->
+  <aside class="top-accessibility-bar py-2" aria-label="Información institucional superior">
+    <div class="container-fluid px-3 px-md-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
       <div class="small fw-bold text-dark d-flex align-items-center gap-2">
-        <i class="bi bi-shield-check text-primary"></i>
-        <span>Sede Oficial: Vereda Alizal &bull; Carmen de Carupa &bull; Tel: <?php echo e(EMPRESA_TELEFONO); ?></span>
+        <i class="bi bi-geo-alt-fill" style="color: var(--accent);"></i>
+        <span>Sede Oficial: Vereda Alizal &bull; Carmen de Carupa &bull; Tel: <a href="tel:<?php echo e(EMPRESA_TELEFONO); ?>" class="text-dark text-decoration-none fw-bold"><?php echo e(EMPRESA_TELEFONO); ?></a></span>
       </div>
 
-      <div class="d-flex align-items-center gap-2 ms-auto">
-        <span class="small fw-bold text-dark me-1">Tamaño de letra:</span>
-        <div class="font-size-controls" role="group" aria-label="Ajuste de tamaño de fuente">
-          <button type="button" class="btn-font-size active" data-size="normal" title="Tamaño normal (20px)" aria-pressed="true">A</button>
-          <button type="button" class="btn-font-size" data-size="large" title="Tamaño grande (23px)" aria-pressed="false">A+</button>
-          <button type="button" class="btn-font-size" data-size="xlarge" title="Tamaño muy grande (26px)" aria-pressed="false">A++</button>
-        </div>
+      <div class="d-none d-md-flex align-items-center gap-2 ms-auto small text-muted fw-bold">
+        <i class="bi bi-shield-check text-primary"></i>
+        <span>Control Lechero Quincenal &bull; 32 Familias Asociadas</span>
       </div>
     </div>
   </aside>
 
   <!-- 2. NAVBAR INSTITUCIONAL SÓLIDO (FONDO BLANCO SÓLIDO, ALTO CONTRASTE) -->
-  <nav class="navbar navbar-expand-lg navbar-asoagro sticky-top" aria-label="Navegación principal">
-    <div class="container<?php echo (!empty($navbarFluido)) ? '-fluid px-3 px-md-4' : ''; ?>">
-      <a class="navbar-brand d-flex align-items-center gap-3 text-decoration-none" href="index.php">
+  <nav class="navbar navbar-expand-xl navbar-asoagro sticky-top" aria-label="Navegación principal">
+    <div class="container-fluid px-3 px-md-4">
+      <a class="navbar-brand d-flex align-items-center gap-2 text-decoration-none" href="index.php">
         <img src="assets/img/logo.png" alt="Logo Oficial <?php echo e(EMPRESA_SIGLA); ?>" class="brand-logo-img">
         <div class="d-flex flex-column">
           <span class="brand-text-title lh-1"><?php echo e(EMPRESA_SIGLA); ?></span>
-          <small class="brand-text-sub">Plataforma de Control Lechero</small>
+          <small class="brand-text-sub text-uppercase" style="letter-spacing: 0.05em; font-size: 0.68rem;">Control Lechero</small>
         </div>
       </a>
 
@@ -87,25 +82,27 @@ $tituloPagina = $tituloPagina ?? (EMPRESA_SIGLA . ' | Control Lechero');
 
       <div class="collapse navbar-collapse" id="navbarContenido">
         <?php if ($paginaActual === 'index.php'): ?>
-          <ul class="navbar-nav ms-auto align-items-lg-center gap-1 my-3 my-lg-0">
+          <ul class="navbar-nav ms-auto align-items-xl-center gap-1 my-3 my-xl-0">
+            <li class="nav-item"><a class="nav-link nav-link-custom active" href="#inicio">Inicio</a></li>
             <li class="nav-item"><a class="nav-link nav-link-custom" href="#quienes-somos">Quiénes Somos</a></li>
-            <li class="nav-item"><a class="nav-link nav-link-custom" href="#mision-vision">Misión & Visión</a></li>
-            <li class="nav-item"><a class="nav-link nav-link-custom" href="#territorio-comunidad">Nuestra Tierra</a></li>
+            <li class="nav-item"><a class="nav-link nav-link-custom" href="#como-funciona">Cómo Funciona</a></li>
             <li class="nav-item"><a class="nav-link nav-link-custom" href="#infraestructura">Infraestructura</a></li>
-            <li class="nav-item"><a class="nav-link nav-link-custom" href="#enfoque-bpo">Calidad BPO</a></li>
+            <li class="nav-item"><a class="nav-link nav-link-custom" href="#mision-vision">Misión &amp; Visión</a></li>
+            <li class="nav-item"><a class="nav-link nav-link-custom" href="#para-el-ganadero">Para el Ganadero</a></li>
+            <li class="nav-item"><a class="nav-link nav-link-custom" href="#preguntas">Preguntas</a></li>
             <li class="nav-item"><a class="nav-link nav-link-custom" href="#contacto">Contacto</a></li>
 
-            <li class="nav-item ms-lg-3 mt-2 mt-lg-0">
+            <li class="nav-item ms-xl-2 mt-2 mt-xl-0">
               <?php if ($usuarioSesion): ?>
                 <?php $urlDestino = ($usuarioSesion['rol'] === 'ADMIN') ? 'admin.php' : 'panel.php'; ?>
-                <a href="<?php echo $urlDestino; ?>" class="btn btn-touch btn-aso-accent">
+                <a href="<?php echo $urlDestino; ?>" class="btn btn-touch btn-aso-accent btn-header-login px-3 py-2">
                   <i class="bi bi-speedometer2"></i>
                   <span>Mi Panel</span>
                 </a>
               <?php else: ?>
-                <a href="login.php" class="btn btn-touch btn-aso-primary">
+                <a href="login.php" class="btn btn-touch btn-aso-primary btn-header-login px-3 py-2">
                   <i class="bi bi-box-arrow-in-right"></i>
-                  <span>Acceso al Sistema</span>
+                  <span>Ingresar</span>
                 </a>
               <?php endif; ?>
             </li>
@@ -120,31 +117,40 @@ $tituloPagina = $tituloPagina ?? (EMPRESA_SIGLA . ' | Control Lechero');
                 </span>
                 <span class="fw-bold d-block text-dark mt-1" style="font-size: 0.95rem;"><?php echo e($usuarioSesion['nombre']); ?></span>
               </li>
-            <?php endif; ?>
 
-            <?php if ($usuarioSesion): ?>
               <li class="nav-item">
-                <a href="cambiar_password.php" class="btn btn-touch btn-outline-primary" title="Cambiar clave">
-                  <i class="bi bi-key-fill"></i>
-                  <span>Cambiar Clave</span>
+                <a href="index.php" class="btn btn-touch btn-outline-primary py-2 px-3">
+                  <i class="bi bi-house-door-fill"></i>
+                  <span class="d-none d-sm-inline">Inicio</span>
                 </a>
               </li>
+
+              <?php if ($usuarioSesion['rol'] === 'ADMIN'): ?>
+                <li class="nav-item">
+                  <a href="admin.php" class="btn btn-touch btn-aso-primary py-2 px-3">
+                    <i class="bi bi-table"></i>
+                    <span>Planilla Admin</span>
+                  </a>
+                </li>
+              <?php else: ?>
+                <li class="nav-item">
+                  <a href="panel.php" class="btn btn-touch btn-aso-primary py-2 px-3">
+                    <i class="bi bi-speedometer2"></i>
+                    <span>Mis Pesajes</span>
+                  </a>
+                </li>
+              <?php endif; ?>
+
               <li class="nav-item">
-                <a href="index.php" class="btn btn-touch btn-outline-primary" title="Sitio público">
-                  <i class="bi bi-globe"></i>
-                  <span>Inicio</span>
-                </a>
-              </li>
-              <li class="nav-item">
-                <a href="logout.php" class="btn btn-touch btn-danger" style="background-color: var(--danger); border-color: var(--danger); color: #ffffff;">
+                <a href="logout.php" class="btn btn-touch btn-outline-danger py-2 px-3" title="Cerrar Sesión Segura">
                   <i class="bi bi-box-arrow-right"></i>
-                  <span>Cerrar Sesión</span>
+                  <span class="d-none d-sm-inline">Salir</span>
                 </a>
               </li>
             <?php else: ?>
               <li class="nav-item">
-                <a href="index.php" class="btn btn-touch btn-outline-primary">
-                  <i class="bi bi-arrow-left"></i>
+                <a href="index.php" class="btn btn-touch btn-outline-primary py-2 px-3">
+                  <i class="bi bi-house-door-fill"></i>
                   <span>Volver al Inicio</span>
                 </a>
               </li>
@@ -154,3 +160,11 @@ $tituloPagina = $tituloPagina ?? (EMPRESA_SIGLA . ' | Control Lechero');
       </div>
     </div>
   </nav>
+
+  <!-- Enlace de accesibilidad para saltar al contenido principal -->
+  <a href="#contenido-principal" class="visually-hidden-focusable p-3 bg-dark text-white fw-bold">Saltar al contenido principal</a>
+
+  <!-- Contenedor del Mensaje Flash Global si existe -->
+  <?php if (function_exists('renderSweetAlert')): ?>
+    <?php echo renderSweetAlert(); ?>
+  <?php endif; ?>

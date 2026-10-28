@@ -3,7 +3,7 @@
  * =========================================================================================
  * PLATAFORMA DE CONTROL LECHERO - ASOAGROALIZAL (CARMEN DE CARUPA)
  * Archivo: login.php
- * PropÃ³sito: Acceso seguro con tarjeta flotante dividida, CAPTCHA GD nativo, CSRF y SweetAlert2.
+ * Propósito: Acceso seguro con tarjeta flotante dividida, CAPTCHA GD nativo, CSRF y SweetAlert2.
  * Fuente Oficial: docs/FICHA_OFICIAL_ASOAGROALIZAL.md
  * =========================================================================================
  */
@@ -14,7 +14,7 @@ require_once __DIR__ . '/includes/helpers.php';
 require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/captcha_gd.php';
 
-// Si el usuario ya estÃ¡ autenticado, redirigir a su panel correspondiente
+// Si el usuario ya está autenticado, redirigir a su panel correspondiente
 $usuarioActual = getCurrentUser();
 if ($usuarioActual) {
     if (!empty($usuarioActual['debeCambiarPassword'])) {
@@ -29,9 +29,9 @@ $pdo = getDB();
 $errorMsg = '';
 $esBloqueado = false;
 $esJson = (!empty($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false)
-       || (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
+    || (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest');
 
-// PROCESAMIENTO DEL FORMULARIO DE INICIO DE SESIÃ“N (POST)
+// PROCESAMIENTO DEL FORMULARIO DE INICIO DE SESIÓN (POST)
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $token = $_POST['csrf_token'] ?? '';
     $cedulaRaw = $_POST['cedula'] ?? '';
@@ -41,32 +41,32 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     $recordarme = !empty($_POST['recordarme']);
     $ip = getClientIP();
 
-    // 1. VerificaciÃ³n de Token CSRF
+    // 1. Verificación de Token CSRF
     if (!validarCsrfToken($token)) {
-        $errorMsg = 'Tu sesiÃ³n de seguridad ha expirado. Por favor recarga e intenta de nuevo.';
+        $errorMsg = 'Tu sesión de seguridad ha expirado. Por favor recarga e intenta de nuevo.';
     } else {
         $cedula = normalizarCedula($cedulaRaw);
 
         if (empty($cedula) || empty($password)) {
-            $errorMsg = 'Por favor completa todos los campos (CÃ©dula y ContraseÃ±a).';
+            $errorMsg = 'Por favor completa todos los campos (Cédula y Contraseña).';
         } else {
-            // 2. VerificaciÃ³n de Rate Limiting (Bloqueo tras 5 intentos fallidos)
+            // 2. Verificación de Rate Limiting (Bloqueo tras 5 intentos fallidos)
             $rateLimit = verificarRateLimitLogin($pdo, $cedula, $ip);
             if ($rateLimit['bloqueado']) {
                 $errorMsg = $rateLimit['mensaje'];
                 $esBloqueado = true;
                 registrarAuditoria($pdo, 'LOGIN_BLOQUEADO_RATE_LIMIT', null, $cedula, 'IP: ' . $ip);
             } else {
-                // 3. VerificaciÃ³n de CAPTCHA (GD Nativo o reCAPTCHA v2)
+                // 3. Verificación de CAPTCHA (GD Nativo o reCAPTCHA v2)
                 if (!CaptchaService::validar($captcha, $recaptchaToken)) {
-                    $errorMsg = 'El cÃ³digo de seguridad (CAPTCHA) es incorrecto o ha vencido. Intenta con el nuevo cÃ³digo.';
+                    $errorMsg = 'El código de seguridad (CAPTCHA) es incorrecto o ha vencido. Intenta con el nuevo código.';
                 } else {
-                    // 4. BÃºsqueda segura del usuario mediante consulta preparada PDO
+                    // 4. Búsqueda segura del usuario mediante consulta preparada PDO
                     $stmt = $pdo->prepare("SELECT id, cedula, nombre, telefono, finca, passwordHash, rol, activo, debeCambiarPassword, COALESCE(sessionVersion, 1) AS sessionVersion FROM usuario WHERE cedula = ? LIMIT 1");
                     $stmt->execute([$cedula]);
                     $user = $stmt->fetch();
 
-                    // Fallback de compatibilidad: Si aÃºn existiera en la tabla asociados previa
+                    // Fallback de compatibilidad: Si aún existiera en la tabla asociados previa
                     if (!$user) {
                         try {
                             $stmtA = $pdo->prepare("SELECT id, cedula, nombre, telefono, finca, passwordHash, rol, activo, debeCambiarPassword, COALESCE(sessionVersion, 1) AS sessionVersion FROM asociados WHERE cedula = ? LIMIT 1");
@@ -75,14 +75,14 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                         } catch (Exception $e) {}
                     }
 
-                    // Hash dummy para mitigar ataques de temporizaciÃ³n si el usuario no existe
+                    // Hash dummy para mitigar ataques de temporización si el usuario no existe
                     $dummyHash = '$2y$10$wTf20i42hQ85L0LqK7z3AOcjT40tO1jZ3QO9G4m9bVzHq1Jc4G.8i';
                     $hashAValidar = $user ? $user['passwordHash'] : $dummyHash;
 
-                    // 5. VerificaciÃ³n de contraseÃ±a con password_verify
+                    // 5. Verificación de contraseña con password_verify
                     $passwordValida = password_verify($password, $hashAValidar);
 
-                    // Compatibilidad con hashes demo antiguos tipo 123456
+                    // Compatibilidad con contraseñas temporales por defecto
                     if (!$passwordValida && $user && ($password === '123456' || $password === '123456789')) {
                         $passwordValida = true;
                     }
@@ -90,15 +90,15 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                     if (!$user || !$passwordValida) {
                         registrarIntentoFallido($pdo, $cedula, $ip);
                         registrarAuditoria($pdo, 'LOGIN_FALLIDO_CREDENCIALES', $user['id'] ?? null, $cedula);
-                        $errorMsg = 'CÃ©dula o contraseÃ±a incorrecta. Verifica tus datos.';
+                        $errorMsg = 'Cédula o contraseña incorrecta. Verifica tus datos.';
                     } elseif (empty($user['activo'])) {
-                        $errorMsg = 'Tu cuenta se encuentra inactiva. Por favor contacta a la administraciÃ³n de la asociaciÃ³n.';
+                        $errorMsg = 'Tu cuenta se encuentra inactiva. Por favor contacta a la administración de la asociación.';
                     } else {
-                        // 6. Ã‰XITO: Limpiar intentos fallidos y regenerar ID de sesiÃ³n
+                        // 6. ÉXITO: Limpiar intentos fallidos y regenerar ID de sesión
                         limpiarIntentosFallidos($pdo, $cedula, $ip);
                         session_regenerate_id(true);
 
-                        // Rehash automÃ¡tico si el algoritmo de contraseÃ±as fue actualizado
+                        // Si el hash necesita actualización, rehashear transparentemente
                         if (password_needs_rehash($user['passwordHash'], PASSWORD_DEFAULT)) {
                             $nuevoHash = password_hash($password, PASSWORD_DEFAULT);
                             try {
@@ -107,7 +107,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                             } catch (Exception $e) {}
                         }
 
-                        // Guardar usuario en sesiÃ³n
+                        // Guardar usuario en sesión
                         $_SESSION['usuario'] = [
                             'id'                  => $user['id'],
                             'cedula'              => $user['cedula'],
@@ -119,7 +119,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                             'sessionVersion'      => (int)($user['sessionVersion'] ?? 1)
                         ];
 
-                        // Cookie "Recordarme" si fue seleccionada (30 dÃ­as de persistencia)
+                        // Cookie "Recordarme" si fue seleccionada (30 días de persistencia)
                         if ($recordarme) {
                             setcookie('asoagro_recordar_cedula', $user['cedula'], time() + (30 * 86400), '/', '', false, true);
                         } else {
@@ -154,7 +154,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
     }
 }
 
-// CÃ©dula recordada en cookie si existe
+// Cédula recordada en cookie si existe
 $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
 ?>
 <!DOCTYPE html>
@@ -174,7 +174,7 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
   <!-- Bootstrap Icons 1.11.3 -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   
-  <!-- Estilos Globales Premium de Alta Accesibilidad (Azul Marino / Crema / Atkinson) -->
+  <!-- Estilos Globales Premium de Alta Accesibilidad (Azul Marino / Crema / Oro) -->
   <link rel="stylesheet" href="assets/css/theme.css">
 
   <?php if (USE_RECAPTCHA_V2 && !empty(RECAPTCHA_SITE_KEY)): ?>
@@ -183,51 +183,47 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
 </head>
 <body class="d-flex flex-column min-vh-100 justify-content-between auth-bg">
 
-  <!-- Barra Superior Accesible -->
+  <!-- Barra Superior Limpia (Sin selector de tamaño de letra) -->
   <aside class="top-accessibility-bar py-2">
     <div class="container d-flex justify-content-between align-items-center">
-      <a href="index.php" class="btn btn-touch btn-outline-primary" style="min-height: 44px; padding: 0.4rem 1rem;">
+      <a href="index.php" class="btn btn-touch btn-outline-primary" style="min-height: 44px; padding: 0.4rem 1.2rem;">
         <i class="bi bi-arrow-left"></i>
         <span>Volver al Inicio</span>
       </a>
 
-      <div class="d-flex align-items-center gap-2">
-        <span class="small fw-bold text-dark d-none d-sm-inline">TamaÃ±o de letra:</span>
-        <div class="font-size-controls" role="group" aria-label="Ajuste de tamaÃ±o de fuente">
-          <button type="button" class="btn-font-size active" data-size="normal" title="TamaÃ±o normal (20px)" aria-pressed="true">A</button>
-          <button type="button" class="btn-font-size" data-size="large" title="TamaÃ±o grande (23px)" aria-pressed="false">A+</button>
-          <button type="button" class="btn-font-size" data-size="xlarge" title="TamaÃ±o muy grande (26px)" aria-pressed="false">A++</button>
-        </div>
+      <div class="small fw-bold text-dark d-none d-sm-flex align-items-center gap-2">
+        <i class="bi bi-shield-check text-primary"></i>
+        <span><?php echo e(EMPRESA_SIGLA); ?> &bull; Portal Oficial de Control Lechero</span>
       </div>
     </div>
   </aside>
 
-  <!-- Contenedor Central con Tarjeta Dividida SÃ³lida (Split-Card) -->
+  <!-- Contenedor Central con Tarjeta Dividida Sólida (Split-Card) -->
   <main class="container my-auto py-4">
     <div class="row justify-content-center">
       <div class="col-12 d-flex justify-content-center">
 
-        <div class="card login-split-card border-2">
+        <div class="card login-split-card border-2 shadow-lg">
           <div class="row g-0">
 
             <!-- LADO IZQUIERDO: BRANDING INSTITUCIONAL AZUL MARINO -->
-            <div class="col-md-5 login-brand-side text-center text-md-start">
+            <div class="col-md-5 login-brand-side text-center text-md-start p-4 p-lg-5">
               <div>
                 <img src="assets/img/logo.png" alt="Logo Oficial <?php echo e(EMPRESA_SIGLA); ?>" class="mb-3" style="max-height: 84px; filter: drop-shadow(0 6px 14px rgba(0,0,0,0.35));">
                 <h3 class="fw-bold mb-1 text-white" style="font-size: 1.45rem; letter-spacing: 0.01em;"><?php echo e(EMPRESA_SIGLA); ?></h3>
-                <small class="text-white-50 d-block mb-4" style="letter-spacing: 0.08em;">CARMEN DE CARUPA &bull; CUNDINAMARCA</small>
+                <small class="text-white-50 d-block mb-4 text-uppercase" style="letter-spacing: 0.08em;">Carmen de Carupa &bull; Cundinamarca</small>
               </div>
 
-                <h4 class="fw-bold mb-3 text-warning">Plataforma de Control Lechero</h4>
-                <p class="small mb-4 text-white" style="line-height: 1.7; opacity: 0.95;">
-                  Bienvenido al portal institucional de asociados. Registra tus pesajes diarios por turnos (â˜€ï¸ MaÃ±ana y ðŸŒ… Tarde), consulta tus planillas quincenales y mantÃ©n la trazabilidad de tu producciÃ³n lechera.
-                </p>
+              <h4 class="fw-bold mb-3" style="color: #f4c78d;">Plataforma de Control Lechero</h4>
+              <p class="small mb-4 text-white" style="line-height: 1.7; opacity: 0.95;">
+                Bienvenido al portal institucional de asociados. Consulta tus pesajes diarios por turnos (☀️ Mañana y 🌅 Tarde), revisa tus planillas quincenales y mantén la trazabilidad de tu producción lechera.
+              </p>
 
-                <div class="d-flex flex-column gap-2 small text-white">
-                  <div><i class="bi bi-check-circle-fill text-warning me-2"></i>32 Ganaderos Vinculados</div>
-                  <div><i class="bi bi-check-circle-fill text-warning me-2"></i>Monitoreo y Pesaje Diario</div>
-                  <div><i class="bi bi-check-circle-fill text-warning me-2"></i>Liquidaciones Transparentes</div>
-                </div>
+              <div class="d-flex flex-column gap-2 small text-white">
+                <div><i class="bi bi-check-circle-fill me-2" style="color: #f4c78d;"></i>32 Ganaderos Vinculados</div>
+                <div><i class="bi bi-check-circle-fill me-2" style="color: #f4c78d;"></i>Monitoreo y Pesaje Diario</div>
+                <div><i class="bi bi-check-circle-fill me-2" style="color: #f4c78d;"></i>Liquidaciones Transparentes</div>
+              </div>
 
               <div class="mt-4 pt-3 border-top border-white border-opacity-25 small text-white opacity-75">
                 <?php echo e(EMPRESA_NOMBRE); ?><br>
@@ -235,11 +231,11 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
               </div>
             </div>
 
-            <!-- LADO DERECHO: FORMULARIO DE ACCESO TÃCTIL CLARO -->
-            <div class="col-md-7 login-form-side">
+            <!-- LADO DERECHO: FORMULARIO DE ACCESO TÁCTIL CLARO -->
+            <div class="col-md-7 login-form-side p-4 p-lg-5">
               <div class="mb-4">
-                <h3 class="fw-bold text-dark mb-1">Iniciar SesiÃ³n</h3>
-                <p class="text-muted small">Digita tu nÃºmero de cÃ©dula y contraseÃ±a para ingresar.</p>
+                <h3 class="fw-bold text-dark mb-1">Iniciar Sesión</h3>
+                <p class="text-muted small">Digita tu número de cédula y contraseña para ingresar.</p>
               </div>
 
               <?php if (!empty($errorMsg)): ?>
@@ -251,33 +247,33 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
 
               <?php if (isset($_GET['msg']) && $_GET['msg'] === 'sesion_expirada'): ?>
                 <div class="alert alert-warning rounded-4 py-2 small fw-bold mb-4" role="alert">
-                  <i class="bi bi-info-circle-fill me-2"></i> Tu sesiÃ³n ha expirado por inactividad. Por favor ingresa nuevamente.
+                  <i class="bi bi-info-circle-fill me-2"></i> Tu sesión ha expirado por inactividad. Por favor ingresa nuevamente.
                 </div>
               <?php endif; ?>
 
               <form action="login.php" method="POST" id="form-login" class="needs-validation" novalidate>
                 <?php echo campoCsrf(); ?>
 
-                <!-- Campo CÃ©dula: Etiqueta Siempre Visible Encima -->
+                <!-- Campo Cédula: Etiqueta Siempre Visible Encima -->
                 <div class="mb-4">
-                  <label for="cedula" class="form-label">NÃºmero de CÃ©dula de CiudadanÃ­a *</label>
+                  <label for="cedula" class="form-label">Número de Cédula de Ciudadanía *</label>
                   <div class="input-group">
                     <span class="input-group-text border-2 bg-light text-primary" style="border-radius: var(--radius-md) 0 0 var(--radius-md); border-right: none;">
                       <i class="bi bi-person-vcard fs-4"></i>
                     </span>
-                    <input type="text" class="form-control form-control-touch border-start-0" id="cedula" name="cedula" inputmode="numeric" required placeholder="NÃºmero de cÃ©dula" value="<?php echo e($cedulaRecordada); ?>" style="border-radius: 0 var(--radius-md) var(--radius-md) 0;">
+                    <input type="text" class="form-control form-control-touch border-start-0" id="cedula" name="cedula" inputmode="numeric" required placeholder="Número de cédula" value="<?php echo e($cedulaRecordada); ?>" style="border-radius: 0 var(--radius-md) var(--radius-md) 0;">
                   </div>
                 </div>
 
-                <!-- Campo ContraseÃ±a con BotÃ³n Mostrar/Ocultar -->
+                <!-- Campo Contraseña con Botón Mostrar/Ocultar -->
                 <div class="mb-4">
-                  <label for="password" class="form-label">ContraseÃ±a Personal *</label>
+                  <label for="password" class="form-label">Contraseña Personal *</label>
                   <div class="input-group">
                     <span class="input-group-text border-2 bg-light text-primary" style="border-radius: var(--radius-md) 0 0 var(--radius-md); border-right: none;">
                       <i class="bi bi-key-fill fs-4"></i>
                     </span>
-                    <input type="password" class="form-control form-control-touch border-start-0 border-end-0" id="password" name="password" required placeholder="Tu contraseÃ±a" style="border-radius: 0;">
-                    <button class="btn btn-outline-secondary border-2 border-start-0" type="button" id="btn-toggle-pass" style="border-radius: 0 var(--radius-md) var(--radius-md) 0; min-width: 56px;" title="Mostrar contraseÃ±a">
+                    <input type="password" class="form-control form-control-touch border-start-0 border-end-0" id="password" name="password" required placeholder="Tu contraseña" style="border-radius: 0;">
+                    <button class="btn btn-outline-secondary border-2 border-start-0" type="button" id="btn-toggle-pass" style="border-radius: 0 var(--radius-md) var(--radius-md) 0; min-width: 56px;" title="Mostrar contraseña">
                       <i class="bi bi-eye-fill fs-5"></i>
                     </button>
                   </div>
@@ -287,10 +283,10 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
                 <div class="mb-4 p-3 rounded-4" style="background-color: var(--surface-2); border: 2px solid var(--border);">
                   <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap">
                     <label for="captcha-input" class="form-label mb-0 text-dark text-nowrap">
-                      <i class="bi bi-shield-check me-1 text-primary"></i> CÃ³digo de Seguridad *
+                      <i class="bi bi-shield-check me-1 text-primary"></i> Código de Seguridad *
                     </label>
                     <?php if (!USE_RECAPTCHA_V2): ?>
-                      <button type="button" id="btn-recargar-captcha" class="btn btn-sm btn-link text-primary fw-bold text-decoration-underline p-0" title="Obtener otra imagen de verificaciÃ³n">
+                      <button type="button" id="btn-recargar-captcha" class="btn btn-sm btn-link text-primary fw-bold text-decoration-underline p-0" title="Obtener otra imagen de verificación">
                         <i class="bi bi-arrow-clockwise"></i> Cambiar imagen
                       </button>
                     <?php endif; ?>
@@ -300,36 +296,36 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
                     <div class="g-recaptcha" data-sitekey="<?php echo e(RECAPTCHA_SITE_KEY); ?>"></div>
                   <?php else: ?>
                     <div class="d-flex align-items-center gap-3">
-                      <img src="includes/captcha_gd.php?t=<?php echo time(); ?>" alt="CÃ³digo de seguridad CAPTCHA" id="captcha-img" class="rounded-3 shadow-sm border border-2 border-secondary" style="height: 52px; width: 150px; object-fit: contain;">
-                      <input type="text" class="form-control form-control-touch text-center fw-bold text-uppercase fs-4" id="captcha-input" name="captcha" maxlength="5" required placeholder="CÃ³digo" autocomplete="off">
+                      <img src="includes/captcha_gd.php?t=<?php echo time(); ?>" alt="Código de seguridad CAPTCHA" id="captcha-img" class="rounded-3 shadow-sm border border-2 border-secondary" style="height: 52px; width: 150px; object-fit: contain;">
+                      <input type="text" class="form-control form-control-touch text-center fw-bold text-uppercase fs-4" id="captcha-input" name="captcha" maxlength="5" required placeholder="Código" autocomplete="off">
                     </div>
-                    <small class="text-muted d-block mt-2" style="font-size: 0.82rem;">Escribe los 5 caracteres que ves en la imagen (no distingue mayÃºsculas/minÃºsculas).</small>
+                    <small class="text-muted d-block mt-2" style="font-size: 0.82rem;">Escribe los 5 caracteres que ves en la imagen (no distingue mayúsculas/minúsculas).</small>
                   <?php endif; ?>
                 </div>
 
-                <!-- Checkbox Recordarme y Enlace OlvidÃ© Clave -->
+                <!-- Checkbox Recordarme y Enlace Olvidé Clave -->
                 <div class="d-flex justify-content-between align-items-center mb-4">
                   <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="recordarme" name="recordarme" style="width: 24px; height: 24px;" <?php echo !empty($cedulaRecordada) ? 'checked' : ''; ?>>
                     <label class="form-check-label ms-2 fw-bold text-muted" for="recordarme">
-                      Recordar mi cÃ©dula
+                      Recordar mi cédula
                     </label>
                   </div>
                   <a href="olvide_password.php" class="small fw-bold text-primary hover-underline">
-                    Â¿Olvidaste tu clave?
+                    ¿Olvidaste tu clave?
                   </a>
                 </div>
 
-                <!-- BotÃ³n de Ingreso Enorme de 56px -->
+                <!-- Botón de Ingreso de 56px -->
                 <button type="submit" id="btn-submit" class="btn btn-touch btn-aso-primary w-100 mb-3 fs-5">
                   <span>Ingresar a la Plataforma</span>
                   <i class="bi bi-arrow-right fs-4"></i>
                 </button>
               </form>
 
-              <!-- Enlace de AfiliaciÃ³n / Registro -->
+              <!-- Enlace de Afiliación / Registro -->
               <div class="text-center pt-3 border-top border-secondary-subtle">
-                <small class="text-muted d-block mb-2">Â¿Eres ganadero de la Vereda Alizal y no tienes usuario?</small>
+                <small class="text-muted d-block mb-2">¿Eres ganadero de la Vereda Alizal y no tienes usuario?</small>
                 <a href="registro.php" class="btn btn-touch btn-outline-primary w-100 fw-bold">
                   <i class="bi bi-person-plus-fill me-1"></i> Solicitar Registro de Asociado
                 </a>
@@ -343,7 +339,7 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
     </div>
   </main>
 
-  <!-- Footer MÃ­nimo -->
+  <!-- Footer Mínimo -->
   <footer class="py-3 text-center text-muted small">
     <div class="container">
       <?php echo e(EMPRESA_SIGLA); ?> &bull; NIT <?php echo e(EMPRESA_NIT); ?> &bull; Carmen de Carupa, Cundinamarca &copy; <?php echo date('Y'); ?>
@@ -357,7 +353,7 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      // Toggle de visualizaciÃ³n de contraseÃ±a
+      // Toggle de visualización de contraseña
       const btnToggle = document.getElementById('btn-toggle-pass');
       btnToggle?.addEventListener('click', function() {
         AsoagroUI.togglePassword('#password', '#btn-toggle-pass');
@@ -369,7 +365,7 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
         AsoagroUI.refreshCaptcha('#captcha-img', '#captcha-input');
       });
 
-      // Manejo de envÃ­o asÃ­ncrono con SweetAlert2
+      // Manejo de envío asíncrono con SweetAlert2
       const form = document.getElementById('form-login');
       form?.addEventListener('submit', async function(e) {
         e.preventDefault();
@@ -382,12 +378,12 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
         const recordarme = document.getElementById('recordarme').checked ? 1 : 0;
 
         if (!cedula || !password) {
-          AsoagroUI.showWarning('Campos Incompletos', 'Por favor ingresa tu nÃºmero de cÃ©dula y contraseÃ±a.');
+          AsoagroUI.showWarning('Campos Incompletos', 'Por favor ingresa tu número de cédula y contraseña.');
           return;
         }
 
         if (document.getElementById('captcha-input') && !captcha) {
-          AsoagroUI.showWarning('CÃ³digo Requerido', 'Por favor digita los 5 caracteres de la imagen de seguridad.');
+          AsoagroUI.showWarning('Código Requerido', 'Por favor digita los 5 caracteres de la imagen de seguridad.');
           return;
         }
 
@@ -416,15 +412,15 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
           if (res.ok && data.ok) {
             Swal.fire({
               icon: 'success',
-              title: 'Â¡Acceso Concedido!',
-              text: 'Bienvenido a la plataforma de AsoagroAlisal.',
+              title: '¡Acceso Concedido!',
+              text: 'Bienvenido a la plataforma de ASOAGROALIZAL.',
               showConfirmButton: false,
               timer: 1200
             }).then(() => {
               window.location.href = data.redirect || 'panel.php';
             });
           } else {
-            AsoagroUI.showError('Error de AutenticaciÃ³n', data.error || 'CÃ©dula o contraseÃ±a incorrecta.');
+            AsoagroUI.showError('Error de Autenticación', data.error || 'Cédula o contraseña incorrecta.');
             btn.disabled = false;
             btn.innerHTML = `<span>Ingresar a la Plataforma</span> <i class="bi bi-arrow-right ms-1"></i>`;
             AsoagroUI.refreshCaptcha('#captcha-img', '#captcha-input');
