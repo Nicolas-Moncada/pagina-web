@@ -5,7 +5,9 @@ if (php_sapi_name() !== 'cli') {
     exit("Acceso prohibido");
 }
 
-require_once __DIR__ . '/api/db.php';
+require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/includes/db.php';
+require_once __DIR__ . '/includes/helpers.php';
 
 $pdo = getDB();
 

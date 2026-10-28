@@ -45,14 +45,17 @@ Todas las modificaciones siguen el estándar [Keep a Changelog](https://keepacha
 Lista clasificada por prioridad de las tareas recomendadas antes y durante la salida a producción en internet:
 
 ### 🔴 Prioridad Alta (Seguridad y Limpieza Inmediata)
-- [ ] **Autorización y Ejecución del Plan de Limpieza de Archivos Basura:**
-  - Borrar dependencias obsoletas de Node.js (`node_modules/`, `src/`, `prisma/`) para aligerar el proyecto en más de 450 MB.
-  - Eliminar carpetas huérfanas `css/` y `js/` de la raíz del proyecto.
-  - Remover `img/logo.png` duplicado (conservando `assets/img/logo.png`).
+- [x] **Autorización y Ejecución del Plan de Limpieza de Archivos Basura:**
+  - Dependencias obsoletas de Node.js (`node_modules/`, `src/`, `prisma/`) eliminadas, reduciendo más de 450 MB de peso innecesario.
+  - Carpetas huérfanas `css/` y `js/` removidas; el proyecto utiliza canónicamente `assets/`.
+  - Duplicado `img/logo.png` eliminado; todas las vistas enlazan canónicamente a `assets/img/logo.png`.
+  - Respaldos temporales de SQL archivados y eliminados del árbol de trabajo.
+- [x] **Corrección Sintáctica en `database.sql`:**
+  - Corregida la definición de la columna `mensaje TEXT` a `mensaje TEXT NOT NULL` en la tabla `consulta`.
+- [x] **Normalización de Conexión PDO:**
+  - Actualizados `recuperar_admin.php`, `reset_db.php` y `restablecer_password.php` para utilizar el singleton de base de datos oficial `includes/db.php` e `includes/config.php`.
 - [ ] **Protección de Scripts de Mantenimiento CLI:**
-  - Mover `reset_db.php` y `recuperar_admin.php` fuera del alcance de peticiones web públicas hacia una carpeta `scripts/cli/` o protegerlos mediante `.htaccess`.
-- [ ] **Corrección Sintáctica en `database.sql`:**
-  - Ajustar la definición de columna `mensaje TEXT` a `mensaje TEXT NOT NULL` en la tabla `consulta`.
+  - Proteger o trasladar `reset_db.php` y `recuperar_admin.php` para que solo sean ejecutados por terminal CLI o restringidos por `.htaccess` en servidores compartidos.
 
 ### 🟡 Prioridad Media (Infraestructura y Despliegue)
 - [ ] **Configuración de Hosting y Dominio Propio:**
@@ -73,3 +76,4 @@ Lista clasificada por prioridad de las tareas recomendadas antes y durante la sa
   - Envío automático de notificación al ganadero al cerrarse y liquidarse la quincena.
 - [ ] **Validación Legal Formal:**
   - Presentar los borradores de la Política de Tratamiento de Datos (Ley 1581 de 2012) ante la asamblea o asesor legal de la asociación para su aprobación definitiva.
+

@@ -11,7 +11,9 @@ if (php_sapi_name() !== 'cli') {
     die("⛔ ACCESO DENEGADO: Por motivos de seguridad, este script solo puede ejecutarse localmente desde la terminal del servidor (CLI).\n");
 }
 
-require_once __DIR__ . '/api/db.php';
+require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/includes/db.php';
+require_once __DIR__ . '/includes/helpers.php';
 
 $pdo = getDB();
 
