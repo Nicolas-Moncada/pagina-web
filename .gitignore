@@ -1,7 +1,40 @@
-.env
-node_modules
-.next
-*.log
-backup_*
-*.tsbuildinfo
+# ================================================================
+# REGLAS DE EXCLUSIÓN GIT - ASOAGROALIZAL
+# ================================================================
 
+# 1. Variables de Entorno y Credenciales Sensibles
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# 2. Artefactos y Dependencias de Node.js (Legacy)
+node_modules/
+.next/
+*.tsbuildinfo
+dist/
+
+# 3. Scripts Temporales y Entorno Python (Pruebas Locales)
+__pycache__/
+*.pyc
+*.pyo
+tools/*.py
+scratch/
+test_*.py
+
+# 4. Archivos de Registro y Temporales
+*.log
+*.tmp
+*.bak
+backup_*
+sql/backup_*.sql
+sql/limpieza_total.sql
+
+# 5. Capturas de Pruebas de Renderizado (Viewport QA)
+docs/capturas/*.png
+
+# 6. Archivos Ocultos del Sistema Operativo
+.DS_Store
+Thumbs.db
+desktop.ini
