@@ -120,7 +120,7 @@ $tituloPagina = $tituloPagina ?? (EMPRESA_SIGLA . ' | Control Lechero');
   <nav class="navbar navbar-expand-xl navbar-asoagro sticky-top" aria-label="Navegación principal">
     <div class="container-fluid px-3 px-md-4">
       <a class="navbar-brand d-flex align-items-center gap-2 text-decoration-none" href="index.php">
-        <img src="assets/img/logo.webp" alt="Logo Oficial <?php echo e(EMPRESA_SIGLA); ?>" class="brand-logo-img" width="1024" height="712" loading="eager" style="aspect-ratio: 1024 / 712;">
+        <img src="assets/img/logo.webp" alt="Logo Oficial <?php echo e(EMPRESA_SIGLA); ?>" class="brand-logo-img" width="300" height="208" loading="eager" style="aspect-ratio: 300 / 208;">
         <div class="d-flex flex-column">
           <span class="brand-text-title lh-1"><?php echo e(EMPRESA_SIGLA); ?></span>
           <small class="brand-text-sub text-uppercase" style="letter-spacing: 0.05em; font-size: 0.68rem;">Control Lechero</small>

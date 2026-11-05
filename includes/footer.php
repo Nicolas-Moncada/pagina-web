@@ -13,7 +13,7 @@
       <div class="row g-4 align-items-center">
         <div class="col-lg-7 text-center text-lg-start">
           <div class="d-flex align-items-center gap-3 justify-content-center justify-content-lg-start mb-2">
-            <img src="assets/img/logo.webp" alt="Logo <?php echo e(EMPRESA_SIGLA); ?>" style="max-height: 48px; aspect-ratio: 1024 / 712;" width="1024" height="712" loading="lazy">
+            <img src="assets/img/logo.webp" alt="Logo <?php echo e(EMPRESA_SIGLA); ?>" style="max-height: 48px; aspect-ratio: 300 / 208;" width="300" height="208" loading="lazy">
             <h4 class="fw-bold mb-0 text-white"><?php echo e(EMPRESA_SIGLA); ?></h4>
           </div>
           <p class="small text-white-50 mb-1">
