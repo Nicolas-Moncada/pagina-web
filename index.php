@@ -427,7 +427,7 @@ require_once __DIR__ . '/includes/header.php';
               <img src="assets/img/card-bienestar.webp" alt="Vacas pastoreando en praderas de montaña" class="img-fluid w-100 object-fit-cover" style="height: 180px;" width="600" height="401" loading="lazy">
             </div>
             <div class="p-3 text-center">
-              <h4 class="fw-bold text-dark mb-2">Bienestar Animal</h4>
+              <h3 class="fw-bold text-dark mb-2">Bienestar Animal</h3>
               <p class="small text-muted mb-0" style="line-height: 1.5;">
                 Pastoreo libre con acceso a agua limpia y sombra natural para evitar el estrés calórico y elevar la producción.
               </p>
@@ -442,7 +442,7 @@ require_once __DIR__ . '/includes/header.php';
               <img src="assets/img/card-sanidad.webp" alt="Sanidad y chequeo veterinario del ganado" class="img-fluid w-100 object-fit-cover" style="height: 180px;" width="600" height="400" loading="lazy">
             </div>
             <div class="p-3 text-center">
-              <h4 class="fw-bold text-dark mb-2">Sanidad del Hato</h4>
+              <h3 class="fw-bold text-dark mb-2">Sanidad del Hato</h3>
               <p class="small text-muted mb-0" style="line-height: 1.5;">
                 Planes periódicos de vacunación oficial, desparasitación estratégica y pruebas periódicas contra mastitis.
               </p>
@@ -457,7 +457,7 @@ require_once __DIR__ . '/includes/header.php';
               <img src="assets/img/card-nutricion.webp" alt="Pasturas andinas nutritivas" class="img-fluid w-100 object-fit-cover" style="height: 180px;" width="600" height="338" loading="lazy">
             </div>
             <div class="p-3 text-center">
-              <h4 class="fw-bold text-dark mb-2">Nutrición y Pasturas</h4>
+              <h3 class="fw-bold text-dark mb-2">Nutrición y Pasturas</h3>
               <p class="small text-muted mb-0" style="line-height: 1.5;">
                 Rotación adecuada de potreros de Ryegrass y Trébol, sales mineralizadas y suplementos forrajeros de calidad.
               </p>
@@ -472,7 +472,7 @@ require_once __DIR__ . '/includes/header.php';
               <img src="assets/img/card-manejo.webp" alt="Ordeño higiénico y cantinas limpias" class="img-fluid w-100 object-fit-cover" style="height: 180px;" width="600" height="399" loading="lazy">
             </div>
             <div class="p-3 text-center">
-              <h4 class="fw-bold text-dark mb-2">Higiene en el Ordeño</h4>
+              <h3 class="fw-bold text-dark mb-2">Higiene en el Ordeño</h3>
               <p class="small text-muted mb-0" style="line-height: 1.5;">
                 Lavado y secado riguroso de pezones con papel desechable, despunte inicial y sellado antes de almacenar en cantina.
               </p>
