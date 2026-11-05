@@ -78,7 +78,7 @@ require_once __DIR__ . '/includes/header.php';
   <section id="inicio" class="hero-asoagro position-relative d-flex align-items-center overflow-hidden">
     <!-- Imagen de fondo con overlay oscuro atmosférico -->
     <div class="hero-bg-wrapper position-absolute top-0 start-0 w-100 h-100">
-      <img src="assets/img/hero-ganado.webp" alt="Ganadería lechera en pasturas de la Vereda Alizal" class="hero-bg-img w-100 h-100 object-fit-cover">
+      <img src="assets/img/hero-ganado.webp" alt="Ganadería lechera en pasturas de la Vereda Alizal" class="hero-bg-img w-100 h-100 object-fit-cover" width="1600" height="1063" loading="eager" fetchpriority="high">
       <div class="hero-bg-overlay position-absolute top-0 start-0 w-100 h-100"></div>
     </div>
 
@@ -187,7 +187,7 @@ require_once __DIR__ . '/includes/header.php';
       <div class="row align-items-center g-4 g-lg-5">
         <div class="col-lg-6">
           <div class="position-relative card-elevate rounded-4 overflow-hidden border-2" style="border: 2px solid var(--border-subtle);">
-            <img src="assets/img/finca-andina.webp" alt="Paisaje de la Vereda Alizal en Carmen de Carupa" class="img-fluid w-100 object-fit-cover" style="max-height: 440px;">
+            <img src="assets/img/finca-andina.webp" alt="Paisaje de la Vereda Alizal en Carmen de Carupa" class="img-fluid w-100 object-fit-cover" style="max-height: 440px;" width="1000" height="573" loading="lazy">
             <div class="position-absolute bottom-0 start-0 w-100 p-3 text-white" style="background: linear-gradient(transparent, rgba(16, 36, 59, 0.9));">
               <span class="badge px-3 py-1.5 rounded-pill fw-bold text-white" style="background-color: var(--accent);">Vereda Alizal &bull; 2.980 m.s.n.m.</span>
               <p class="small mb-0 mt-1 opacity-90">Corazón ganadero lechero del Altiplano Cundiboyacense</p>
@@ -306,7 +306,7 @@ require_once __DIR__ . '/includes/header.php';
         <div class="col-md-4">
           <div class="card card-elevate h-100 rounded-4 border-2 overflow-hidden" style="background-color: var(--surface); border-color: var(--border-subtle);">
             <div class="card-zoom">
-              <img src="assets/img/infra-tanque.webp" alt="Tanque de enfriamiento de leche en acero inoxidable" class="img-fluid w-100 object-fit-cover" style="height: 230px;">
+              <img src="assets/img/infra-tanque.webp" alt="Tanque de enfriamiento de leche en acero inoxidable" class="img-fluid w-100 object-fit-cover" style="height: 230px;" width="800" height="600" loading="lazy">
             </div>
             <div class="p-4">
               <span class="badge px-2.5 py-1 rounded-pill mb-2 fw-bold" style="background-color: var(--surface-2); color: var(--primary); font-size: 0.78rem;">CADENA DE FRÍO</span>
@@ -322,7 +322,7 @@ require_once __DIR__ . '/includes/header.php';
         <div class="col-md-4">
           <div class="card card-elevate h-100 rounded-4 border-2 overflow-hidden" style="background-color: var(--surface); border-color: var(--border-subtle);">
             <div class="card-zoom">
-              <img src="assets/img/infra-invernadero.webp" alt="Invernadero tecnificado para forrajes y cultivos" class="img-fluid w-100 object-fit-cover" style="height: 230px;">
+              <img src="assets/img/infra-invernadero.webp" alt="Invernadero tecnificado para forrajes y cultivos" class="img-fluid w-100 object-fit-cover" style="height: 230px;" width="800" height="450" loading="lazy">
             </div>
             <div class="p-4">
               <span class="badge px-2.5 py-1 rounded-pill mb-2 fw-bold" style="background-color: var(--surface-2); color: var(--primary); font-size: 0.78rem;">AGRICULTURA PROTEGIDA</span>
@@ -338,7 +338,7 @@ require_once __DIR__ . '/includes/header.php';
         <div class="col-md-4">
           <div class="card card-elevate h-100 rounded-4 border-2 overflow-hidden" style="background-color: var(--surface); border-color: var(--border-subtle);">
             <div class="card-zoom">
-              <img src="assets/img/infra-laboratorio.webp" alt="Laboratorio de biotecnología vegetal" class="img-fluid w-100 object-fit-cover" style="height: 230px;">
+              <img src="assets/img/infra-laboratorio.webp" alt="Laboratorio de biotecnología vegetal" class="img-fluid w-100 object-fit-cover" style="height: 230px;" width="800" height="533" loading="lazy">
             </div>
             <div class="p-4">
               <span class="badge px-2.5 py-1 rounded-pill mb-2 fw-bold" style="background-color: var(--surface-2); color: var(--primary); font-size: 0.78rem;">BIOTECNOLOGÍA</span>
@@ -424,7 +424,7 @@ require_once __DIR__ . '/includes/header.php';
         <div class="col-sm-6 col-lg-3">
           <div class="card card-elevate h-100 rounded-4 border-2 overflow-hidden" style="background-color: var(--surface); border-color: var(--border-subtle);">
             <div class="card-zoom">
-              <img src="assets/img/card-bienestar.webp" alt="Vacas pastoreando en praderas de montaña" class="img-fluid w-100 object-fit-cover" style="height: 180px;">
+              <img src="assets/img/card-bienestar.webp" alt="Vacas pastoreando en praderas de montaña" class="img-fluid w-100 object-fit-cover" style="height: 180px;" width="600" height="401" loading="lazy">
             </div>
             <div class="p-3 text-center">
               <h5 class="fw-bold text-dark mb-2">Bienestar Animal</h5>
@@ -439,7 +439,7 @@ require_once __DIR__ . '/includes/header.php';
         <div class="col-sm-6 col-lg-3">
           <div class="card card-elevate h-100 rounded-4 border-2 overflow-hidden" style="background-color: var(--surface); border-color: var(--border-subtle);">
             <div class="card-zoom">
-              <img src="assets/img/card-sanidad.webp" alt="Sanidad y chequeo veterinario del ganado" class="img-fluid w-100 object-fit-cover" style="height: 180px;">
+              <img src="assets/img/card-sanidad.webp" alt="Sanidad y chequeo veterinario del ganado" class="img-fluid w-100 object-fit-cover" style="height: 180px;" width="600" height="400" loading="lazy">
             </div>
             <div class="p-3 text-center">
               <h5 class="fw-bold text-dark mb-2">Sanidad del Hato</h5>
@@ -454,7 +454,7 @@ require_once __DIR__ . '/includes/header.php';
         <div class="col-sm-6 col-lg-3">
           <div class="card card-elevate h-100 rounded-4 border-2 overflow-hidden" style="background-color: var(--surface); border-color: var(--border-subtle);">
             <div class="card-zoom">
-              <img src="assets/img/card-nutricion.webp" alt="Pasturas andinas nutritivas" class="img-fluid w-100 object-fit-cover" style="height: 180px;">
+              <img src="assets/img/card-nutricion.webp" alt="Pasturas andinas nutritivas" class="img-fluid w-100 object-fit-cover" style="height: 180px;" width="600" height="338" loading="lazy">
             </div>
             <div class="p-3 text-center">
               <h5 class="fw-bold text-dark mb-2">Nutrición y Pasturas</h5>
@@ -469,7 +469,7 @@ require_once __DIR__ . '/includes/header.php';
         <div class="col-sm-6 col-lg-3">
           <div class="card card-elevate h-100 rounded-4 border-2 overflow-hidden" style="background-color: var(--surface); border-color: var(--border-subtle);">
             <div class="card-zoom">
-              <img src="assets/img/card-manejo.webp" alt="Ordeño higiénico y cantinas limpias" class="img-fluid w-100 object-fit-cover" style="height: 180px;">
+              <img src="assets/img/card-manejo.webp" alt="Ordeño higiénico y cantinas limpias" class="img-fluid w-100 object-fit-cover" style="height: 180px;" width="600" height="399" loading="lazy">
             </div>
             <div class="p-3 text-center">
               <h5 class="fw-bold text-dark mb-2">Higiene en el Ordeño</h5>

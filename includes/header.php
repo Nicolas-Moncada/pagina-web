@@ -27,9 +27,28 @@ $tituloPagina = $tituloPagina ?? (EMPRESA_SIGLA . ' | Control Lechero');
 
   <meta name="description" content="Plataforma de Control Lechero y desarrollo asociativo de ASOAGROALIZAL en Carmen de Carupa, Cundinamarca. NIT <?php echo e(EMPRESA_NIT); ?>.">
   <meta name="author" content="<?php echo e(EMPRESA_NOMBRE); ?>">
+  <meta name="theme-color" content="#16375f">
 
-  <!-- Favicon Oficial -->
-  <link rel="icon" type="image/png" href="assets/img/logo.png">
+  <!-- Canonical y Open Graph -->
+  <link rel="canonical" href="http://localhost/asociacion/index.php">
+  <meta property="og:title" content="<?php echo e($tituloPagina); ?>">
+  <meta property="og:description" content="Plataforma de Control Lechero y desarrollo asociativo de ASOAGROALIZAL en Carmen de Carupa, Cundinamarca.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="http://localhost/asociacion/index.php">
+  <meta property="og:image" content="assets/img/hero-ganado.webp">
+
+  <!-- Preconnect a CDNs externos -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="preconnect" href="https://code.jquery.com">
+
+  <!-- Favicon Oficial (WebP optimizado) -->
+  <link rel="icon" type="image/webp" href="assets/img/logo.webp">
+
+  <!-- Preload de fuente principal para evitar bloqueo de render -->
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Sora:wght@500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet"></noscript>
 
   <!-- Bootstrap 5.3 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
@@ -68,7 +87,7 @@ $tituloPagina = $tituloPagina ?? (EMPRESA_SIGLA . ' | Control Lechero');
   <nav class="navbar navbar-expand-xl navbar-asoagro sticky-top" aria-label="Navegación principal">
     <div class="container-fluid px-3 px-md-4">
       <a class="navbar-brand d-flex align-items-center gap-2 text-decoration-none" href="index.php">
-        <img src="assets/img/logo.png" alt="Logo Oficial <?php echo e(EMPRESA_SIGLA); ?>" class="brand-logo-img">
+        <img src="assets/img/logo.webp" alt="Logo Oficial <?php echo e(EMPRESA_SIGLA); ?>" class="brand-logo-img" width="1024" height="712" loading="eager">
         <div class="d-flex flex-column">
           <span class="brand-text-title lh-1"><?php echo e(EMPRESA_SIGLA); ?></span>
           <small class="brand-text-sub text-uppercase" style="letter-spacing: 0.05em; font-size: 0.68rem;">Control Lechero</small>
