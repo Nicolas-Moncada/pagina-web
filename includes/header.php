@@ -46,6 +46,10 @@ $tituloPagina = $tituloPagina ?? (EMPRESA_SIGLA . ' | Control Lechero');
   <!-- Favicon Oficial (WebP optimizado) -->
   <link rel="icon" type="image/webp" href="assets/img/logo.webp">
 
+  <!-- Preload de imagen del héroe (LCP) — variante móvil (Lighthouse móvil usa 390px) -->
+  <link rel="preload" as="image" fetchpriority="high" href="assets/img/hero-ganado-mobile.webp">
+  <link rel="preload" as="image" href="assets/img/logo.webp">
+
   <!-- Preload de fuente principal para evitar bloqueo de render -->
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Sora:wght@500;600;700;800&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
   <noscript><link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet"></noscript>
@@ -63,8 +67,37 @@ $tituloPagina = $tituloPagina ?? (EMPRESA_SIGLA . ' | Control Lechero');
     <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
   <?php endif; ?>
 
-  <!-- Estilos del Sistema de Diseño Premium Accesible (Azul Marino / Crema / Oro) -->
-  <link rel="stylesheet" href="assets/css/theme.css">
+  <!-- CSS crítico inline (above-the-fold) -->
+  <style>
+    :root,[data-bs-theme="light"],html{color-scheme:light!important;--bg:#f7f4ee;--surface:#ffffff;--text:#101c2b;--primary:#16375f;--accent:#b56f10;--on-primary:#ffffff}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text)}
+    .top-accessibility-bar{background:var(--surface);border-bottom:1px solid var(--border-subtle)}
+    .navbar-asoagro{background:var(--surface);border-bottom:1px solid var(--border-subtle)}
+    .brand-logo-img{max-height:52px;width:auto;object-fit:contain}
+    .hero-bg-wrapper{position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden;z-index:1}
+    .hero-bg-img{width:100%;height:100%;object-fit:cover;object-position:center 38%;display:block}
+    .hero-bg-overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(180deg,rgba(11,29,54,.72)0%,rgba(11,29,54,.86)60%,rgba(10,24,43,.94)100%);pointer-events:none;z-index:2}
+    .container{width:100%;padding-right:15px;padding-left:15px;margin-right:auto;margin-left:auto}
+    .position-relative{position:relative}
+    .position-absolute{position:absolute}
+    .d-flex{display:flex!important}
+    .align-items-center{align-items:center!important}
+    .justify-content-center{justify-content:center!important}
+    .text-white{color:#fff!important}
+    .text-start{text-align:left!important}
+    .w-100{width:100%!important}
+    .h-100{height:100%!important}
+    .overflow-hidden{overflow:hidden!important}
+    .py-5{padding-top:3rem!important;padding-bottom:3rem!important}
+    .my-auto{margin-top:auto!important;margin-bottom:auto!important}
+    .z-index-2{z-index:2!important}
+    .reveal{opacity:1;transform:none}
+  </style>
+
+  <!-- Estilos del Sistema de Diseño Premium Accesible (carga diferida) -->
+  <link rel="stylesheet" href="assets/css/theme.css" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="assets/css/theme.css"></noscript>
 </head>
 <body class="d-flex flex-column min-vh-100 auth-bg">
 
@@ -87,7 +120,7 @@ $tituloPagina = $tituloPagina ?? (EMPRESA_SIGLA . ' | Control Lechero');
   <nav class="navbar navbar-expand-xl navbar-asoagro sticky-top" aria-label="Navegación principal">
     <div class="container-fluid px-3 px-md-4">
       <a class="navbar-brand d-flex align-items-center gap-2 text-decoration-none" href="index.php">
-        <img src="assets/img/logo.webp" alt="Logo Oficial <?php echo e(EMPRESA_SIGLA); ?>" class="brand-logo-img" width="1024" height="712" loading="eager">
+        <img src="assets/img/logo.webp" alt="Logo Oficial <?php echo e(EMPRESA_SIGLA); ?>" class="brand-logo-img" width="1024" height="712" loading="eager" style="aspect-ratio: 1024 / 712;">
         <div class="d-flex flex-column">
           <span class="brand-text-title lh-1"><?php echo e(EMPRESA_SIGLA); ?></span>
           <small class="brand-text-sub text-uppercase" style="letter-spacing: 0.05em; font-size: 0.68rem;">Control Lechero</small>

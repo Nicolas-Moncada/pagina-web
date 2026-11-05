@@ -13,7 +13,7 @@
       <div class="row g-4 align-items-center">
         <div class="col-lg-7 text-center text-lg-start">
           <div class="d-flex align-items-center gap-3 justify-content-center justify-content-lg-start mb-2">
-            <img src="assets/img/logo.webp" alt="Logo <?php echo e(EMPRESA_SIGLA); ?>" style="max-height: 48px;" width="1024" height="712" loading="eager">
+            <img src="assets/img/logo.webp" alt="Logo <?php echo e(EMPRESA_SIGLA); ?>" style="max-height: 48px; aspect-ratio: 1024 / 712;" width="1024" height="712" loading="lazy">
             <h4 class="fw-bold mb-0 text-white"><?php echo e(EMPRESA_SIGLA); ?></h4>
           </div>
           <p class="small text-white-50 mb-1">
@@ -31,11 +31,11 @@
 
         <div class="col-lg-5 text-center text-lg-end">
           <div class="d-flex flex-wrap gap-2 justify-content-center justify-content-lg-end mb-2">
-            <a href="javascript:void(0)" class="text-white text-decoration-none small hover-underline" data-bs-toggle="modal" data-bs-target="#modalPoliticaDatos">
+            <a href="#modalPoliticaDatos" class="text-white text-decoration-none small hover-underline" data-bs-toggle="modal" data-bs-target="#modalPoliticaDatos">
               Política de Tratamiento de Datos
             </a>
             <span class="opacity-50">|</span>
-            <a href="javascript:void(0)" class="text-white text-decoration-none small hover-underline" data-bs-toggle="modal" data-bs-target="#modalTerminos">
+            <a href="#modalTerminos" class="text-white text-decoration-none small hover-underline" data-bs-toggle="modal" data-bs-target="#modalTerminos">
               Términos y Condiciones
             </a>
             <span class="opacity-50">|</span>

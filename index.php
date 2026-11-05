@@ -78,7 +78,7 @@ require_once __DIR__ . '/includes/header.php';
   <section id="inicio" class="hero-asoagro position-relative d-flex align-items-center overflow-hidden">
     <!-- Imagen de fondo con overlay oscuro atmosférico -->
     <div class="hero-bg-wrapper position-absolute top-0 start-0 w-100 h-100">
-      <img src="assets/img/hero-ganado.webp" alt="Ganadería lechera en pasturas de la Vereda Alizal" class="hero-bg-img w-100 h-100 object-fit-cover" width="1600" height="1063" loading="eager" fetchpriority="high">
+      <img src="assets/img/hero-ganado.webp" alt="Ganadería lechera en pasturas de la Vereda Alizal" class="hero-bg-img w-100 h-100 object-fit-cover" width="1600" height="1063" loading="eager" fetchpriority="high" decoding="async" srcset="assets/img/hero-ganado-mobile.webp 800w, assets/img/hero-ganado.webp 1600w" sizes="(max-width: 768px) 800px, 1600px" style="aspect-ratio: 1600/1063;">
       <div class="hero-bg-overlay position-absolute top-0 start-0 w-100 h-100"></div>
     </div>
 
@@ -130,7 +130,7 @@ require_once __DIR__ . '/includes/header.php';
     </div>
 
     <!-- Indicador de desplazamiento (Scroll Indicator) -->
-    <a href="#cifras" class="hero-scroll-indicator position-absolute bottom-0 start-50 translate-middle-x mb-4 text-white text-decoration-none text-center" aria-label="Desplazarse hacia abajo">
+    <a href="#cifras" class="hero-scroll-indicator position-absolute bottom-0 start-50 translate-middle-x mb-4 text-white text-decoration-none text-center">
       <span class="d-block small text-white-50 mb-1" style="font-size: 0.85rem; letter-spacing: 0.04em;">Conozca más</span>
       <i class="bi bi-chevron-down fs-4 animate-bounce" style="color: #f4c78d;"></i>
     </a>
@@ -254,7 +254,7 @@ require_once __DIR__ . '/includes/header.php';
             <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-4 text-white" style="width: 72px; height: 72px; background: linear-gradient(135deg, var(--primary) 0%, #20518c 100%); font-size: 1.8rem;">
               <i class="bi bi-bucket-fill"></i>
             </div>
-            <h4 class="fw-bold text-dark mb-3">1. Ordeño y Pesaje</h4>
+            <h3 class="fw-bold text-dark mb-3">1. Ordeño y Pesaje</h3>
             <p class="text-muted mb-0" style="line-height: 1.6;">
               Cada asociado entrega su leche en cantinas higienizadas en dos turnos diarios: <strong>☀️ Mañana</strong> y <strong>🌅 Tarde</strong>. Se pesa con báscula calibrada y se registra inmediatamente.
             </p>
@@ -266,7 +266,7 @@ require_once __DIR__ . '/includes/header.php';
             <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-4 text-white" style="width: 72px; height: 72px; background: linear-gradient(135deg, #d98d28 0%, #b56f10 100%); font-size: 1.8rem;">
               <i class="bi bi-laptop"></i>
             </div>
-            <h4 class="fw-bold text-dark mb-3">2. Registro Digital</h4>
+            <h3 class="fw-bold text-dark mb-3">2. Registro Digital</h3>
             <p class="text-muted mb-0" style="line-height: 1.6;">
               La administración digita los pesajes en la planilla matricial del sistema. El ganadero puede ingresar a su portal desde su celular y verificar sus litros día por día en tiempo real.
             </p>
@@ -278,7 +278,7 @@ require_once __DIR__ . '/includes/header.php';
             <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-4 text-white" style="width: 72px; height: 72px; background: linear-gradient(135deg, #1e7a44 0%, #144722 100%); font-size: 1.8rem;">
               <i class="bi bi-cash-stack"></i>
             </div>
-            <h4 class="fw-bold text-dark mb-3">3. Liquidación Clara</h4>
+            <h3 class="fw-bold text-dark mb-3">3. Liquidación Clara</h3>
             <p class="text-muted mb-0" style="line-height: 1.6;">
               Al cumplirse cada quincena (1-15 o 16-fin de mes), el sistema totaliza los litros acumulados y aplica la tarifa oficial por litro, emitiendo la liquidación exacta y transparente.
             </p>
@@ -310,7 +310,7 @@ require_once __DIR__ . '/includes/header.php';
             </div>
             <div class="p-4">
               <span class="badge px-2.5 py-1 rounded-pill mb-2 fw-bold" style="background-color: var(--surface-2); color: var(--primary); font-size: 0.78rem;">CADENA DE FRÍO</span>
-              <h4 class="fw-bold text-dark mb-2">Tanque de Enfriamiento</h4>
+              <h3 class="fw-bold text-dark mb-2">Tanque de Enfriamiento</h3>
               <p class="small text-muted mb-0" style="line-height: 1.6;">
                 Tanques de acero inoxidable grado alimentario que bajan la temperatura de la leche a 4 °C en menos de dos horas, frenando la proliferación bacteriana y preservando su calidad.
               </p>
@@ -326,7 +326,7 @@ require_once __DIR__ . '/includes/header.php';
             </div>
             <div class="p-4">
               <span class="badge px-2.5 py-1 rounded-pill mb-2 fw-bold" style="background-color: var(--surface-2); color: var(--primary); font-size: 0.78rem;">AGRICULTURA PROTEGIDA</span>
-              <h4 class="fw-bold text-dark mb-2">Invernadero Comunitario</h4>
+              <h3 class="fw-bold text-dark mb-2">Invernadero Comunitario</h3>
               <p class="small text-muted mb-0" style="line-height: 1.6;">
                 Módulos de agricultura protegida para la producción escalonada de semillas limpias, forrajes de alto rendimiento y diversificación de ingresos agrícolas para las familias.
               </p>
@@ -342,7 +342,7 @@ require_once __DIR__ . '/includes/header.php';
             </div>
             <div class="p-4">
               <span class="badge px-2.5 py-1 rounded-pill mb-2 fw-bold" style="background-color: var(--surface-2); color: var(--primary); font-size: 0.78rem;">BIOTECNOLOGÍA</span>
-              <h4 class="fw-bold text-dark mb-2">Laboratorio y Control</h4>
+              <h3 class="fw-bold text-dark mb-2">Laboratorio y Control</h3>
               <p class="small text-muted mb-0" style="line-height: 1.6;">
                 Área técnica destinada al control microbiológico básico de la leche, pruebas de mastitis y proyectos de propagación biológica y mejoramiento de pasturas de clima frío.
               </p>
@@ -427,7 +427,7 @@ require_once __DIR__ . '/includes/header.php';
               <img src="assets/img/card-bienestar.webp" alt="Vacas pastoreando en praderas de montaña" class="img-fluid w-100 object-fit-cover" style="height: 180px;" width="600" height="401" loading="lazy">
             </div>
             <div class="p-3 text-center">
-              <h5 class="fw-bold text-dark mb-2">Bienestar Animal</h5>
+              <h4 class="fw-bold text-dark mb-2">Bienestar Animal</h4>
               <p class="small text-muted mb-0" style="line-height: 1.5;">
                 Pastoreo libre con acceso a agua limpia y sombra natural para evitar el estrés calórico y elevar la producción.
               </p>
@@ -442,7 +442,7 @@ require_once __DIR__ . '/includes/header.php';
               <img src="assets/img/card-sanidad.webp" alt="Sanidad y chequeo veterinario del ganado" class="img-fluid w-100 object-fit-cover" style="height: 180px;" width="600" height="400" loading="lazy">
             </div>
             <div class="p-3 text-center">
-              <h5 class="fw-bold text-dark mb-2">Sanidad del Hato</h5>
+              <h4 class="fw-bold text-dark mb-2">Sanidad del Hato</h4>
               <p class="small text-muted mb-0" style="line-height: 1.5;">
                 Planes periódicos de vacunación oficial, desparasitación estratégica y pruebas periódicas contra mastitis.
               </p>
@@ -457,7 +457,7 @@ require_once __DIR__ . '/includes/header.php';
               <img src="assets/img/card-nutricion.webp" alt="Pasturas andinas nutritivas" class="img-fluid w-100 object-fit-cover" style="height: 180px;" width="600" height="338" loading="lazy">
             </div>
             <div class="p-3 text-center">
-              <h5 class="fw-bold text-dark mb-2">Nutrición y Pasturas</h5>
+              <h4 class="fw-bold text-dark mb-2">Nutrición y Pasturas</h4>
               <p class="small text-muted mb-0" style="line-height: 1.5;">
                 Rotación adecuada de potreros de Ryegrass y Trébol, sales mineralizadas y suplementos forrajeros de calidad.
               </p>
@@ -472,7 +472,7 @@ require_once __DIR__ . '/includes/header.php';
               <img src="assets/img/card-manejo.webp" alt="Ordeño higiénico y cantinas limpias" class="img-fluid w-100 object-fit-cover" style="height: 180px;" width="600" height="399" loading="lazy">
             </div>
             <div class="p-3 text-center">
-              <h5 class="fw-bold text-dark mb-2">Higiene en el Ordeño</h5>
+              <h4 class="fw-bold text-dark mb-2">Higiene en el Ordeño</h4>
               <p class="small text-muted mb-0" style="line-height: 1.5;">
                 Lavado y secado riguroso de pezones con papel desechable, despunte inicial y sellado antes de almacenar en cantina.
               </p>
@@ -579,7 +579,7 @@ require_once __DIR__ . '/includes/header.php';
         <!-- Columna Formulario -->
         <div class="col-lg-7">
           <div class="card card-elevate p-4 p-md-5 rounded-4 border-2" style="background-color: var(--surface); border-color: var(--border-subtle);">
-            <h4 class="fw-bold text-dark mb-2">Envíenos su Mensaje o Petición</h4>
+            <h3 class="fw-bold text-dark mb-2">Envíenos su Mensaje o Petición</h3>
             <p class="text-muted small mb-4">Diligencie el formulario y le responderemos a la mayor brevedad.</p>
 
             <form action="index.php" method="POST" id="form-contacto" class="needs-validation" novalidate>
@@ -624,7 +624,7 @@ require_once __DIR__ . '/includes/header.php';
         <!-- Columna Ficha y Canales Oficiales -->
         <div class="col-lg-5">
           <div class="card card-elevate p-4 p-md-5 rounded-4 border-2 h-100" style="background-color: var(--surface-2); border-color: var(--border-subtle);">
-            <h4 class="fw-bold text-dark mb-4">Información Institucional</h4>
+            <h3 class="fw-bold text-dark mb-4">Información Institucional</h3>
 
             <div class="d-flex flex-column gap-4">
               <div class="d-flex gap-3">
