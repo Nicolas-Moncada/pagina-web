@@ -164,7 +164,7 @@ function requireAdminAuth(bool $validarCsrfEnPost = false): array {
                 exit;
             }
             die("<div style='font-family:sans-serif;padding:30px;background:#fef2f2;color:#991b1b;border:2px solid #f87171;border-radius:12px;max-width:500px;margin:50px auto;text-align:center;'>
-                <h3>⚠️ Error de Validación CSRF</h3>
+                <h3>Error de Validación CSRF</h3>
                 <p>La solicitud no superó la verificación de seguridad. Por favor recarga la página y vuelve a intentar.</p>
                 <a href='admin.php' style='display:inline-block;padding:8px 16px;background:#144722;color:white;border-radius:6px;text-decoration:none;'>Regresar</a>
             </div>");

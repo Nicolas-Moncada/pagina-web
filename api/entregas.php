@@ -147,7 +147,7 @@ if ($method === 'POST') {
         $turnoNombre = ($turno === 'MANANA') ? 'Mañana' : 'Tarde';
         jsonResponse([
             'ok' => true,
-            'mensaje' => "✅ Litros guardados: " . number_format($litros, 1) . " L para {$nombreGanadero} ({$turnoNombre})",
+            'mensaje' => "Litros guardados: " . number_format($litros, 1) . " L para {$nombreGanadero} ({$turnoNombre})",
             'entrega' => [
                 'id' => $id,
                 'usuarioId' => $usuarioId,

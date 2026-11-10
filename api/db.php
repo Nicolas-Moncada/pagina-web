@@ -95,7 +95,7 @@ function getDB() {
                 ], 500);
             } else {
                 die("<div style='font-family:sans-serif;padding:30px;background:#fef2f2;color:#991b1b;border:2px solid #f87171;border-radius:12px;max-width:600px;margin:50px auto;text-align:center;'>
-                    <h2>⚠️ MySQL no está encendido en XAMPP</h2>
+                    <h2>MySQL no está encendido en XAMPP</h2>
                     <p>Por favor abre el Panel de Control de XAMPP y enciende el servicio MySQL.</p>
                 </div>");
             }

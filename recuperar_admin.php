@@ -8,7 +8,7 @@
 if (php_sapi_name() !== 'cli') {
     http_response_code(403);
     header('Content-Type: text/plain; charset=utf-8');
-    die("⛔ ACCESO DENEGADO: Por motivos de seguridad, este script solo puede ejecutarse localmente desde la terminal del servidor (CLI).\n");
+    die("[ACCESO DENEGADO]: Por motivos de seguridad, este script solo puede ejecutarse localmente desde la terminal del servidor (CLI).\n");
 }
 
 require_once __DIR__ . '/includes/config.php';
@@ -35,7 +35,7 @@ if (!$admin) {
 }
 
 if (!$admin) {
-    echo "❌ ERROR: No se encontró al Administrador con cédula {$adminCedula}.\n";
+    echo "[ERROR]: No se encontró al Administrador con cédula {$adminCedula}.\n";
     exit(1);
 }
 
@@ -74,7 +74,7 @@ if ($opcion === '' || $opcion === '1') {
 // Validar política de seguridad estricta
 $check = validarPoliticaPassword($passNueva, 'ADMIN', $admin['passwordHash']);
 if (!$check['valido']) {
-    echo "\n❌ ERROR: " . $check['error'] . "\n";
+    echo "\n[ERROR]: " . $check['error'] . "\n";
     exit(1);
 }
 
@@ -95,7 +95,7 @@ $pdo->prepare("UPDATE solicitudes_recuperacion SET usado = 1, estado = 'EXPIRADA
 registrarAuditoria($pdo, 'RECUPERACION_CLI_ADMIN', $admin['id'], $admin['cedula'], 'Restablecida vía terminal');
 
 echo "\n=================================================================\n";
-echo "✅ ÉXITO: Contraseña de Administrador restablecida correctamente.\n";
+echo "EXITO: Contraseña de Administrador restablecida correctamente.\n";
 echo "=================================================================\n";
 if ($esGenerada) {
     echo "Contraseña generada (cópiala ahora, se muestra una sola vez):\n";

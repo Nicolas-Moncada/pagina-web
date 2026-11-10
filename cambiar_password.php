@@ -4,6 +4,7 @@
  * PLATAFORMA DE CONTROL LECHERO - ASOAGROALIZAL (CARMEN DE CARUPA)
  * Archivo: cambiar_password.php
  * Propósito: Cambio obligatorio (primer ingreso) o voluntario con Argon2id y sesión concurrente.
+ *            - 100% CERO EMOJIS, iconografía Lucide Icons monocromática (stroke-width: 1.5px).
  * =========================================================================================
  */
 
@@ -97,36 +98,56 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
 
   <!-- Bootstrap 5.3 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-  
-  <!-- FontAwesome 6 Free -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Tailwind CSS CDN (preflight false) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      corePlugins: { preflight: false },
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              primary: '#0A2E1C',
+              secondary: '#14532D',
+              canvas: '#F8FAFC',
+              surface: '#FFFFFF'
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
 
   <!-- Estilos Globales Corporativos -->
   <link rel="stylesheet" href="assets/css/theme.css">
   <link rel="stylesheet" href="assets/css/styles.css">
 </head>
-<body class="bg-light d-flex align-items-center justify-content-center min-vh-100 p-3">
+<body class="bg-slate-50 flex items-center justify-center min-vh-100 p-3">
 
-  <div class="card border-0 shadow-lg rounded-4 overflow-hidden" style="max-width: 520px; width: 100%;">
+  <div class="card border border-slate-200 shadow-xl rounded-2xl overflow-hidden w-full" style="max-width: 500px;">
     <!-- Cabecera Institucional -->
-    <div class="p-4 text-center text-white" style="background-color: var(--primary-emerald);">
-      <div class="rounded-circle mx-auto d-flex align-items-center justify-content-center mb-3 bg-white text-success shadow-sm" style="width: 58px; height: 58px; font-size: 1.5rem;">
-        <i class="fa-solid fa-key" style="color: var(--accent-gold);"></i>
+    <div class="p-6 text-center text-white" style="background-color: var(--brand-primary, #0A2E1C);">
+      <div class="rounded-full mx-auto flex items-center justify-center mb-3 bg-white/10 text-amber-400 border border-white/20" style="width: 52px; height: 52px;">
+        <i data-lucide="key" style="width: 24px; height: 24px;"></i>
       </div>
-      <h3 class="fw-bold mb-1 text-white">Actualización de Contraseña</h3>
-      <p class="small text-light opacity-85 mb-0">
+      <h3 class="font-bold text-xl text-white mb-1">Actualización de Contraseña</h3>
+      <p class="text-xs text-slate-300 mb-0">
         <?php if ($esPrimerIngreso): ?>
-          <span class="badge bg-warning text-dark me-1">Primer Ingreso</span> Se requiere establecer una nueva clave personal.
+          <span class="inline-block px-2 py-0.5 rounded text-xs font-semibold bg-amber-500 text-slate-900 me-1">Primer Ingreso</span> Se requiere establecer una nueva clave personal.
         <?php else: ?>
           Modificación de credenciales de seguridad institucional.
         <?php endif; ?>
       </p>
     </div>
 
-    <div class="p-4 p-md-5 bg-white">
+    <div class="p-6 p-md-8 bg-white">
       <?php if (!empty($errorMsg)): ?>
-        <div class="alert alert-danger rounded-3 py-2 px-3 small fw-bold mb-4 d-flex align-items-center gap-2" role="alert">
-          <i class="fa-solid fa-triangle-exclamation fs-5 flex-shrink-0"></i>
+        <div class="alert alert-danger rounded-lg py-2.5 px-3 text-sm font-medium mb-4 flex items-center gap-2 border border-red-200" role="alert">
+          <i data-lucide="alert-circle" class="text-red-600 flex-shrink-0" style="width: 18px; height: 18px;"></i>
           <span><?php echo e($errorMsg); ?></span>
         </div>
       <?php endif; ?>
@@ -135,51 +156,52 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         <?php echo campoCsrf(); ?>
 
         <!-- Contraseña Actual -->
-        <div class="mb-3">
-          <label for="passwordActual" class="form-label fw-bold small text-dark">Contraseña Actual *</label>
+        <div class="mb-4">
+          <label for="passwordActual" class="form-label font-semibold text-xs text-slate-700">Contraseña Actual *</label>
           <div class="input-auth-wrapper">
-            <i class="fa-solid fa-lock input-auth-icon"></i>
+            <i data-lucide="lock" class="input-auth-icon" style="width: 18px; height: 18px;"></i>
             <input type="password" class="form-control-auth" id="passwordActual" name="passwordActual" required placeholder="Tu clave actual o provisional">
           </div>
         </div>
 
         <!-- Nueva Contraseña -->
-        <div class="mb-3">
-          <label for="passwordNueva" class="form-label fw-bold small text-dark">
-            Nueva Contraseña (Mín. <?php echo ($usuario['rol'] === 'ADMIN') ? '10' : '8'; ?> caract.) *
+        <div class="mb-4">
+          <label for="passwordNueva" class="form-label font-semibold text-xs text-slate-700">
+            Nueva Contraseña (Mín. <?php echo ($usuario['rol'] === 'ADMIN') ? '10' : '8'; ?> caracteres) *
           </label>
           <div class="input-auth-wrapper">
-            <i class="fa-solid fa-shield-halved input-auth-icon"></i>
+            <i data-lucide="shield" class="input-auth-icon" style="width: 18px; height: 18px;"></i>
             <input type="password" class="form-control-auth" id="passwordNueva" name="passwordNueva" required placeholder="Define tu nueva clave">
           </div>
         </div>
 
         <!-- Confirmar Nueva Contraseña -->
-        <div class="mb-3">
-          <label for="passwordConfirm" class="form-label fw-bold small text-dark">Confirmar Nueva Contraseña *</label>
+        <div class="mb-4">
+          <label for="passwordConfirm" class="form-label font-semibold text-xs text-slate-700">Confirmar Nueva Contraseña *</label>
           <div class="input-auth-wrapper">
-            <i class="fa-solid fa-check-double input-auth-icon"></i>
+            <i data-lucide="shield-check" class="input-auth-icon" style="width: 18px; height: 18px;"></i>
             <input type="password" class="form-control-auth" id="passwordConfirm" name="passwordConfirm" required placeholder="Repite la nueva clave">
           </div>
         </div>
 
         <!-- Requisitos visuales -->
-        <div class="p-3 mb-4 rounded-3 bg-light border small">
-          <span class="fw-bold d-block text-dark mb-1">Requisitos de Seguridad:</span>
-          <ul class="list-unstyled mb-0 text-muted">
-            <li><i class="fa-solid fa-check text-success me-1"></i> Mínimo <?php echo ($usuario['rol'] === 'ADMIN') ? '10' : '8'; ?> caracteres de longitud</li>
-            <li><i class="fa-solid fa-check text-success me-1"></i> Cifrado de última generación Argon2id</li>
-            <li><i class="fa-solid fa-check text-success me-1"></i> Cierra automáticamente sesiones en otros equipos</li>
+        <div class="p-3.5 mb-5 rounded-lg bg-slate-50 border border-slate-200 text-xs">
+          <span class="font-bold block text-slate-900 mb-1.5">Requisitos de Seguridad:</span>
+          <ul class="list-unstyled mb-0 text-slate-600 space-y-1">
+            <li class="flex items-center gap-1.5"><i data-lucide="check" class="text-emerald-700" style="width: 14px; height: 14px;"></i> Mínimo <?php echo ($usuario['rol'] === 'ADMIN') ? '10' : '8'; ?> caracteres de longitud</li>
+            <li class="flex items-center gap-1.5"><i data-lucide="check" class="text-emerald-700" style="width: 14px; height: 14px;"></i> Cifrado criptográfico Argon2id</li>
+            <li class="flex items-center gap-1.5"><i data-lucide="check" class="text-emerald-700" style="width: 14px; height: 14px;"></i> Cierra automáticamente sesiones previas en otros equipos</li>
           </ul>
         </div>
 
-        <button type="submit" class="btn-auth-submit w-100">
-          <i class="fa-solid fa-lock me-1"></i> Guardar Nueva Contraseña
+        <button type="submit" class="btn-auth-submit w-full">
+          <i data-lucide="lock" style="width: 18px; height: 18px;"></i>
+          <span>Guardar Nueva Contraseña</span>
         </button>
 
         <?php if (!$esPrimerIngreso): ?>
           <div class="text-center mt-3">
-            <a href="<?php echo ($usuario['rol'] === 'ADMIN') ? 'admin.php' : 'panel.php'; ?>" class="text-muted small text-decoration-none">
+            <a href="<?php echo ($usuario['rol'] === 'ADMIN') ? 'admin.php' : 'panel.php'; ?>" class="text-slate-500 hover:text-slate-800 text-xs text-decoration-none">
               Cancelar y volver a mi panel
             </a>
           </div>
@@ -189,5 +211,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    if (window.lucide) {
+      lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
+    }
+  </script>
 </body>
 </html>

@@ -3,11 +3,12 @@
  * =========================================================================================
  * PLATAFORMA DE CONTROL LECHERO - ASOAGROALIZAL (CARMEN DE CARUPA, CUNDINAMARCA)
  * Archivo: index.php
- * Propósito: Portal público institucional rediseñado al estilo corporativo de Central Ganadera:
- *            - Hero inmersivo de gran impacto con 3 Tarjetas Flotantes Superpuestas (Overlap Cards).
+ * Propósito: Portal público institucional corporativo al estilo Central Ganadera:
+ *            - Hero inmersivo con tarjetas flotantes superpuestas (Overlap Cards).
  *            - 4 Accesos Directos Operativos (Acopio, Portal Asociado, Colillas, F-PQRS).
- *            - Módulos de Nuestras Áreas, Misión/Visión, Beneficios y Galería con Lightbox.
+ *            - Módulos de Nuestras Áreas, Misión/Visión, Infraestructura y Galería con Lightbox.
  *            - Formulario seguro con CSRF, Honeypot y tabla de base de datos `consulta`.
+ *            - 100% CERO EMOJIS, iconografía Lucide Icons monocromática (stroke-width: 1.5px).
  * Fuente Oficial: docs/FICHA_OFICIAL_ASOAGROALIZAL.md | NIT: 832006127-2
  * =========================================================================================
  */
@@ -101,7 +102,6 @@ require_once __DIR__ . '/includes/header.php';
        1. HERO SECTION CORPORATIVO (ESTILO CENTRAL GANADERA)
        ======================================================================== -->
   <section id="inicio" class="hero-corporate">
-    <!-- Fondo multimedia optimizado con gradiente de contraste -->
     <img src="assets/img/hero-ganado.webp" alt="Ganadería lechera en pasturas de la Vereda Alizal" class="hero-bg-media" width="1600" height="1063" loading="eager" fetchpriority="high">
     <div class="hero-overlay-dark"></div>
 
@@ -111,7 +111,7 @@ require_once __DIR__ . '/includes/header.php';
 
           <!-- Eyebrow Pill -->
           <div class="hero-eyebrow mb-3">
-            <i class="fa-solid fa-location-dot" style="color: var(--accent-gold);"></i>
+            <i data-lucide="map-pin" class="text-amber-500" style="width: 16px; height: 16px; display: inline-block;"></i>
             <span>CARMEN DE CARUPA &bull; VEREDA ALIZAL &bull; NIT <?php echo e(EMPRESA_NIT); ?></span>
           </div>
 
@@ -124,7 +124,7 @@ require_once __DIR__ . '/includes/header.php';
           <!-- Descripción -->
           <p class="hero-description">
             Plataforma oficial de control lechero para las 32 familias productoras asociadas de ASOAGROALIZAL. 
-            Registro diario riguroso en dos turnos (☀️ Mañana y 🌅 Tarde), estándares de calidad BPO y liquidación quincenal oportuna.
+            Registro diario riguroso en dos turnos (AM y PM), estándares de calidad BPO y liquidación quincenal oportuna.
           </p>
 
           <!-- Botones de Acción Inmediata -->
@@ -132,16 +132,16 @@ require_once __DIR__ . '/includes/header.php';
             <?php if ($usuarioActual): ?>
               <?php $urlDestino = ($usuarioActual['rol'] === 'ADMIN') ? 'admin.php' : 'panel.php'; ?>
               <a href="<?php echo $urlDestino; ?>" class="btn-cta-gold">
-                <i class="fa-solid fa-gauge-high"></i>
+                <i data-lucide="layout-dashboard" style="width: 18px; height: 18px;"></i>
                 <span>Ir a Mi Panel de Control</span>
               </a>
             <?php else: ?>
               <a href="login.php" class="btn-cta-gold">
-                <i class="fa-solid fa-right-to-bracket"></i>
+                <i data-lucide="log-in" style="width: 18px; height: 18px;"></i>
                 <span>Ingresar como Asociado</span>
               </a>
               <a href="#areas" class="btn-cta-outline">
-                <i class="fa-solid fa-cubes-stacked"></i>
+                <i data-lucide="layers" style="width: 18px; height: 18px;"></i>
                 <span>Nuestras Áreas Operativas</span>
               </a>
             <?php endif; ?>
@@ -153,7 +153,7 @@ require_once __DIR__ . '/includes/header.php';
   </section>
 
   <!-- ========================================================================
-       2. TARJETAS FLOTANTES SUPERPUESTAS (OVERLAP CARDS AL ESTILO CENTRAL GANADERA)
+       2. TARJETAS FLOTANTES SUPERPUESTAS (OVERLAP CARDS ESTILO CENTRAL GANADERA)
        ======================================================================== -->
   <section class="container hero-overlap-container">
     <div class="row g-4 justify-content-center">
@@ -163,23 +163,24 @@ require_once __DIR__ . '/includes/header.php';
         <div class="overlap-card overlap-card-gold" id="precio">
           <div class="d-flex align-items-center justify-content-between">
             <div class="overlap-card-icon icon-bg-gold">
-              <i class="fa-solid fa-sack-dollar"></i>
+              <i data-lucide="circle-dollar-sign" style="width: 24px; height: 24px;"></i>
             </div>
             <span class="badge rounded-pill fw-bold" style="background-color: var(--accent-gold-soft); color: var(--accent-gold-hover);">
-              <i class="fa-solid fa-circle-dot fa-fade me-1 text-warning"></i> En Línea
+              <span class="inline-block rounded-full bg-amber-500 me-1" style="width: 8px; height: 8px; display: inline-block;"></span> Tarifa Vigente
             </span>
           </div>
           <span class="overlap-card-label">Precio Oficial por Litro</span>
           <div class="overlap-card-value tabular-nums">
             $<?php echo number_format($precioLitro, 0, ',', '.'); ?> <span class="fs-6 fw-normal text-muted">COP / Litro</span>
           </div>
-          <p class="small text-muted mb-3">
-            <i class="fa-regular fa-calendar-check me-1"></i> <?php echo e($quincenaTexto); ?>
+          <p class="small text-muted mb-3 d-flex align-items-center gap-1">
+            <i data-lucide="calendar-check" style="width: 15px; height: 15px;"></i>
+            <span><?php echo e($quincenaTexto); ?></span>
           </p>
           <div class="mt-auto pt-2 border-top">
             <a href="login.php" class="text-decoration-none fw-bold small d-inline-flex align-items-center gap-1" style="color: var(--accent-gold);">
               <span>Ver tabla de liquidación completa</span>
-              <i class="fa-solid fa-arrow-right"></i>
+              <i data-lucide="arrow-right" style="width: 15px; height: 15px;"></i>
             </a>
           </div>
         </div>
@@ -190,23 +191,24 @@ require_once __DIR__ . '/includes/header.php';
         <div class="overlap-card overlap-card-emerald">
           <div class="d-flex align-items-center justify-content-between">
             <div class="overlap-card-icon icon-bg-emerald">
-              <i class="fa-solid fa-glass-water-droplet"></i>
+              <i data-lucide="droplet" style="width: 24px; height: 24px;"></i>
             </div>
             <span class="badge rounded-pill fw-bold" style="background-color: #DCFCE7; color: var(--secondary-green);">
-              Turnos ☀️ y 🌅
+              Turnos AM y PM
             </span>
           </div>
           <span class="overlap-card-label">Acopio Acumulado Reportado</span>
           <div class="overlap-card-value tabular-nums">
             <?php echo number_format($totalLitros, 0, ',', '.'); ?> <span class="fs-6 fw-normal text-muted">Litros Totales</span>
           </div>
-          <p class="small text-muted mb-3">
-            <i class="fa-solid fa-shield-halved text-success me-1"></i> Control individual para los 32 productores asociados.
+          <p class="small text-muted mb-3 d-flex align-items-center gap-1">
+            <i data-lucide="shield-check" class="text-emerald-700" style="width: 15px; height: 15px;"></i>
+            <span>Control individual para los 32 productores asociados.</span>
           </p>
           <div class="mt-auto pt-2 border-top">
             <a href="login.php" class="text-decoration-none fw-bold small d-inline-flex align-items-center gap-1" style="color: var(--secondary-green);">
               <span>Consultar mis entregas diarias</span>
-              <i class="fa-solid fa-arrow-right"></i>
+              <i data-lucide="arrow-right" style="width: 15px; height: 15px;"></i>
             </a>
           </div>
         </div>
@@ -217,7 +219,7 @@ require_once __DIR__ . '/includes/header.php';
         <div class="overlap-card overlap-card-dusk">
           <div class="d-flex align-items-center justify-content-between">
             <div class="overlap-card-icon icon-bg-dusk">
-              <i class="fa-solid fa-temperature-arrow-down"></i>
+              <i data-lucide="thermometer-snowflake" style="width: 24px; height: 24px;"></i>
             </div>
             <span class="badge rounded-pill fw-bold" style="background-color: var(--accent-dusk-soft); color: var(--accent-dusk);">
               4°C Garantizados
@@ -227,13 +229,14 @@ require_once __DIR__ . '/includes/header.php';
           <div class="overlap-card-value">
             Calidad BPO <span class="fs-6 fw-normal text-muted">Certificada</span>
           </div>
-          <p class="small text-muted mb-3">
-            <i class="fa-solid fa-circle-check text-primary me-1"></i> Inspección diaria de acidez, grasa y sólidos totales en centro de acopio.
+          <p class="small text-muted mb-3 d-flex align-items-center gap-1">
+            <i data-lucide="check-circle-2" class="text-primary" style="width: 15px; height: 15px;"></i>
+            <span>Inspección diaria de acidez, grasa y sólidos totales en centro de acopio.</span>
           </p>
           <div class="mt-auto pt-2 border-top">
             <a href="#infraestructura" class="text-decoration-none fw-bold small d-inline-flex align-items-center gap-1" style="color: var(--accent-dusk);">
               <span>Conocer nuestra infraestructura técnica</span>
-              <i class="fa-solid fa-arrow-right"></i>
+              <i data-lucide="arrow-right" style="width: 15px; height: 15px;"></i>
             </a>
           </div>
         </div>
@@ -258,64 +261,64 @@ require_once __DIR__ . '/includes/header.php';
       <div class="row g-4">
         <!-- Tarjeta 1: Resumen de Acopio -->
         <div class="col-lg-3 col-sm-6">
-          <a href="login.php" class="quick-access-card">
+          <a href="login.php" class="quick-access-card text-decoration-none">
             <div class="quick-access-icon" style="background-color: #DCFCE7; color: var(--secondary-green);">
-              <i class="fa-solid fa-clipboard-list"></i>
+              <i data-lucide="clipboard-list" style="width: 24px; height: 24px;"></i>
             </div>
             <h3 class="quick-access-title">Resumen de Acopio</h3>
             <p class="quick-access-desc">
               Consulte el histórico de litros entregados en la quincena actual y anteriores con discriminación por turno.
             </p>
-            <span class="quick-access-link">
-              Ver entregas <i class="fa-solid fa-chevron-right fs-6"></i>
+            <span class="quick-access-link d-inline-flex align-items-center gap-1">
+              Ver entregas <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
             </span>
           </a>
         </div>
 
         <!-- Tarjeta 2: Portal del Asociado -->
         <div class="col-lg-3 col-sm-6">
-          <a href="login.php" class="quick-access-card">
+          <a href="login.php" class="quick-access-card text-decoration-none">
             <div class="quick-access-icon" style="background-color: var(--accent-gold-soft); color: var(--accent-gold);">
-              <i class="fa-solid fa-user-lock"></i>
+              <i data-lucide="lock" style="width: 24px; height: 24px;"></i>
             </div>
             <h3 class="quick-access-title">Portal del Asociado</h3>
             <p class="quick-access-desc">
               Acceso individual protegido con Google OAuth o contraseña para verificar su liquidación en pesos COP.
             </p>
-            <span class="quick-access-link" style="color: var(--accent-gold);">
-              Iniciar sesión <i class="fa-solid fa-chevron-right fs-6"></i>
+            <span class="quick-access-link d-inline-flex align-items-center gap-1" style="color: var(--accent-gold);">
+              Iniciar sesión <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
             </span>
           </a>
         </div>
 
         <!-- Tarjeta 3: Certificados y Colillas -->
         <div class="col-lg-3 col-sm-6">
-          <a href="login.php" class="quick-access-card">
+          <a href="login.php" class="quick-access-card text-decoration-none">
             <div class="quick-access-icon" style="background-color: var(--accent-dusk-soft); color: var(--accent-dusk);">
-              <i class="fa-solid fa-file-invoice-dollar"></i>
+              <i data-lucide="file-text" style="width: 24px; height: 24px;"></i>
             </div>
             <h3 class="quick-access-title">Colillas de Pago</h3>
             <p class="quick-access-desc">
               Genere e imprima su comprobante de pago quincenal con desglose de pesajes y precio unitario pactado.
             </p>
-            <span class="quick-access-link" style="color: var(--accent-dusk);">
-              Descargar recibo <i class="fa-solid fa-chevron-right fs-6"></i>
+            <span class="quick-access-link d-inline-flex align-items-center gap-1" style="color: var(--accent-dusk);">
+              Descargar recibo <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
             </span>
           </a>
         </div>
 
         <!-- Tarjeta 4: Realiza tu F-PQRS -->
         <div class="col-lg-3 col-sm-6">
-          <a href="#contacto" class="quick-access-card">
+          <a href="#contacto" class="quick-access-card text-decoration-none">
             <div class="quick-access-icon" style="background-color: #FEE2E2; color: #DC2626;">
-              <i class="fa-solid fa-envelope-open-text"></i>
+              <i data-lucide="mail" style="width: 24px; height: 24px;"></i>
             </div>
             <h3 class="quick-access-title">Realiza tu F-PQRS</h3>
             <p class="quick-access-desc">
               Buzón oficial de quejas, reclamos de pesaje y sugerencias con respuesta trazable y notificación formal.
             </p>
-            <span class="quick-access-link" style="color: #DC2626;">
-              Radicar reclamo <i class="fa-solid fa-chevron-right fs-6"></i>
+            <span class="quick-access-link d-inline-flex align-items-center gap-1" style="color: #DC2626;">
+              Radicar reclamo <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
             </span>
           </a>
         </div>
@@ -337,8 +340,9 @@ require_once __DIR__ . '/includes/header.php';
           </p>
         </div>
         <div class="col-lg-5 text-lg-end mt-3 mt-lg-0">
-          <span class="badge py-2 px-3 rounded-pill bg-light text-dark border">
-            <i class="fa-solid fa-cow text-success me-1"></i> 32 Fincas Vinculadas &bull; Vereda Alizal
+          <span class="badge py-2 px-3 rounded-pill bg-light text-dark border d-inline-flex align-items-center gap-1">
+            <i data-lucide="check" class="text-emerald-700" style="width: 15px; height: 15px;"></i>
+            <span>32 Fincas Vinculadas &bull; Vereda Alizal</span>
           </span>
         </div>
       </div>
@@ -348,7 +352,7 @@ require_once __DIR__ . '/includes/header.php';
         <div class="col-md-6 col-lg-3">
           <div class="feature-box">
             <div class="feature-box-icon">
-              <i class="fa-solid fa-truck-droplet"></i>
+              <i data-lucide="truck" style="width: 24px; height: 24px;"></i>
             </div>
             <h4 class="fw-bold mb-2 text-dark">1. Acopio Técnico</h4>
             <p class="text-muted small mb-0">
@@ -361,7 +365,7 @@ require_once __DIR__ . '/includes/header.php';
         <div class="col-md-6 col-lg-3">
           <div class="feature-box">
             <div class="feature-box-icon" style="background-color: var(--accent-gold-soft); color: var(--accent-gold);">
-              <i class="fa-solid fa-vial-circle-check"></i>
+              <i data-lucide="flask-conical" style="width: 24px; height: 24px;"></i>
             </div>
             <h4 class="fw-bold mb-2 text-dark">2. Control de Calidad</h4>
             <p class="text-muted small mb-0">
@@ -374,7 +378,7 @@ require_once __DIR__ . '/includes/header.php';
         <div class="col-md-6 col-lg-3">
           <div class="feature-box">
             <div class="feature-box-icon" style="background-color: #EFF6FF; color: #2563EB;">
-              <i class="fa-solid fa-hand-holding-dollar"></i>
+              <i data-lucide="badge-dollar-sign" style="width: 24px; height: 24px;"></i>
             </div>
             <h4 class="fw-bold mb-2 text-dark">3. Liquidación Transparente</h4>
             <p class="text-muted small mb-0">
@@ -387,7 +391,7 @@ require_once __DIR__ . '/includes/header.php';
         <div class="col-md-6 col-lg-3">
           <div class="feature-box">
             <div class="feature-box-icon" style="background-color: #FEF3C7; color: #D97706;">
-              <i class="fa-solid fa-seedling"></i>
+              <i data-lucide="sprout" style="width: 24px; height: 24px;"></i>
             </div>
             <h4 class="fw-bold mb-2 text-dark">4. Sostenibilidad</h4>
             <p class="text-muted small mb-0">
@@ -428,7 +432,7 @@ require_once __DIR__ . '/includes/header.php';
           </div>
 
           <div class="d-flex align-items-center gap-3">
-            <i class="fa-solid fa-check-double text-success fs-4"></i>
+            <i data-lucide="check-check" class="text-emerald-700" style="width: 24px; height: 24px;"></i>
             <span class="fw-bold text-dark">Comprometidos con el desarrollo económico y la seguridad alimentaria de Cundinamarca.</span>
           </div>
         </div>
@@ -437,8 +441,9 @@ require_once __DIR__ . '/includes/header.php';
           <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
             <img src="assets/img/infra-tanque.webp" alt="Tanque de enfriamiento de acero inoxidable en ASOAGROALIZAL" class="img-fluid" style="aspect-ratio: 16/10; object-fit: cover;">
             <div class="card-body p-4 bg-white">
-              <h5 class="fw-bold text-dark mb-2">
-                <i class="fa-solid fa-snowflake text-primary me-2"></i> Infraestructura de Frío y Acopio
+              <h5 class="fw-bold text-dark mb-2 d-flex align-items-center gap-2">
+                <i data-lucide="snowflake" class="text-blue-600" style="width: 20px; height: 20px;"></i>
+                <span>Infraestructura de Frío y Acopio</span>
               </h5>
               <p class="small text-muted mb-0">
                 Disponemos de tanques de expansión en acero inoxidable con agitadores automáticos y plantas de respaldo para mantener la leche por debajo de 4°C de manera continua, previniendo proliferación bacteriana.
@@ -470,7 +475,7 @@ require_once __DIR__ . '/includes/header.php';
             <img src="assets/img/hero-ganado.webp" alt="Pasturas y vacas lecheras" loading="lazy">
             <div class="gallery-overlay">
               <h6 class="fw-bold mb-1">Pasturas de Alta Montaña</h6>
-              <small><i class="fa-solid fa-magnifying-glass-plus me-1"></i> Clic para ampliar</small>
+              <small class="d-inline-flex align-items-center gap-1"><i data-lucide="zoom-in" style="width: 14px; height: 14px;"></i> Clic para ampliar</small>
             </div>
           </div>
         </div>
@@ -481,7 +486,7 @@ require_once __DIR__ . '/includes/header.php';
             <img src="assets/img/infra-tanque.webp" alt="Tanque de refrigeración láctea" loading="lazy">
             <div class="gallery-overlay">
               <h6 class="fw-bold mb-1">Cadena de Frío a 4°C</h6>
-              <small><i class="fa-solid fa-magnifying-glass-plus me-1"></i> Clic para ampliar</small>
+              <small class="d-inline-flex align-items-center gap-1"><i data-lucide="zoom-in" style="width: 14px; height: 14px;"></i> Clic para ampliar</small>
             </div>
           </div>
         </div>
@@ -492,7 +497,7 @@ require_once __DIR__ . '/includes/header.php';
             <img src="assets/img/infra-laboratorio.webp" alt="Control de laboratorio y acidez" loading="lazy">
             <div class="gallery-overlay">
               <h6 class="fw-bold mb-1">Control de Acidez y Grasa</h6>
-              <small><i class="fa-solid fa-magnifying-glass-plus me-1"></i> Clic para ampliar</small>
+              <small class="d-inline-flex align-items-center gap-1"><i data-lucide="zoom-in" style="width: 14px; height: 14px;"></i> Clic para ampliar</small>
             </div>
           </div>
         </div>
@@ -503,7 +508,7 @@ require_once __DIR__ . '/includes/header.php';
             <img src="assets/img/finca-andina.webp" alt="Finca lechera en Carmen de Carupa" loading="lazy">
             <div class="gallery-overlay">
               <h6 class="fw-bold mb-1">Fincas Asociadas</h6>
-              <small><i class="fa-solid fa-magnifying-glass-plus me-1"></i> Clic para ampliar</small>
+              <small class="d-inline-flex align-items-center gap-1"><i data-lucide="zoom-in" style="width: 14px; height: 14px;"></i> Clic para ampliar</small>
             </div>
           </div>
         </div>
@@ -514,7 +519,7 @@ require_once __DIR__ . '/includes/header.php';
             <img src="assets/img/card-bienestar.webp" alt="Bienestar animal en ordeño" loading="lazy">
             <div class="gallery-overlay">
               <h6 class="fw-bold mb-1">Bienestar Animal</h6>
-              <small><i class="fa-solid fa-magnifying-glass-plus me-1"></i> Clic para ampliar</small>
+              <small class="d-inline-flex align-items-center gap-1"><i data-lucide="zoom-in" style="width: 14px; height: 14px;"></i> Clic para ampliar</small>
             </div>
           </div>
         </div>
@@ -525,7 +530,7 @@ require_once __DIR__ . '/includes/header.php';
             <img src="assets/img/infra-invernadero.webp" alt="Invernadero y producción complementaria" loading="lazy">
             <div class="gallery-overlay">
               <h6 class="fw-bold mb-1">Proyectos Sostenibles</h6>
-              <small><i class="fa-solid fa-magnifying-glass-plus me-1"></i> Clic para ampliar</small>
+              <small class="d-inline-flex align-items-center gap-1"><i data-lucide="zoom-in" style="width: 14px; height: 14px;"></i> Clic para ampliar</small>
             </div>
           </div>
         </div>
@@ -564,7 +569,7 @@ require_once __DIR__ . '/includes/header.php';
           <div class="d-flex flex-column gap-3 mb-4">
             <div class="d-flex align-items-center gap-3 p-3 bg-white rounded-3 border">
               <div class="overlap-card-icon icon-bg-emerald mb-0">
-                <i class="fa-solid fa-phone"></i>
+                <i data-lucide="phone" style="width: 20px; height: 20px;"></i>
               </div>
               <div>
                 <small class="text-muted d-block fw-bold text-uppercase">Teléfono de Contacto</small>
@@ -576,7 +581,7 @@ require_once __DIR__ . '/includes/header.php';
 
             <div class="d-flex align-items-center gap-3 p-3 bg-white rounded-3 border">
               <div class="overlap-card-icon icon-bg-gold mb-0">
-                <i class="fa-brands fa-whatsapp"></i>
+                <i data-lucide="message-circle" style="width: 20px; height: 20px;"></i>
               </div>
               <div>
                 <small class="text-muted d-block fw-bold text-uppercase">WhatsApp Oficial</small>
@@ -588,7 +593,7 @@ require_once __DIR__ . '/includes/header.php';
 
             <div class="d-flex align-items-center gap-3 p-3 bg-white rounded-3 border">
               <div class="overlap-card-icon icon-bg-dusk mb-0">
-                <i class="fa-solid fa-envelope"></i>
+                <i data-lucide="mail" style="width: 20px; height: 20px;"></i>
               </div>
               <div>
                 <small class="text-muted d-block fw-bold text-uppercase">Correo Electrónico</small>
@@ -654,7 +659,7 @@ require_once __DIR__ . '/includes/header.php';
 
                 <div class="col-12 mt-4">
                   <button type="submit" class="btn text-white w-100 py-3 rounded-3 fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm" style="background-color: var(--primary-emerald);">
-                    <i class="fa-solid fa-paper-plane"></i>
+                    <i data-lucide="send" style="width: 18px; height: 18px;"></i>
                     <span>Radicar Mensaje / F-PQRS</span>
                   </button>
                 </div>

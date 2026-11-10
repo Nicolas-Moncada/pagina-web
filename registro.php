@@ -6,6 +6,7 @@
  * Propósito: Registro seguro de nuevos ganaderos asociados al estilo Split-Screen:
  *            - Validación estricta en servidor, hashing criptográfico Argon2id y CSRF.
  *            - Panel institucional coordinado con Central Ganadera y medidor de clave.
+ *            - 100% CERO EMOJIS, iconografía Lucide Icons monocromática (stroke-width: 1.5px).
  * =========================================================================================
  */
 
@@ -107,56 +108,84 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   <!-- Bootstrap 5.3 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-  
-  <!-- FontAwesome 6 Free -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Tailwind CSS CDN (preflight false) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      corePlugins: { preflight: false },
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              primary: '#0A2E1C',
+              secondary: '#14532D',
+              canvas: '#F8FAFC',
+              surface: '#FFFFFF'
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
 
   <!-- Estilos Globales Corporativos -->
   <link rel="stylesheet" href="assets/css/theme.css">
   <link rel="stylesheet" href="assets/css/styles.css">
 </head>
-<body class="bg-light">
+<body class="bg-slate-50 min-vh-100 flex flex-col justify-center">
 
   <div class="auth-split-wrapper">
 
     <!-- PANEL IZQUIERDO INSTITUCIONAL -->
-    <div class="auth-panel-brand">
+    <div class="auth-panel-brand" style="background-color: var(--brand-primary, #0A2E1C);">
       <div>
-        <a href="index.php" class="d-inline-flex align-items-center gap-2 text-white text-decoration-none mb-4 opacity-90">
-          <i class="fa-solid fa-arrow-left"></i>
-          <span class="small fw-bold">Volver al Portal Principal</span>
+        <a href="index.php" class="inline-flex items-center gap-2 text-white/80 hover:text-white text-decoration-none mb-8 transition-colors">
+          <i data-lucide="arrow-left" style="width: 18px; height: 18px;"></i>
+          <span class="text-sm font-medium">Volver al Portal Principal</span>
         </a>
 
-        <div class="mb-4">
-          <img src="assets/img/logo.webp" alt="Logo <?php echo e(EMPRESA_SIGLA); ?>" class="auth-brand-logo bg-white p-2 rounded-4 shadow-sm">
-          <h2 class="fw-bold text-white mb-1" style="font-size: 1.85rem;"><?php echo e(EMPRESA_NOMBRE); ?></h2>
-          <span class="auth-badge-role">
-            <i class="fa-solid fa-user-plus"></i>
+        <div class="mb-6">
+          <div class="inline-block p-2 bg-white rounded-xl shadow-sm mb-4">
+            <img src="assets/img/logo.webp" alt="Logo <?php echo e(EMPRESA_SIGLA); ?>" style="height: 52px; width: auto; object-fit: contain;">
+          </div>
+          <h2 class="font-bold text-white mb-2" style="font-size: 1.75rem; line-height: 1.25;"><?php echo e(EMPRESA_NOMBRE); ?></h2>
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-900/60 text-emerald-200 border border-emerald-700/50">
+            <i data-lucide="user-plus" style="width: 14px; height: 14px;"></i>
             <span>Afiliación de Productores Lecheros</span>
           </span>
         </div>
 
-        <p class="text-light opacity-85 small mb-4" style="line-height: 1.7;">
-          Únete a la asociación oficial de ganaderos de la Vereda Alizal. Con tu cuenta podrás consultar diariamente tus litros recibidos en turnos Mañana (☀️) y Tarde (🌅), tu historial de pagos y descargar tus colillas de liquidación.
+        <p class="text-slate-300 text-sm mb-6 leading-relaxed">
+          Únete a la asociación oficial de ganaderos de la Vereda Alizal. Con tu cuenta podrás consultar diariamente tus litros recibidos en turnos Mañana (Turno AM) y Tarde (Turno PM), tu historial de pagos y descargar tus colillas de liquidación.
         </p>
 
         <!-- Tarjeta Flotante con Precio Oficial -->
-        <div class="auth-price-pill shadow-sm">
-          <div class="d-flex align-items-center justify-content-between mb-1">
-            <span class="small text-uppercase fw-bold text-warning">Tarifa Oficial Vigente</span>
-            <span class="badge bg-success rounded-pill px-2 py-0.5" style="font-size: 0.72rem;">Activa</span>
+        <div class="p-4 rounded-xl border border-emerald-800/80 bg-emerald-950/40 backdrop-blur-sm mb-6">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs uppercase tracking-wider font-bold text-amber-400">Tarifa Oficial Vigente</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              Activa
+            </span>
           </div>
-          <div class="fs-2 fw-bold text-white tabular-nums mb-1">
-            $<?php echo number_format($precioLitroReg, 0, ',', '.'); ?> <span class="fs-6 fw-normal opacity-75">COP / Litro</span>
+          <div class="text-2xl font-bold text-white tabular-nums mb-1 font-mono">
+            $<?php echo number_format($precioLitroReg, 0, ',', '.'); ?> <span class="text-sm font-normal text-slate-300">COP / Litro</span>
           </div>
-          <small class="text-light opacity-75 d-block">
-            <i class="fa-solid fa-check-double text-warning me-1"></i> Liquidación quincenal garantizada
-          </small>
+          <span class="text-xs text-slate-400 flex items-center gap-1.5">
+            <i data-lucide="check-check" class="text-emerald-400" style="width: 14px; height: 14px;"></i>
+            <span>Liquidación quincenal garantizada</span>
+          </span>
         </div>
       </div>
 
-      <div class="mt-4 pt-3 border-top border-white border-opacity-15 small text-light opacity-75">
-        <span><i class="fa-solid fa-lock text-warning me-1"></i> Cifrado de alta seguridad Argon2id &bull; NIT: <?php echo e(EMPRESA_NIT); ?></span>
+      <div class="mt-8 pt-4 border-t border-white/10 text-xs text-slate-400">
+        <span class="flex items-center gap-1.5">
+          <i data-lucide="shield-check" class="text-emerald-400" style="width: 14px; height: 14px;"></i>
+          <span>Cifrado de alta seguridad Argon2id &bull; NIT: <?php echo e(EMPRESA_NIT); ?></span>
+        </span>
       </div>
     </div>
 
@@ -164,14 +193,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="auth-panel-form">
       <div class="auth-card-main" style="max-width: 580px;">
         
-        <div class="mb-4">
-          <h1 class="auth-title">Solicitud de Registro</h1>
-          <p class="auth-subtitle">Completa tus datos personales para habilitar tu acceso al control lechero.</p>
+        <div class="mb-5 text-start">
+          <h1 class="text-2xl font-bold text-slate-900 mb-1">Solicitud de Registro</h1>
+          <p class="text-sm text-slate-600 mb-0">Completa tus datos personales para habilitar tu acceso al control lechero.</p>
         </div>
 
         <?php if (!empty($errorMsg)): ?>
-          <div class="alert alert-danger rounded-3 py-2 px-3 small fw-bold mb-4 d-flex align-items-center gap-2" role="alert">
-            <i class="fa-solid fa-triangle-exclamation fs-5 flex-shrink-0"></i>
+          <div class="alert alert-danger rounded-lg py-2.5 px-3 text-sm font-medium mb-4 flex items-center gap-2 border border-red-200" role="alert">
+            <i data-lucide="alert-circle" class="text-red-600 flex-shrink-0" style="width: 18px; height: 18px;"></i>
             <span><?php echo e($errorMsg); ?></span>
           </div>
         <?php endif; ?>
@@ -182,64 +211,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <div class="row g-3">
             <!-- Cédula -->
             <div class="col-md-6">
-              <label for="cedula" class="form-label fw-bold small text-dark">Cédula de Ciudadanía *</label>
+              <label for="cedula" class="form-label font-semibold text-xs text-slate-700">Cédula de Ciudadanía *</label>
               <div class="input-auth-wrapper">
-                <i class="fa-solid fa-id-card input-auth-icon"></i>
-                <input type="text" class="form-control-auth" id="cedula" name="cedula" inputmode="numeric" required placeholder="Ej. 20444983" value="<?php echo e($_POST['cedula'] ?? ''); ?>">
+                <i data-lucide="user" class="input-auth-icon" style="width: 18px; height: 18px;"></i>
+                <input type="text" class="form-control-auth font-mono" id="cedula" name="cedula" inputmode="numeric" required placeholder="Ej. 20444983" value="<?php echo e($_POST['cedula'] ?? ''); ?>">
               </div>
             </div>
 
             <!-- Teléfono -->
             <div class="col-md-6">
-              <label for="telefono" class="form-label fw-bold small text-dark">Teléfono / WhatsApp *</label>
+              <label for="telefono" class="form-label font-semibold text-xs text-slate-700">Teléfono / WhatsApp *</label>
               <div class="input-auth-wrapper">
-                <i class="fa-solid fa-phone input-auth-icon"></i>
+                <i data-lucide="phone" class="input-auth-icon" style="width: 18px; height: 18px;"></i>
                 <input type="tel" class="form-control-auth" id="telefono" name="telefono" required placeholder="Ej. 3185235690" value="<?php echo e($_POST['telefono'] ?? ''); ?>">
               </div>
             </div>
 
             <!-- Nombre Completo -->
             <div class="col-12">
-              <label for="nombre" class="form-label fw-bold small text-dark">Nombre y Apellidos Completos *</label>
+              <label for="nombre" class="form-label font-semibold text-xs text-slate-700">Nombre y Apellidos Completos *</label>
               <div class="input-auth-wrapper">
-                <i class="fa-solid fa-user input-auth-icon"></i>
+                <i data-lucide="user-check" class="input-auth-icon" style="width: 18px; height: 18px;"></i>
                 <input type="text" class="form-control-auth" id="nombre" name="nombre" required placeholder="Ej. Hilda Inés Montaño" value="<?php echo e($_POST['nombre'] ?? ''); ?>">
               </div>
             </div>
 
             <!-- Finca / Vereda -->
             <div class="col-md-6">
-              <label for="finca" class="form-label fw-bold small text-dark">Nombre de la Finca o Predio</label>
+              <label for="finca" class="form-label font-semibold text-xs text-slate-700">Nombre de la Finca o Predio</label>
               <div class="input-auth-wrapper">
-                <i class="fa-solid fa-house-chimney-window input-auth-icon"></i>
+                <i data-lucide="map-pin" class="input-auth-icon" style="width: 18px; height: 18px;"></i>
                 <input type="text" class="form-control-auth" id="finca" name="finca" placeholder="Ej. Finca El Recuerdo" value="<?php echo e($_POST['finca'] ?? 'Vereda Alizal'); ?>">
               </div>
             </div>
 
             <!-- Correo Electrónico (para Google OAuth) -->
             <div class="col-md-6">
-              <label for="email" class="form-label fw-bold small text-dark">Correo Electrónico (Recomendado)</label>
+              <label for="email" class="form-label font-semibold text-xs text-slate-700">Correo Electrónico (Recomendado)</label>
               <div class="input-auth-wrapper">
-                <i class="fa-solid fa-envelope input-auth-icon"></i>
+                <i data-lucide="mail" class="input-auth-icon" style="width: 18px; height: 18px;"></i>
                 <input type="email" class="form-control-auth" id="email" name="email" placeholder="usuario@gmail.com" value="<?php echo e($_POST['email'] ?? ''); ?>">
               </div>
-              <small class="text-muted" style="font-size: 0.74rem;">Permite iniciar sesión con Google en 1 clic.</small>
+              <span class="text-xs text-slate-500 block mt-1">Permite iniciar sesión con Google en 1 clic.</span>
             </div>
 
             <!-- Contraseña -->
             <div class="col-md-6">
-              <label for="password" class="form-label fw-bold small text-dark">Contraseña (Mín. 8 caract.) *</label>
+              <label for="password" class="form-label font-semibold text-xs text-slate-700">Contraseña (Mín. 8 caract.) *</label>
               <div class="input-auth-wrapper">
-                <i class="fa-solid fa-lock input-auth-icon"></i>
+                <i data-lucide="lock" class="input-auth-icon" style="width: 18px; height: 18px;"></i>
                 <input type="password" class="form-control-auth" id="password" name="password" required placeholder="Crea tu contraseña">
               </div>
             </div>
 
             <!-- Confirmar Contraseña -->
             <div class="col-md-6">
-              <label for="password_confirm" class="form-label fw-bold small text-dark">Confirmar Contraseña *</label>
+              <label for="password_confirm" class="form-label font-semibold text-xs text-slate-700">Confirmar Contraseña *</label>
               <div class="input-auth-wrapper">
-                <i class="fa-solid fa-lock-open input-auth-icon"></i>
+                <i data-lucide="shield-check" class="input-auth-icon" style="width: 18px; height: 18px;"></i>
                 <input type="password" class="form-control-auth" id="password_confirm" name="password_confirm" required placeholder="Repite la clave">
               </div>
             </div>
@@ -254,18 +283,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <!-- CAPTCHA -->
             <div class="col-12">
-              <div class="p-3 rounded-3" style="background-color: var(--bg-surface-alt); border: 1px solid var(--border-subtle);">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                  <span class="small fw-bold text-dark">
-                    <i class="fa-solid fa-shield-halved text-success me-1"></i> Código de Seguridad *
+              <div class="p-3 rounded-lg bg-slate-50 border border-slate-200">
+                <div class="flex justify-between items-center mb-1">
+                  <span class="text-xs font-semibold text-slate-700 flex items-center gap-1">
+                    <i data-lucide="shield" class="text-emerald-700" style="width: 14px; height: 14px;"></i> Código de Seguridad *
                   </span>
-                  <button type="button" id="btn-recargar-captcha" class="btn btn-sm btn-link p-0 text-decoration-none small fw-bold" style="color: var(--secondary-green);">
-                    <i class="fa-solid fa-arrows-rotate me-1"></i> Cambiar imagen
+                  <button type="button" id="btn-recargar-captcha" class="btn btn-sm btn-link p-0 text-decoration-none text-xs font-semibold text-emerald-800 hover:text-emerald-950 flex items-center gap-1">
+                    <i data-lucide="refresh-cw" style="width: 13px; height: 13px;"></i> Cambiar imagen
                   </button>
                 </div>
-                <div class="d-flex align-items-center gap-3">
-                  <img src="includes/captcha_gd.php?t=<?php echo time(); ?>" alt="Código CAPTCHA" id="captcha-img" class="rounded-2 border bg-white" style="height: 48px; width: 140px; object-fit: contain;">
-                  <input type="text" class="form-control text-center fw-bold text-uppercase fs-5" id="captcha-input" name="captcha" maxlength="5" required placeholder="Código" autocomplete="off" style="min-height: 48px;">
+                <div class="flex items-center gap-3">
+                  <img src="includes/captcha_gd.php?t=<?php echo time(); ?>" alt="Código CAPTCHA" id="captcha-img" class="rounded border bg-white" style="height: 44px; width: 130px; object-fit: contain;">
+                  <input type="text" class="form-control text-center font-mono font-bold tracking-widest text-lg" id="captcha-input" name="captcha" maxlength="5" required placeholder="Código" autocomplete="off" style="min-height: 44px;">
                 </div>
               </div>
             </div>
@@ -273,17 +302,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <!-- Botón Submit -->
             <div class="col-12 mt-4">
               <button type="submit" class="btn-auth-submit">
-                <i class="fa-solid fa-user-check"></i>
+                <i data-lucide="check" style="width: 18px; height: 18px;"></i>
                 <span>Crear Cuenta de Asociado</span>
               </button>
             </div>
           </div>
         </form>
 
-        <div class="text-center pt-3 border-top mt-4">
-          <small class="text-muted d-block mb-1">¿Ya tienes una cuenta registrada en ASOAGROALIZAL?</small>
-          <a href="login.php" class="fw-bold small text-decoration-none" style="color: var(--secondary-green);">
-            Iniciar Sesión con Cédula o Google &rarr;
+        <div class="text-center pt-3 border-t border-slate-200 mt-4">
+          <span class="text-xs text-slate-600 block mb-1">¿Ya tienes una cuenta registrada en ASOAGROALIZAL?</span>
+          <a href="login.php" class="font-semibold text-xs text-emerald-800 hover:text-emerald-950 text-decoration-none inline-flex items-center gap-1">
+            <span>Iniciar Sesión con Cédula o Google</span>
+            <i data-lucide="arrow-right" style="width: 14px; height: 14px;"></i>
           </a>
         </div>
 
@@ -294,6 +324,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script>
+    if (window.lucide) {
+      lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
       // Recarga de CAPTCHA
       const btnRecargar = document.getElementById('btn-recargar-captcha');

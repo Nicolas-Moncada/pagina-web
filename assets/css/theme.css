@@ -24,7 +24,7 @@
   color: #15803d !important;
 }
 .matrix-cell.is-saved::after {
-  content: '✓ Guardado';
+  content: 'Guardado';
   position: absolute;
   top: -18px;
   left: 50%;

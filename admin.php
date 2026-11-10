@@ -359,8 +359,8 @@ require_once __DIR__ . '/includes/header.php';
             <?php echo number_format($litrosHoyTotal, 1, ',', '.'); ?> <span class="fs-6 fw-normal text-muted">L</span>
           </div>
           <small class="text-muted d-block">
-            <span class="badge-shift-m py-0.5 px-2">☀️ M: <?php echo number_format($litrosHoyM, 1, ',', '.'); ?> L</span> &bull; 
-            <span class="badge-shift-t py-0.5 px-2">🌅 T: <?php echo number_format($litrosHoyT, 1, ',', '.'); ?> L</span>
+            <span class="badge-shift-m py-0.5 px-2">Turno AM: <?php echo number_format($litrosHoyM, 1, ',', '.'); ?> L</span> &bull; 
+            <span class="badge-shift-t py-0.5 px-2">Turno PM: <?php echo number_format($litrosHoyT, 1, ',', '.'); ?> L</span>
           </small>
         </div>
       </div>
@@ -423,7 +423,7 @@ require_once __DIR__ . '/includes/header.php';
               <?php $sel = ($q['fechaInicio'] === $fechaInicioSel && $q['fechaFin'] === $fechaFinSel) ? 'selected' : ''; ?>
               <option value="<?php echo e($q['fechaInicio'] . '|' . $q['fechaFin']); ?>" <?php echo $sel; ?>>
                 <?php echo formatoFechaEspanol($q['fechaInicio']); ?> al <?php echo formatoFechaEspanol($q['fechaFin']); ?>
-                <?php echo !empty($q['cerrada']) ? ' 🔒 (Cerrada)' : ' 🟢 (En curso)'; ?>
+                <?php echo !empty($q['cerrada']) ? ' (Cerrada)' : ' (En curso)'; ?>
               </option>
             <?php endforeach; ?>
           </select>
@@ -433,7 +433,7 @@ require_once __DIR__ . '/includes/header.php';
           </a>
 
           <span class="badge <?php echo $quincenaEstaCerrada ? 'bg-secondary' : 'bg-primary'; ?> px-3 py-2 rounded-pill ms-lg-2">
-            <?php echo $quincenaEstaCerrada ? '🔒 Cerrada' : '🔵 Abierta para edición'; ?>
+            <?php echo $quincenaEstaCerrada ? 'Cerrada' : 'Abierta para edición'; ?>
           </span>
 
           <!-- Botón de Cierre / Reapertura de Quincena -->
@@ -481,10 +481,10 @@ require_once __DIR__ . '/includes/header.php';
       <!-- Leyenda de Uso -->
       <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 pt-2 mt-2 border-top border-secondary-subtle small text-muted">
         <div>
-          <span class="me-3"><strong class="text-warning-emphasis">☀️ Mañana:</strong> Primer turno</span>
-          <span class="me-3"><strong class="text-danger-emphasis">🌅 Tarde:</strong> Segundo turno</span>
-          <span class="me-3">⌨️ <strong>Enter:</strong> Baja celda &bull; <strong>Tab / Flechas:</strong> Navega &bull; <strong>Esc:</strong> Cancela</span>
-          <span>📋 <strong>Pegar desde Excel:</strong> Selecciona una celda y presiona Ctrl + V para pegar en bloque</span>
+          <span class="me-3"><strong class="text-amber-700">Turno AM:</strong> Mañana</span>
+          <span class="me-3"><strong class="text-blue-700">Turno PM:</strong> Tarde</span>
+          <span class="me-3"><strong>Enter:</strong> Baja celda &bull; <strong>Tab / Flechas:</strong> Navega &bull; <strong>Esc:</strong> Cancela</span>
+          <span><strong>Pegar desde Excel:</strong> Selecciona una celda y presiona Ctrl + V para pegar en bloque</span>
         </div>
         <div id="contador-filas-visibles" class="fw-bold text-primary">
           <?php echo $totalGanaderosActivos; ?> asociados visibles
@@ -522,8 +522,8 @@ require_once __DIR__ . '/includes/header.php';
             <!-- Fila Nivel 2: Turnos -->
             <tr>
               <?php foreach ($diasQuincena as $d): ?>
-                <th class="py-1 px-1 bg-warning-subtle text-dark">☀️ M</th>
-                <th class="py-1 px-1 bg-danger-subtle text-dark col-border-day">🌅 T</th>
+                <th class="py-1 px-1 bg-warning-subtle text-dark">AM</th>
+                <th class="py-1 px-1 bg-danger-subtle text-dark col-border-day">PM</th>
               <?php endforeach; ?>
             </tr>
           </thead>
@@ -762,9 +762,9 @@ require_once __DIR__ . '/includes/header.php';
                     </td>
                     <td class="text-center">
                       <?php if (!empty($qd['cerrada'])): ?>
-                        <span class="badge bg-secondary">🔒 Cerrada</span>
+                        <span class="badge bg-secondary">Cerrada</span>
                       <?php else: ?>
-                        <span class="badge bg-success">🟢 Activa</span>
+                        <span class="badge bg-success">Activa</span>
                       <?php endif; ?>
                     </td>
                     <td class="text-center">
@@ -1148,9 +1148,9 @@ require_once __DIR__ . '/includes/header.php';
                 <tr>
                   <th>Fecha</th>
                   <th>Día</th>
-                  <th>☀️ Mañana (L)</th>
-                  <th>🌅 Tarde (L)</th>
-                  <th>🥛 Total Día (L)</th>
+                  <th>Turno AM (L)</th>
+                  <th>Turno PM (L)</th>
+                  <th>Total Día (L)</th>
                 </tr>
               </thead>
               <tbody id="colilla-tbody-dias" class="small">
@@ -1224,9 +1224,9 @@ require_once __DIR__ . '/includes/header.php';
         <div class="mb-3">
           <label class="form-label small fw-bold text-dark">Estado del Reclamo *</label>
           <select id="resp-nuevo-estado" class="form-select form-select-touch">
-            <option value="PENDIENTE">🔴 Pendiente</option>
-            <option value="EN_REVISION">🟡 En Revisión</option>
-            <option value="RESUELTO">🟢 Resuelto</option>
+            <option value="PENDIENTE">Pendiente</option>
+            <option value="EN_REVISION">En Revisión</option>
+            <option value="RESUELTO">Resuelto</option>
           </select>
         </div>
 

@@ -92,7 +92,7 @@ foreach ($tests as $t) {
 
 echo "\n";
 if ($allPassed) {
-    echo "✅ EXCELENTE: 100% de las pruebas cumplen con el estándar de alta legibilidad para adultos mayores (Texto >= 7:1, Botones >= 3:1).\n";
+    echo "[OK] EXCELENTE: 100% de las pruebas cumplen con el estándar de alta legibilidad para adultos mayores (Texto >= 7:1, Botones >= 3:1).\n";
 } else {
-    echo "❌ ALERTA: Algunos pares no cumplieron.\n";
+    echo "[ALERTA]: Algunos pares no cumplieron.\n";
 }

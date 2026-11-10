@@ -81,11 +81,11 @@ class Database {
                             <div class='container' style='max-width: 620px;'>
                                 <div class='card shadow-lg border-0 rounded-4 overflow-hidden'>
                                     <div class='card-header text-white p-4 text-center' style='background: #144722;'>
-                                        <h3 class='fw-bold mb-1'>🥛 " . htmlspecialchars(EMPRESA_SIGLA) . "</h3>
+                                        <h3 class='fw-bold mb-1'>" . htmlspecialchars(EMPRESA_SIGLA) . "</h3>
                                         <small class='opacity-75'>Control Lechero &bull; Carmen de Carupa</small>
                                     </div>
                                     <div class='card-body p-4 text-center'>
-                                        <div class='display-4 mb-3 text-warning'>⚠️</div>
+                                        <div class='display-6 mb-3 text-warning font-bold'>[AVISO]</div>
                                         <h4 class='fw-bold text-dark mb-2'>Base de Datos no disponible</h4>
                                         <p class='text-muted mb-4'>No se pudo conectar con MySQL en XAMPP. Abre el Panel de Control de XAMPP y presiona <strong>Start</strong> en el módulo <strong>MySQL</strong>.</p>
                                         <a href='javascript:location.reload()' class='btn btn-success fw-bold px-4 py-2 rounded-3'>Reintentar Conexión</a>

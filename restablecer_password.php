@@ -103,8 +103,8 @@ if (empty($token) || strlen($token) !== 64) {
   <div class="card card-rural overflow-hidden p-0 w-100 border-0 shadow-lg" style="max-width: 480px;">
     <!-- Cabecera -->
     <div class="p-4 text-center text-white" style="background: var(--grad-primary);">
-      <div class="rounded-circle text-white mx-auto d-flex align-items-center justify-content-center mb-3" style="width: 56px; height: 56px; font-size: 1.5rem; background: var(--grad-accent); box-shadow: var(--shadow-glow-gold);">
-        🔐
+      <div class="rounded-circle text-white mx-auto d-flex align-items-center justify-content-center mb-3" style="width: 56px; height: 56px; font-size: 1.25rem; background: var(--grad-accent); box-shadow: var(--shadow-glow-gold);">
+        SEG
       </div>
       <h1 class="h3 fw-bold mb-1">Nueva Contraseña</h1>
       <p class="small opacity-75 mb-0">
@@ -116,12 +116,12 @@ if (empty($token) || strlen($token) !== 64) {
     <div class="p-4 p-md-5">
       <?php if (!$tokenValido): ?>
         <div class="alert alert-danger small fw-bold mb-4 rounded-4" role="alert">
-          ⚠️ <?php echo htmlspecialchars($errorMensaje); ?>
+          <?php echo htmlspecialchars($errorMensaje); ?>
         </div>
         <div class="pt-2 text-center d-grid">
           <a href="./olvide_password.php" class="btn btn-touch btn-aso-primary w-100">
             <span>Solicitar un Nuevo Enlace</span>
-            <span>➜</span>
+            <span>&rarr;</span>
           </a>
         </div>
       <?php else: ?>
@@ -156,20 +156,20 @@ if (empty($token) || strlen($token) !== 64) {
           <div class="req-list p-3 mb-4">
             <p class="small mb-2">Requisitos de la contraseña:</p>
             <ul class="list-unstyled mb-0" style="display: grid; gap: 0.4rem;">
-              <li id="req-len" class="check-req"><span>⚪</span> <span>Mínimo <?php echo $rolUsuario === 'ADMIN' ? '10' : '8'; ?> caracteres</span></li>
+              <li id="req-len" class="check-req"><span>&bull;</span> <span>Mínimo <?php echo $rolUsuario === 'ADMIN' ? '10' : '8'; ?> caracteres</span></li>
               <?php if ($rolUsuario === 'ADMIN'): ?>
-                <li id="req-upper" class="check-req"><span>⚪</span> <span>Al menos una letra mayúscula (A-Z)</span></li>
-                <li id="req-lower" class="check-req"><span>⚪</span> <span>Al menos una letra minúscula (a-z)</span></li>
-                <li id="req-num" class="check-req"><span>⚪</span> <span>Al menos un número (0-9)</span></li>
-                <li id="req-sym" class="check-req"><span>⚪</span> <span>Al menos un símbolo especial (!@#$%&*)</span></li>
+                <li id="req-upper" class="check-req"><span>&bull;</span> <span>Al menos una letra mayúscula (A-Z)</span></li>
+                <li id="req-lower" class="check-req"><span>&bull;</span> <span>Al menos una letra minúscula (a-z)</span></li>
+                <li id="req-num" class="check-req"><span>&bull;</span> <span>Al menos un número (0-9)</span></li>
+                <li id="req-sym" class="check-req"><span>&bull;</span> <span>Al menos un símbolo especial (!@#$%&*)</span></li>
               <?php endif; ?>
-              <li id="req-match" class="check-req"><span>⚪</span> <span>Las dos contraseñas deben coincidir</span></li>
+              <li id="req-match" class="check-req"><span>&bull;</span> <span>Las dos contraseñas deben coincidir</span></li>
             </ul>
           </div>
 
           <button type="submit" id="btn-submit-restablecer" class="btn btn-touch btn-aso-primary w-100">
             <span>Guardar Nueva Contraseña</span>
-            <span>➜</span>
+            <span>&rarr;</span>
           </button>
         </form>
       <?php endif; ?>
@@ -204,10 +204,10 @@ if (empty($token) || strlen($token) !== 64) {
       if (!el) return;
       if (cumple) {
         el.className = 'check-req ok';
-        el.querySelector('span').textContent = '✅';
+        el.querySelector('span').textContent = '[OK]';
       } else {
         el.className = 'check-req';
-        el.querySelector('span').textContent = '⚪';
+        el.querySelector('span').textContent = '[  ]';
       }
     }
 
@@ -239,21 +239,21 @@ if (empty($token) || strlen($token) !== 64) {
 
         if (res.ok) {
           msgBox.className = 'msg-ok show';
-          msgBox.textContent = `✅ ${data.mensaje}`;
+          msgBox.textContent = data.mensaje;
           setTimeout(() => {
             window.location.href = './login.php?cambiado=true';
           }, 2000);
         } else {
           msgBox.className = 'msg-err show';
-          msgBox.textContent = `⚠️ ${data.error || 'Ocurrió un error al restablecer.'}`;
+          msgBox.textContent = data.error || 'Ocurrió un error al restablecer.';
           btn.disabled = false;
-          btn.innerHTML = '<span>Guardar Nueva Contraseña</span><span>➜</span>';
+          btn.innerHTML = '<span>Guardar Nueva Contraseña</span><span>&rarr;</span>';
         }
       } catch (err) {
         msgBox.className = 'msg-err show';
-        msgBox.textContent = '⚠️ Error de conexión con el servidor.';
+        msgBox.textContent = 'Error de conexión con el servidor.';
         btn.disabled = false;
-        btn.innerHTML = '<span>Guardar Nueva Contraseña</span><span>➜</span>';
+        btn.innerHTML = '<span>Guardar Nueva Contraseña</span><span>&rarr;</span>';
       }
     });
   </script>

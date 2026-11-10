@@ -5,9 +5,11 @@
  * Archivo: panel.php
  * Propósito: Portal del Ganadero Asociado (Dashboard Financiero estilo Central Ganadera):
  *            - Header del Asociado con datos de Finca, Cédula y Quincena Activa.
- *            - KPIs de Producción: Turno Mañana ☀️, Tarde 🌅, Litros y Pago Estimado en COP.
+ *            - 4 KPIs de Producción: Litros Quincena, Promedio Diario, Tarifa Pactada y Liquidación Estimada.
+ *            - Gráfica de Tendencia de Entrega Diaria con ApexCharts (Curvas AM vs PM).
  *            - Planilla quincenal solo lectura de alto contraste con impresión de Colilla.
  *            - Módulo F-PQRS con estado corporativo y respuesta oficial de la administración.
+ *            - 100% CERO EMOJIS, iconografía Lucide Icons monocromática (stroke-width: 1.5px).
  * Fuente Oficial: docs/FICHA_OFICIAL_ASOAGROALIZAL.md
  * =========================================================================================
  */
@@ -84,6 +86,17 @@ $totalPagarEstimado = $precioLitro ? ($totalLitrosQuincena * $precioLitro) : 0.0
 
 $diasQuincena = generarDiasQuincena($fechaInicioSel, $fechaFinSel);
 
+// Datos para ApexCharts
+$fechasGrafica = [];
+$serieManana = [];
+$serieTarde = [];
+foreach ($diasQuincena as $d) {
+    $f = $d['fecha'];
+    $fechasGrafica[] = date('d/m', strtotime($f));
+    $serieManana[] = (float)($mapaPesajes[$f]['MANANA'] ?? 0.0);
+    $serieTarde[] = (float)($mapaPesajes[$f]['TARDE'] ?? 0.0);
+}
+
 // 6. HISTORIAL DE QUINCENAS DISPONIBLES
 $stmtListaQ = $pdo->query("SELECT fechaInicio, fechaFin, precioLitro, cerrada FROM quincena ORDER BY fechaInicio DESC LIMIT 24");
 $quincenasDisponibles = $stmtListaQ->fetchAll();
@@ -154,34 +167,37 @@ require_once __DIR__ . '/includes/header.php';
   <!-- ==============================================================
        1. HEADER DEL ASOCIADO (ESTILO CORPORATIVO CENTRAL GANADERA)
        ============================================================== -->
-  <div class="card border-0 shadow-sm rounded-4 p-4 text-white mb-4" style="background-color: var(--primary-emerald);">
+  <div class="card border border-slate-200 shadow-sm rounded-2xl p-4 p-md-5 text-white mb-4" style="background-color: var(--brand-primary, #0A2E1C);">
     <div class="row align-items-center g-3">
       <div class="col-lg-8">
-        <div class="d-flex align-items-center gap-2 mb-2">
-          <span class="badge rounded-pill fw-bold" style="background-color: var(--accent-gold); color: #fff;">
-            <i class="fa-solid fa-cow me-1"></i> Productor Asociado
+        <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+          <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-900/60 text-emerald-200 border border-emerald-700/50">
+            <i data-lucide="shield-check" style="width: 14px; height: 14px;"></i>
+            <span>Productor Asociado</span>
           </span>
-          <span class="badge rounded-pill bg-white text-dark fw-bold">
+          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-white text-slate-900 font-mono">
             C.C. <?php echo e($usuario['cedula']); ?>
           </span>
-          <span class="badge rounded-pill bg-light text-success fw-bold">
-            <i class="fa-solid fa-circle-check me-1"></i> Cuenta Activa
+          <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            <i data-lucide="check" style="width: 13px; height: 13px;"></i>
+            <span>Cuenta Activa</span>
           </span>
         </div>
-        <h2 class="fw-bold mb-1 text-white" style="font-size: 1.85rem;">
+        <h2 class="font-bold mb-1 text-white text-2xl md:text-3xl">
           ¡Bienvenido, <?php echo e($usuario['nombre']); ?>!
         </h2>
-        <p class="small text-light opacity-85 mb-0">
-          <i class="fa-solid fa-house-chimney me-1 text-warning"></i> Predio: <strong><?php echo e($usuario['finca'] ?? 'Vereda Alizal'); ?></strong> &bull; 
-          <i class="fa-solid fa-location-dot me-1 text-warning"></i> Sede: Carmen de Carupa
+        <p class="text-xs text-slate-300 mb-0 flex items-center gap-2 flex-wrap">
+          <span class="flex items-center gap-1"><i data-lucide="map-pin" class="text-amber-400" style="width: 14px; height: 14px;"></i> Predio: <strong><?php echo e($usuario['finca'] ?? 'Vereda Alizal'); ?></strong></span>
+          <span>&bull;</span>
+          <span>Sede: Carmen de Carupa, Cundinamarca</span>
         </p>
       </div>
 
       <!-- Selector de Quincena Rápido -->
       <div class="col-lg-4 text-lg-end">
         <form action="panel.php" method="GET" class="d-inline-flex flex-column align-items-lg-end gap-1">
-          <label for="filtro-quincena" class="small text-light opacity-90 fw-bold">Seleccionar Periodo Quincenal:</label>
-          <select id="filtro-quincena" class="form-select form-select-sm fw-bold border-0 shadow-sm" style="min-width: 260px;" onchange="const p = this.value.split('|'); location.href='panel.php?fechaInicio=' + p[0] + '&fechaFin=' + p[1];">
+          <label for="filtro-quincena" class="text-xs text-slate-300 font-semibold">Seleccionar Periodo Quincenal:</label>
+          <select id="filtro-quincena" class="form-select form-select-sm fw-bold border-0 shadow-sm rounded-lg" style="min-width: 260px;" onchange="const p = this.value.split('|'); location.href='panel.php?fechaInicio=' + p[0] + '&fechaFin=' + p[1];">
             <?php foreach ($quincenasDisponibles as $q): ?>
               <?php $sel = ($q['fechaInicio'] === $fechaInicioSel && $q['fechaFin'] === $fechaFinSel) ? 'selected' : ''; ?>
               <option value="<?php echo e($q['fechaInicio'] . '|' . $q['fechaFin']); ?>" <?php echo $sel; ?>>
@@ -196,147 +212,162 @@ require_once __DIR__ . '/includes/header.php';
   </div>
 
   <!-- ==============================================================
-       2. TARJETAS KPI DE PRODUCCIÓN DIARIA (MAÑANA / TARDE / TOTAL)
+       2. ENTREGAS DE HOY (TURNO AM / TURNO PM / TOTAL)
        ============================================================== -->
   <div class="row g-3 mb-4">
     <div class="col-12">
-      <h4 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-        <i class="fa-solid fa-calendar-day" style="color: var(--accent-gold);"></i>
+      <h5 class="font-bold text-slate-900 mb-0 flex items-center gap-2">
+        <i data-lucide="calendar" class="text-emerald-800" style="width: 18px; height: 18px;"></i>
         <span>Entregas Registradas Hoy &ndash; <?php echo date('d/m/Y'); ?></span>
-      </h4>
+      </h5>
     </div>
 
-    <!-- Turno Mañana ☀️ (Ámbar) -->
+    <!-- Turno AM -->
     <div class="col-md-4">
-      <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white" style="border-top: 4px solid var(--accent-gold) !important;">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <span class="badge-shift-m">
-            <i class="fa-solid fa-sun me-1 text-warning"></i> Turno Mañana
-          </span>
-          <span class="small text-muted fw-bold">5:30 AM &ndash; 7:30 AM</span>
+      <div class="card border border-slate-200 shadow-sm rounded-xl p-3.5 h-100 bg-white" style="border-top: 3px solid #D97706 !important;">
+        <div class="flex items-center justify-between mb-2">
+          <span class="badge-shift-m">Turno AM (Mañana)</span>
+          <span class="text-xs text-slate-500 font-medium">5:30 AM &ndash; 7:30 AM</span>
         </div>
-        <div class="d-flex align-items-baseline gap-2 my-1">
-          <span class="fs-1 fw-bold text-dark tabular-nums"><?php echo number_format($litrosMananaHoy, 1, ',', '.'); ?></span>
-          <span class="fs-6 fw-bold text-muted">Litros</span>
+        <div class="flex items-baseline gap-2 my-1">
+          <span class="text-3xl font-bold text-slate-900 font-mono"><?php echo number_format($litrosMananaHoy, 1, ',', '.'); ?></span>
+          <span class="text-xs font-semibold text-slate-500">Litros</span>
         </div>
-        <small class="text-muted d-block">
-          <?php echo ($litrosMananaHoy > 0) ? '<i class="fa-solid fa-circle-check text-success me-1"></i> Registrado en tanque' : '<i class="fa-regular fa-clock me-1"></i> Pendiente de entrega'; ?>
-        </small>
+        <span class="text-xs text-slate-500 block">
+          <?php echo ($litrosMananaHoy > 0) ? 'Registrado en tanque' : 'Pendiente de entrega'; ?>
+        </span>
       </div>
     </div>
 
-    <!-- Turno Tarde 🌅 (Azul) -->
+    <!-- Turno PM -->
     <div class="col-md-4">
-      <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white" style="border-top: 4px solid var(--accent-dusk) !important;">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <span class="badge-shift-t">
-            <i class="fa-solid fa-moon me-1 text-primary"></i> Turno Tarde
-          </span>
-          <span class="small text-muted fw-bold">4:00 PM &ndash; 5:30 PM</span>
+      <div class="card border border-slate-200 shadow-sm rounded-xl p-3.5 h-100 bg-white" style="border-top: 3px solid #1E40AF !important;">
+        <div class="flex items-center justify-between mb-2">
+          <span class="badge-shift-t">Turno PM (Tarde)</span>
+          <span class="text-xs text-slate-500 font-medium">4:00 PM &ndash; 5:30 PM</span>
         </div>
-        <div class="d-flex align-items-baseline gap-2 my-1">
-          <span class="fs-1 fw-bold text-dark tabular-nums"><?php echo number_format($litrosTardeHoy, 1, ',', '.'); ?></span>
-          <span class="fs-6 fw-bold text-muted">Litros</span>
+        <div class="flex items-baseline gap-2 my-1">
+          <span class="text-3xl font-bold text-slate-900 font-mono"><?php echo number_format($litrosTardeHoy, 1, ',', '.'); ?></span>
+          <span class="text-xs font-semibold text-slate-500">Litros</span>
         </div>
-        <small class="text-muted d-block">
-          <?php echo ($litrosTardeHoy > 0) ? '<i class="fa-solid fa-circle-check text-success me-1"></i> Registrado en tanque' : '<i class="fa-regular fa-clock me-1"></i> Pendiente de entrega'; ?>
-        </small>
+        <span class="text-xs text-slate-500 block">
+          <?php echo ($litrosTardeHoy > 0) ? 'Registrado en tanque' : 'Pendiente de entrega'; ?>
+        </span>
       </div>
     </div>
 
-    <!-- Total del Día (Verde Esmeralda) -->
+    <!-- Total del Día -->
     <div class="col-md-4">
-      <div class="card border-0 shadow-sm rounded-4 p-3 h-100 bg-white" style="border-top: 4px solid var(--secondary-green) !important;">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <span class="badge rounded-pill fw-bold" style="background-color: #DCFCE7; color: var(--secondary-green);">
-            <i class="fa-solid fa-droplet me-1"></i> Total Hoy
+      <div class="card border border-slate-200 shadow-sm rounded-xl p-3.5 h-100 bg-white" style="border-top: 3px solid #14532D !important;">
+        <div class="flex items-center justify-between mb-2">
+          <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-800">
+            Total Hoy
           </span>
-          <span class="small text-success fw-bold">Suma de Turnos</span>
+          <span class="text-xs text-emerald-700 font-semibold">Suma de Turnos</span>
         </div>
-        <div class="d-flex align-items-baseline gap-2 my-1">
-          <span class="fs-1 fw-bold tabular-nums" style="color: var(--secondary-green);"><?php echo number_format($totalHoy, 1, ',', '.'); ?></span>
-          <span class="fs-6 fw-bold text-muted">Litros</span>
+        <div class="flex items-baseline gap-2 my-1">
+          <span class="text-3xl font-bold text-emerald-800 font-mono"><?php echo number_format($totalHoy, 1, ',', '.'); ?></span>
+          <span class="text-xs font-semibold text-slate-500">Litros</span>
         </div>
-        <small class="text-muted d-block">
-          Cadena de frío activa a 4°C
-        </small>
+        <span class="text-xs text-slate-500 block">Cadena de frío continua a 4°C</span>
       </div>
     </div>
   </div>
 
   <!-- ==============================================================
-       3. LIQUIDACIÓN DE LA QUINCENA EN CURSO (DASHBOARD FINANCIERO)
+       3. 4 TARJETAS KPI DE LIQUIDACIÓN QUINCENAL (MINIMALISTAS)
        ============================================================== -->
   <div class="row g-3 mb-4">
     <!-- Litros Acumulados -->
     <div class="col-lg-3 col-sm-6">
-      <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
-        <span class="small text-uppercase fw-bold text-muted">Litros Quincena</span>
-        <div class="fs-2 fw-bold text-dark tabular-nums my-1">
-          <?php echo number_format($totalLitrosQuincena, 1, ',', '.'); ?> <span class="fs-6 fw-normal text-muted">L</span>
+      <div class="card border border-slate-200 shadow-sm rounded-xl p-3.5 bg-white h-100">
+        <span class="text-xs uppercase tracking-wider font-semibold text-slate-500">Litros Quincena</span>
+        <div class="text-2xl font-bold text-slate-900 font-mono my-1">
+          <?php echo number_format($totalLitrosQuincena, 1, ',', '.'); ?> <span class="text-xs font-normal text-slate-500">L</span>
         </div>
-        <small class="text-muted">Total entregado en el periodo</small>
+        <span class="text-xs text-slate-500">Total entregado en el periodo</span>
       </div>
     </div>
 
     <!-- Promedio Diario -->
     <div class="col-lg-3 col-sm-6">
-      <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
-        <span class="small text-uppercase fw-bold text-muted">Promedio Diario</span>
-        <div class="fs-2 fw-bold text-dark tabular-nums my-1">
-          <?php echo number_format($promedioDiario, 1, ',', '.'); ?> <span class="fs-6 fw-normal text-muted">L / día</span>
+      <div class="card border border-slate-200 shadow-sm rounded-xl p-3.5 bg-white h-100">
+        <span class="text-xs uppercase tracking-wider font-semibold text-slate-500">Promedio Diario</span>
+        <div class="text-2xl font-bold text-slate-900 font-mono my-1">
+          <?php echo number_format($promedioDiario, 1, ',', '.'); ?> <span class="text-xs font-normal text-slate-500">L / día</span>
         </div>
-        <small class="text-muted"><?php echo $cantidadDiasConEntrega; ?> de <?php echo count($diasQuincena); ?> días con pesaje</small>
+        <span class="text-xs text-slate-500"><?php echo $cantidadDiasConEntrega; ?> de <?php echo count($diasQuincena); ?> días con pesaje</span>
       </div>
     </div>
 
     <!-- Tarifa por Litro -->
     <div class="col-lg-3 col-sm-6">
-      <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100">
-        <span class="small text-uppercase fw-bold text-muted">Precio Oficial</span>
-        <div class="fs-2 fw-bold tabular-nums my-1" style="color: var(--accent-gold);">
-          $<?php echo number_format($precioLitro, 0, ',', '.'); ?> <span class="fs-6 fw-normal text-muted">COP</span>
+      <div class="card border border-slate-200 shadow-sm rounded-xl p-3.5 bg-white h-100">
+        <span class="text-xs uppercase tracking-wider font-semibold text-slate-500">Precio Oficial</span>
+        <div class="text-2xl font-bold text-amber-600 font-mono my-1">
+          $<?php echo number_format($precioLitro, 0, ',', '.'); ?> <span class="text-xs font-normal text-slate-500">COP</span>
         </div>
-        <small class="text-muted"><?php echo $quincenaCerrada ? 'Tarifa Liquidada' : 'Tarifa Vigente'; ?></small>
+        <span class="text-xs text-slate-500"><?php echo $quincenaCerrada ? 'Tarifa Liquidada' : 'Tarifa Vigente'; ?></span>
       </div>
     </div>
 
-    <!-- PAGO ESTIMADO EN COP (DESTACADO GRANDE) -->
+    <!-- PAGO ESTIMADO EN COP -->
     <div class="col-lg-3 col-sm-6">
-      <div class="card border-0 shadow-sm rounded-4 p-3 text-white h-100" style="background: linear-gradient(135deg, var(--primary-emerald) 0%, #166534 100%);">
-        <div class="d-flex align-items-center justify-content-between">
-          <span class="small text-uppercase fw-bold text-warning">Pago Estimado</span>
-          <i class="fa-solid fa-coins text-warning"></i>
+      <div class="card border-0 shadow-sm rounded-xl p-3.5 text-white h-100" style="background: linear-gradient(135deg, var(--brand-primary, #0A2E1C) 0%, #14532D 100%);">
+        <div class="flex items-center justify-between">
+          <span class="text-xs uppercase tracking-wider font-bold text-amber-400">Pago Estimado</span>
+          <i data-lucide="circle-dollar-sign" class="text-amber-400" style="width: 18px; height: 18px;"></i>
         </div>
-        <div class="fs-2 fw-bold text-white tabular-nums my-1">
+        <div class="text-2xl font-bold text-white font-mono my-1">
           $<?php echo number_format($totalPagarEstimado, 0, ',', '.'); ?>
         </div>
-        <small class="text-light opacity-75">
+        <span class="text-xs text-slate-300">
           <?php echo $quincenaCerrada ? 'Neto a recibir liquidado' : 'Sujeto a pesajes restantes'; ?>
-        </small>
+        </span>
       </div>
     </div>
   </div>
 
   <!-- ==============================================================
-       4. PLANILLA QUINCENAL DETALLADA (SOLO LECTURA MEJORADA)
+       GRÁFICA DE TENDENCIA DE ENTREGA (APEXCHARTS)
        ============================================================== -->
-  <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white mb-4">
-    <div class="p-3.5 p-md-4 d-flex flex-wrap justify-content-between align-items-center gap-3 border-bottom" style="background-color: var(--bg-surface-alt);">
+  <div class="card border border-slate-200 shadow-sm rounded-2xl p-4 bg-white mb-4">
+    <div class="flex justify-between items-center mb-3">
       <div>
-        <h5 class="fw-bold text-dark mb-0 d-flex align-items-center gap-2">
-          <i class="fa-solid fa-table-list" style="color: var(--secondary-green);"></i>
+        <h6 class="font-bold text-slate-900 mb-0 flex items-center gap-2">
+          <i data-lucide="trending-up" class="text-emerald-800" style="width: 18px; height: 18px;"></i>
+          <span>Curva de Entregas por Turno (AM vs PM)</span>
+        </h6>
+        <span class="text-xs text-slate-500">Evolución diaria de litros durante la quincena seleccionada</span>
+      </div>
+      <div class="flex items-center gap-3 text-xs font-semibold">
+        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> Turno AM</span>
+        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-blue-600 inline-block"></span> Turno PM</span>
+      </div>
+    </div>
+    <div id="grafica-produccion" style="min-height: 280px;"></div>
+  </div>
+
+  <!-- ==============================================================
+       4. PLANILLA QUINCENAL DETALLADA (SOLO LECTURA DE ALTO CONTRASTE)
+       ============================================================== -->
+  <div class="card border border-slate-200 shadow-sm rounded-2xl overflow-hidden bg-white mb-4">
+    <div class="p-3.5 p-md-4 flex flex-wrap justify-between items-center gap-3 border-b border-slate-200 bg-slate-50">
+      <div>
+        <h5 class="font-bold text-slate-900 mb-0 flex items-center gap-2">
+          <i data-lucide="table" class="text-emerald-800" style="width: 18px; height: 18px;"></i>
           <span>Planilla Quincenal de Pesajes Día a Día</span>
         </h5>
-        <small class="text-muted">
+        <span class="text-xs text-slate-500">
           Periodo del <?php echo formatoFechaEspanol($fechaInicioSel); ?> al <?php echo formatoFechaEspanol($fechaFinSel); ?>
-        </small>
+        </span>
       </div>
 
-      <!-- Botones de Acción: Descargar / Imprimir Colilla -->
-      <div class="d-flex align-items-center gap-2">
-        <button type="button" class="btn btn-sm btn-outline-success fw-bold rounded-pill px-3 py-1.5 shadow-xs" onclick="window.print()">
-          <i class="fa-solid fa-print me-1.5"></i> Imprimir Colilla de Pago
+      <!-- Botón de Acción: Imprimir Colilla -->
+      <div>
+        <button type="button" class="btn btn-sm btn-outline-success font-semibold rounded-lg px-3 py-1.5 inline-flex items-center gap-1.5" onclick="abrirModalColilla()">
+          <i data-lucide="printer" style="width: 15px; height: 15px;"></i>
+          <span>Imprimir Colilla de Pago</span>
         </button>
       </div>
     </div>
@@ -345,11 +376,11 @@ require_once __DIR__ . '/includes/header.php';
       <table id="tabla-ganadero-pesajes" class="table table-hover align-middle w-100">
         <thead class="table-light">
           <tr>
-            <th class="fw-bold" style="background-color: var(--primary-emerald); color: #fff;">Fecha de Entrega</th>
-            <th class="fw-bold" style="background-color: var(--primary-emerald); color: #fff;">Día</th>
-            <th class="text-center fw-bold" style="background-color: var(--primary-emerald); color: #fff;">☀️ Turno Mañana</th>
-            <th class="text-center fw-bold" style="background-color: var(--primary-emerald); color: #fff;">🌅 Turno Tarde</th>
-            <th class="text-end fw-bold" style="background-color: var(--primary-emerald); color: #fff;">🥛 Total Diario</th>
+            <th class="fw-bold" style="background-color: var(--brand-primary, #0A2E1C); color: #fff;">Fecha de Entrega</th>
+            <th class="fw-bold" style="background-color: var(--brand-primary, #0A2E1C); color: #fff;">Día</th>
+            <th class="text-center fw-bold" style="background-color: var(--brand-primary, #0A2E1C); color: #fff;">Turno AM</th>
+            <th class="text-center fw-bold" style="background-color: var(--brand-primary, #0A2E1C); color: #fff;">Turno PM</th>
+            <th class="text-end fw-bold" style="background-color: var(--brand-primary, #0A2E1C); color: #fff;">Total Diario</th>
           </tr>
         </thead>
         <tbody>
@@ -369,40 +400,40 @@ require_once __DIR__ . '/includes/header.php';
               <td class="fw-bold">
                 <?php echo formatoFechaEspanol($f); ?>
                 <?php if ($esHoy): ?>
-                  <span class="badge bg-warning text-dark ms-1.5">HOY</span>
+                  <span class="badge bg-warning text-dark ms-1.5 font-semibold">HOY</span>
                 <?php endif; ?>
               </td>
               <td class="text-muted"><?php echo e($diaObj['diaSemana']); ?></td>
-              <td class="text-center tabular-nums">
+              <td class="text-center font-mono">
                 <?php if ($m > 0): ?>
-                  <span class="badge-shift-m fs-6"><?php echo number_format($m, 1, ',', '.'); ?> L</span>
+                  <span class="badge-shift-m"><?php echo number_format($m, 1, ',', '.'); ?> L</span>
                 <?php else: ?>
                   <span class="text-muted opacity-50">&ndash;</span>
                 <?php endif; ?>
               </td>
-              <td class="text-center tabular-nums">
+              <td class="text-center font-mono">
                 <?php if ($t > 0): ?>
-                  <span class="badge-shift-t fs-6"><?php echo number_format($t, 1, ',', '.'); ?> L</span>
+                  <span class="badge-shift-t"><?php echo number_format($t, 1, ',', '.'); ?> L</span>
                 <?php else: ?>
                   <span class="text-muted opacity-50">&ndash;</span>
                 <?php endif; ?>
               </td>
-              <td class="text-end fw-bold tabular-nums" style="color: var(--primary-emerald); font-size: 1.05rem;">
+              <td class="text-end font-bold font-mono text-emerald-800">
                 <?php echo ($tot > 0) ? number_format($tot, 1, ',', '.') . ' L' : '<span class="text-muted opacity-50">&ndash;</span>'; ?>
               </td>
             </tr>
           <?php endforeach; ?>
         </tbody>
-        <tfoot style="background-color: var(--bg-surface-alt); border-top: 2px solid var(--border-subtle);">
+        <tfoot class="bg-slate-50 border-t-2 border-slate-300">
           <tr>
             <th colspan="2" class="text-end fw-bold text-uppercase">Totales de la Quincena:</th>
-            <th class="text-center fw-bold tabular-nums fs-6" style="color: var(--accent-gold);">
+            <th class="text-center fw-bold font-mono text-amber-700">
               <?php echo number_format($sumaM, 1, ',', '.'); ?> L
             </th>
-            <th class="text-center fw-bold tabular-nums fs-6" style="color: var(--accent-dusk);">
+            <th class="text-center fw-bold font-mono text-blue-700">
               <?php echo number_format($sumaT, 1, ',', '.'); ?> L
             </th>
-            <th class="text-end fw-bold tabular-nums fs-5" style="color: var(--primary-emerald);">
+            <th class="text-end fw-bold font-mono text-emerald-900 text-lg">
               <?php echo number_format($totalLitrosQuincena, 1, ',', '.'); ?> L
             </th>
           </tr>
@@ -414,26 +445,30 @@ require_once __DIR__ . '/includes/header.php';
   <!-- ==============================================================
        5. MÓDULO F-PQRS (BUZÓN DE INCONFORMIDADES 1 POR QUINCENA)
        ============================================================== -->
-  <div class="card border-0 shadow-sm rounded-4 p-4 bg-white" id="reclamo">
+  <div class="card border border-slate-200 shadow-sm rounded-2xl p-4 bg-white" id="reclamo">
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
       <div>
-        <h5 class="fw-bold text-dark mb-1 d-flex align-items-center gap-2">
-          <i class="fa-solid fa-triangle-exclamation text-warning"></i>
+        <h5 class="font-bold text-slate-900 mb-1 flex items-center gap-2">
+          <i data-lucide="alert-triangle" class="text-amber-500" style="width: 18px; height: 18px;"></i>
           <span>Buzón F-PQRS &bull; Inconformidades con Pesajes</span>
         </h5>
-        <p class="small text-muted mb-0">
+        <p class="text-xs text-slate-500 mb-0">
           Por política asociativa, puedes radicar <strong>un (1) reclamo formal</strong> por quincena para verificación de litros.
         </p>
       </div>
 
       <div>
         <?php if ($alertaExistente): ?>
-          <span class="badge py-2 px-3 rounded-pill bg-light text-dark border fw-bold">
-            Estado: <span class="text-primary"><?php echo e($alertaExistente['estado']); ?></span>
+          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-300">
+            <span>Estado:</span>
+            <strong class="<?php echo $alertaExistente['estado'] === 'RESUELTO' ? 'text-emerald-700' : ($alertaExistente['estado'] === 'EN_REVISION' ? 'text-amber-700' : 'text-blue-700'); ?>">
+              <?php echo e($alertaExistente['estado']); ?>
+            </strong>
           </span>
         <?php else: ?>
-          <button type="button" class="btn btn-sm text-white fw-bold px-3 py-2 rounded-pill shadow-xs" style="background-color: var(--accent-gold);" data-bs-toggle="modal" data-bs-target="#modalReclamo">
-            <i class="fa-solid fa-pen-to-square me-1"></i> Radicar Inconformidad
+          <button type="button" class="btn btn-sm text-white font-semibold px-3 py-2 rounded-lg inline-flex items-center gap-1.5 shadow-sm" style="background-color: var(--accent-gold, #D97706);" data-bs-toggle="modal" data-bs-target="#modalReclamo">
+            <i data-lucide="edit-3" style="width: 15px; height: 15px;"></i>
+            <span>Radicar Inconformidad</span>
           </button>
         <?php endif; ?>
       </div>
@@ -441,41 +476,45 @@ require_once __DIR__ . '/includes/header.php';
 
     <!-- Si ya existe un reclamo en esta quincena -->
     <?php if ($alertaExistente): ?>
-      <div class="mt-3 p-3 rounded-3 bg-light border small">
-        <strong class="text-dark d-block mb-1">
-          <i class="fa-solid fa-circle-info text-primary me-1"></i> Reclamo Radicado el <?php echo formatoFechaEspanol($alertaExistente['creadoEn']); ?>:
+      <div class="mt-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+        <strong class="text-slate-900 block mb-1 flex items-center gap-1.5">
+          <i data-lucide="info" class="text-blue-600" style="width: 14px; height: 14px;"></i>
+          <span>Reclamo Radicado el <?php echo formatoFechaEspanol($alertaExistente['creadoEn']); ?>:</span>
         </strong>
-        <p class="mb-1 text-dark fst-italic">"<?php echo e($alertaExistente['mensaje']); ?>"</p>
-        <span class="text-muted">Litros en planilla al radicar: <?php echo formatoLitros($alertaExistente['litrosAlMomento']); ?></span>
+        <p class="mb-1 text-slate-700 italic">"<?php echo e($alertaExistente['mensaje']); ?>"</p>
+        <span class="text-slate-500">Litros en planilla al radicar: <?php echo formatoLitros($alertaExistente['litrosAlMomento']); ?></span>
       </div>
 
       <!-- Respuesta Oficial del Administrador -->
       <?php if (!empty($alertaExistente['respuestaAdmin'])): ?>
-        <div class="mt-3 p-3 rounded-3 border-2 border-success bg-success-subtle text-success-emphasis">
-          <div class="d-flex align-items-center justify-content-between mb-2">
-            <strong class="d-flex align-items-center gap-2">
-              <i class="fa-solid fa-circle-check text-success fs-5"></i> Respuesta Oficial de la Administración:
+        <div class="mt-3 p-3.5 rounded-xl border border-emerald-300 bg-emerald-50 text-emerald-950">
+          <div class="flex items-center justify-between mb-2">
+            <strong class="flex items-center gap-1.5 text-xs text-emerald-900">
+              <i data-lucide="check-circle" class="text-emerald-700" style="width: 16px; height: 16px;"></i>
+              <span>Respuesta Oficial de la Administración:</span>
             </strong>
-            <span class="badge bg-success text-white px-2.5 py-1 rounded-pill fw-bold">
+            <span class="px-2 py-0.5 rounded text-xs font-semibold bg-emerald-200 text-emerald-900">
               <?php echo e($alertaExistente['estado']); ?>
             </span>
           </div>
-          <p class="mb-2 text-dark" style="line-height: 1.6;"><?php echo nl2br(e($alertaExistente['respuestaAdmin'])); ?></p>
-          <small class="text-muted d-block">
+          <p class="mb-2 text-xs text-slate-800 leading-relaxed"><?php echo nl2br(e($alertaExistente['respuestaAdmin'])); ?></p>
+          <span class="text-xs text-slate-500 block">
             Atendido por: <strong><?php echo e($alertaExistente['respondidoPor'] ?: 'Administrador General'); ?></strong>
             <?php if (!empty($alertaExistente['respondidoEn'])): ?> &bull; <?php echo formatoFechaEspanol($alertaExistente['respondidoEn']); ?><?php endif; ?>
-          </small>
+          </span>
         </div>
       <?php else: ?>
-        <div class="mt-2 small text-muted">
-          <i class="fa-solid fa-clock-rotate-left text-warning me-1"></i> Tu reclamo está siendo verificado con la planilla física del acopio.
+        <div class="mt-2 text-xs text-slate-500 flex items-center gap-1">
+          <i data-lucide="clock" class="text-amber-500" style="width: 14px; height: 14px;"></i>
+          <span>Tu reclamo está siendo verificado con la planilla física del acopio.</span>
         </div>
       <?php endif; ?>
     <?php endif; ?>
 
     <?php if (!empty($errorReclamo)): ?>
-      <div class="alert alert-danger rounded-3 py-2 small fw-bold mt-3 mb-0">
-        <i class="fa-solid fa-triangle-exclamation me-1"></i> <?php echo e($errorReclamo); ?>
+      <div class="alert alert-danger rounded-lg py-2 px-3 text-xs font-semibold mt-3 mb-0 flex items-center gap-1.5 border border-red-200">
+        <i data-lucide="alert-circle" class="text-red-600" style="width: 14px; height: 14px;"></i>
+        <span><?php echo e($errorReclamo); ?></span>
       </div>
     <?php endif; ?>
   </div>
@@ -486,10 +525,11 @@ require_once __DIR__ . '/includes/header.php';
 <?php if (!$alertaExistente): ?>
   <div class="modal fade" id="modalReclamo" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content rounded-4 border-0 shadow-lg">
-        <div class="modal-header text-white p-4" style="background-color: var(--primary-emerald);">
-          <h5 class="modal-title fw-bold text-white">
-            <i class="fa-solid fa-file-pen text-warning me-2"></i> Radicar Inconformidad Quincenal
+      <div class="modal-content rounded-2xl border-0 shadow-xl overflow-hidden">
+        <div class="modal-header text-white p-4" style="background-color: var(--brand-primary, #0A2E1C);">
+          <h5 class="modal-title font-bold text-white text-base flex items-center gap-2">
+            <i data-lucide="edit-3" class="text-amber-400" style="width: 18px; height: 18px;"></i>
+            <span>Radicar Inconformidad Quincenal</span>
           </h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
         </div>
@@ -498,20 +538,21 @@ require_once __DIR__ . '/includes/header.php';
           <input type="hidden" name="accion_reclamo" value="1">
 
           <div class="modal-body p-4">
-            <p class="text-muted small mb-3">
-              Indica con claridad las fechas, turnos (Mañana o Tarde) o cantidad de litros que consideras que deben ser rectificados.
+            <p class="text-slate-600 text-xs mb-3">
+              Indica con claridad las fechas, turnos (AM o PM) o cantidad de litros que consideras que deben ser rectificados.
             </p>
 
             <div class="mb-3">
-              <label for="mensaje_reclamo" class="form-label fw-bold small text-dark">Detalle del Reclamo *</label>
-              <textarea class="form-control" id="mensaje_reclamo" name="mensaje_reclamo" rows="4" required placeholder="Describe las diferencias observadas..."></textarea>
-              <small class="text-muted d-block mt-1">Mínimo 10 caracteres.</small>
+              <label for="mensaje_reclamo" class="form-label font-semibold text-xs text-slate-700">Detalle del Reclamo *</label>
+              <textarea class="form-control text-sm" id="mensaje_reclamo" name="mensaje_reclamo" rows="4" required placeholder="Describe las diferencias observadas..."></textarea>
+              <span class="text-xs text-slate-500 block mt-1">Mínimo 10 caracteres.</span>
             </div>
           </div>
-          <div class="modal-footer p-3 bg-light">
-            <button type="button" class="btn btn-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancelar</button>
-            <button type="submit" class="btn text-white rounded-pill px-4 fw-bold" style="background-color: var(--primary-emerald);">
-              <i class="fa-solid fa-paper-plane me-1"></i> Enviar a Revisión
+          <div class="modal-footer p-3 bg-slate-50 border-t border-slate-200">
+            <button type="button" class="btn btn-secondary rounded-lg px-3 text-xs" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn text-white rounded-lg px-4 font-semibold text-xs inline-flex items-center gap-1.5" style="background-color: var(--brand-primary, #0A2E1C);">
+              <i data-lucide="send" style="width: 14px; height: 14px;"></i>
+              <span>Enviar a Revisión</span>
             </button>
           </div>
         </form>
@@ -520,17 +561,168 @@ require_once __DIR__ . '/includes/header.php';
   </div>
 <?php endif; ?>
 
+<!-- MODAL COMPROBANTE COLILLA DE PAGO -->
+<div class="modal fade" id="modalColillaPago" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content rounded-2xl border-0 shadow-2xl overflow-hidden">
+      <div class="modal-header bg-slate-100 border-b border-slate-200 p-4">
+        <h5 class="modal-title font-bold text-slate-900 text-base flex items-center gap-2">
+          <i data-lucide="file-text" class="text-emerald-800" style="width: 18px; height: 18px;"></i>
+          <span>Comprobante de Liquidación Quincenal</span>
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body p-6" id="area-impresion-colilla">
+        <!-- Encabezado de la Colilla -->
+        <div class="border-b border-slate-200 pb-4 mb-4 flex justify-between items-start">
+          <div>
+            <h4 class="font-bold text-slate-900 mb-0"><?php echo e(EMPRESA_NOMBRE); ?></h4>
+            <span class="text-xs text-slate-600 block">NIT: <?php echo e(EMPRESA_NIT); ?> &bull; Carmen de Carupa, Cundinamarca</span>
+            <span class="text-xs text-slate-500 block">Centro de Acopio Vereda Alizal &bull; Tel: <?php echo e(EMPRESA_TELEFONO); ?></span>
+          </div>
+          <div class="text-end">
+            <span class="px-2.5 py-1 rounded bg-slate-100 text-slate-800 font-mono text-xs font-bold block mb-1">COLILLA DE PAGO</span>
+            <span class="text-xs text-slate-500"><?php echo date('d/m/Y H:i'); ?></span>
+          </div>
+        </div>
+
+        <!-- Datos del Asociado y Período -->
+        <div class="grid grid-cols-2 gap-4 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs mb-4">
+          <div>
+            <span class="text-slate-500 block">Asociado / Titular:</span>
+            <strong class="text-slate-900 text-sm"><?php echo e($usuario['nombre']); ?></strong>
+            <span class="text-slate-600 block font-mono">C.C. <?php echo e($usuario['cedula']); ?></span>
+          </div>
+          <div>
+            <span class="text-slate-500 block">Predio / Finca:</span>
+            <strong class="text-slate-900 text-sm"><?php echo e($usuario['finca'] ?? 'Vereda Alizal'); ?></strong>
+            <span class="text-slate-600 block">Período: <?php echo formatoFechaEspanol($fechaInicioSel); ?> al <?php echo formatoFechaEspanol($fechaFinSel); ?></span>
+          </div>
+        </div>
+
+        <!-- Resumen de Liquidación -->
+        <div class="border border-slate-200 rounded-xl overflow-hidden mb-4 text-xs">
+          <table class="w-full text-start">
+            <thead class="bg-slate-100 border-b border-slate-200 text-slate-700">
+              <tr>
+                <th class="p-2.5 text-start font-semibold">Concepto</th>
+                <th class="p-2.5 text-center font-semibold">Cantidad</th>
+                <th class="p-2.5 text-end font-semibold">Valor Unitario</th>
+                <th class="p-2.5 text-end font-semibold">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr>
+                <td class="p-2.5">Leche Cruda Recibida (Turno AM)</td>
+                <td class="p-2.5 text-center font-mono"><?php echo number_format($sumaM, 1, ',', '.'); ?> L</td>
+                <td class="p-2.5 text-end font-mono">$<?php echo number_format($precioLitro, 0, ',', '.'); ?></td>
+                <td class="p-2.5 text-end font-mono">$<?php echo number_format($sumaM * $precioLitro, 0, ',', '.'); ?></td>
+              </tr>
+              <tr>
+                <td class="p-2.5">Leche Cruda Recibida (Turno PM)</td>
+                <td class="p-2.5 text-center font-mono"><?php echo number_format($sumaT, 1, ',', '.'); ?> L</td>
+                <td class="p-2.5 text-end font-mono">$<?php echo number_format($precioLitro, 0, ',', '.'); ?></td>
+                <td class="p-2.5 text-end font-mono">$<?php echo number_format($sumaT * $precioLitro, 0, ',', '.'); ?></td>
+              </tr>
+            </tbody>
+            <tfoot class="bg-slate-50 border-t border-slate-200 font-bold">
+              <tr>
+                <td class="p-2.5 text-slate-900">TOTAL LIQUIDADO</td>
+                <td class="p-2.5 text-center font-mono text-slate-900"><?php echo number_format($totalLitrosQuincena, 1, ',', '.'); ?> L</td>
+                <td class="p-2.5 text-end text-slate-500 font-mono">$<?php echo number_format($precioLitro, 0, ',', '.'); ?> COP</td>
+                <td class="p-2.5 text-end font-mono text-emerald-900 text-base">$<?php echo number_format($totalPagarEstimado, 0, ',', '.'); ?> COP</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <div class="pt-8 mt-6 border-t border-slate-200 flex justify-between text-center text-xs text-slate-500">
+          <div class="w-48 border-t border-slate-400 pt-1">
+            <span>Firma Autorizada / Acopio</span>
+          </div>
+          <div class="w-48 border-t border-slate-400 pt-1">
+            <span>Firma Asociado Productor</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer bg-slate-50 border-t border-slate-200 p-3">
+        <button type="button" class="btn btn-secondary rounded-lg px-3 text-xs" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-success rounded-lg px-4 text-xs font-semibold inline-flex items-center gap-1.5" onclick="imprimirColillaDirecta()">
+          <i data-lucide="printer" style="width: 14px; height: 14px;"></i>
+          <span>Imprimir Comprobante</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
+  function abrirModalColilla() {
+    const modalEl = document.getElementById('modalColillaPago');
+    if (modalEl) {
+      const modal = new bootstrap.Modal(modalEl);
+      modal.show();
+    }
+  }
+
+  function imprimirColillaDirecta() {
+    window.print();
+  }
+
   document.addEventListener('DOMContentLoaded', function() {
-    if (typeof $ !== 'undefined' && $.fn.DataTable) {
-      $('#tabla-ganadero-pesajes').DataTable({
-        language: {
-          url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/es-ES.json'
+    if (window.lucide) {
+      lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
+    }
+
+    // Inicialización de ApexCharts
+    if (typeof ApexCharts !== 'undefined') {
+      const options = {
+        series: [
+          {
+            name: 'Turno AM (Mañana)',
+            data: <?php echo json_encode($serieManana); ?>
+          },
+          {
+            name: 'Turno PM (Tarde)',
+            data: <?php echo json_encode($serieTarde); ?>
+          }
+        ],
+        chart: {
+          height: 280,
+          type: 'area',
+          fontFamily: 'Inter, sans-serif',
+          toolbar: { show: false }
         },
-        pageLength: 20,
-        responsive: true,
-        order: [[0, 'asc']]
-      });
+        colors: ['#D97706', '#2563EB'],
+        dataLabels: { enabled: false },
+        stroke: { curve: 'smooth', width: 2 },
+        fill: {
+          type: 'gradient',
+          gradient: {
+            shadeIntensity: 1,
+            opacityFrom: 0.35,
+            opacityTo: 0.05,
+            stops: [0, 95, 100]
+          }
+        },
+        xaxis: {
+          categories: <?php echo json_encode($fechasGrafica); ?>,
+          labels: { style: { fontSize: '11px', colors: '#64748B' } }
+        },
+        yaxis: {
+          labels: {
+            formatter: (val) => val.toFixed(1) + ' L',
+            style: { fontSize: '11px', colors: '#64748B' }
+          }
+        },
+        tooltip: {
+          y: { formatter: (val) => val.toFixed(1) + ' Litros' }
+        },
+        legend: { show: false }
+      };
+
+      const chart = new ApexCharts(document.querySelector("#grafica-produccion"), options);
+      chart.render();
     }
   });
 </script>

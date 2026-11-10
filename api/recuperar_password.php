@@ -97,7 +97,7 @@ try {
             // Intento de envío de correo electrónico al correo oficial de la asociación
             $adminEmail = 'asoagroalisal@gmail.com';
             $resetLink = "http://localhost/asociacion/restablecer_password.php?token={$rawToken}";
-            $asunto = "🔐 Restablecimiento de Contraseña de Administrador - Asoagroalisal";
+            $asunto = "Restablecimiento de Contraseña de Administrador - Asoagroalisal";
             $cuerpo = "Hola {$nombre},\n\nSe ha solicitado el restablecimiento de tu contraseña de Administrador.\n\n"
                     . "Para crear una nueva contraseña segura, haz clic en el siguiente enlace:\n"
                     . "{$resetLink}\n\n"

@@ -111,7 +111,7 @@ if ($method === 'POST') {
 
         // 4. ENVÍO DE CORREO ELECTRÓNICO AL ADMINISTRADOR (asoagroalisal@gmail.com)
         $adminEmail = 'asoagroalisal@gmail.com';
-        $asunto = "⚠️ [Reclamo de Litros] {$currentUser['nombre']} - Quincena {$fechaInicio} al {$fechaFin}";
+        $asunto = "[Reclamo de Litros] {$currentUser['nombre']} - Quincena {$fechaInicio} al {$fechaFin}";
 
         $cuerpoHTML = "
         <html>
@@ -162,7 +162,7 @@ if ($method === 'POST') {
 
         jsonResponse([
             'ok' => true,
-            'mensaje' => '✅ Tu inquietud ha sido registrada y notificada a la administración. Solo se permite 1 alerta por quincena.',
+            'mensaje' => 'Tu inquietud ha sido registrada y notificada a la administración. Solo se permite 1 alerta por quincena.',
             'alertaId' => $alertaId,
             'correoEnviado' => $correoEnviado
         ]);

@@ -4,9 +4,11 @@
  * PLATAFORMA DE CONTROL LECHERO - ASOAGROALIZAL (CARMEN DE CARUPA)
  * Archivo: login.php
  * Propósito: Portal de Acceso Corporativo Transaccional (Split-Screen estilo Central Ganadera):
- *            - Panel izquierdo institucional en Verde Esmeralda (#0B3B24) con precio en vivo.
- *            - Panel derecho con tarjeta de acceso, Google Identity Services (OAuth 2.0) y CAPTCHA.
+ *            - Panel izquierdo institucional en Verde Institucional (#0A2E1C) con tarifa en vivo.
+ *            - Selector de Perfil Lineal (Asociado Productor / Administración).
+ *            - Panel derecho con tarjeta blanca sobria, Google OAuth 2.0 y CAPTCHA nativo.
  *            - Hashing Argon2id, protección CSRF y Rate-Limiting anti fuerza bruta.
+ *            - 100% CERO EMOJIS, iconografía Lucide Icons monocromática (stroke-width: 1.5px).
  * Fuente Oficial: docs/FICHA_OFICIAL_ASOAGROALIZAL.md
  * =========================================================================================
  */
@@ -186,9 +188,29 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
 
   <!-- Bootstrap 5.3 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-  
-  <!-- FontAwesome 6 Free -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Tailwind CSS CDN (preflight false) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      corePlugins: { preflight: false },
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              primary: '#0A2E1C',
+              secondary: '#14532D',
+              canvas: '#F8FAFC',
+              surface: '#FFFFFF'
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
 
   <!-- Estilos Globales Corporativos -->
   <link rel="stylesheet" href="assets/css/theme.css">
@@ -197,53 +219,58 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
   <!-- Google Identity Services (OAuth 2.0) -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
-<body class="bg-light">
+<body class="bg-slate-50 min-vh-100 flex flex-col justify-center">
 
   <div class="auth-split-wrapper">
 
     <!-- ==============================================================
-         PANEL IZQUIERDO: IDENTIDAD CORPORATIVA EN VERDE ESMERALDA
+         PANEL IZQUIERDO: IDENTIDAD CORPORATIVA EN VERDE INSTITUCIONAL
          ============================================================== -->
-    <div class="auth-panel-brand">
+    <div class="auth-panel-brand" style="background-color: var(--brand-primary, #0A2E1C);">
       <div>
-        <a href="index.php" class="d-inline-flex align-items-center gap-2 text-white text-decoration-none mb-4 opacity-90 hover-opacity">
-          <i class="fa-solid fa-arrow-left"></i>
-          <span class="small fw-bold">Volver al Portal Principal</span>
+        <a href="index.php" class="inline-flex items-center gap-2 text-white/80 hover:text-white text-decoration-none mb-8 transition-colors">
+          <i data-lucide="arrow-left" style="width: 18px; height: 18px;"></i>
+          <span class="text-sm font-medium">Volver al Portal Principal</span>
         </a>
 
-        <div class="text-center text-md-start mb-4">
-          <img src="assets/img/logo.webp" alt="Logo <?php echo e(EMPRESA_SIGLA); ?>" class="auth-brand-logo bg-white p-2 rounded-4 shadow-sm">
-          <h2 class="fw-bold text-white mb-1" style="font-size: 1.85rem;"><?php echo e(EMPRESA_NOMBRE); ?></h2>
-          <span class="auth-badge-role">
-            <i class="fa-solid fa-cow"></i>
+        <div class="text-start mb-6">
+          <div class="inline-block p-2 bg-white rounded-xl shadow-sm mb-4">
+            <img src="assets/img/logo.webp" alt="Logo <?php echo e(EMPRESA_SIGLA); ?>" style="height: 52px; width: auto; object-fit: contain;">
+          </div>
+          <h2 class="font-bold text-white mb-2" style="font-size: 1.75rem; line-height: 1.25;"><?php echo e(EMPRESA_NOMBRE); ?></h2>
+          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-900/60 text-emerald-200 border border-emerald-700/50">
+            <i data-lucide="shield-check" style="width: 14px; height: 14px;"></i>
             <span>Plataforma Oficial de Control Lechero</span>
           </span>
         </div>
 
-        <p class="text-light opacity-85 small mb-4" style="line-height: 1.7;">
-          Sistema transaccional seguro para el pesaje, trazabilidad por turno y liquidación quincenal de los 32 ganaderos asociados de la Vereda Alizal.
+        <p class="text-slate-300 text-sm mb-6 leading-relaxed">
+          Sistema transaccional para el registro de pesaje diario, trazabilidad por turno (AM / PM) y liquidación quincenal oportuna de los ganaderos asociados en Carmen de Carupa.
         </p>
 
-        <!-- Tarjeta Flotante con Precio Oficial en Vivo -->
-        <div class="auth-price-pill shadow-sm">
-          <div class="d-flex align-items-center justify-content-between mb-1">
-            <span class="small text-uppercase fw-bold text-warning">Precio Oficial Quincenal</span>
-            <span class="badge bg-success rounded-pill px-2 py-0.5" style="font-size: 0.72rem;">En Línea</span>
+        <!-- Tarjeta de Tarifa Vigente -->
+        <div class="p-4 rounded-xl border border-emerald-800/80 bg-emerald-950/40 backdrop-blur-sm mb-6">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs uppercase tracking-wider font-bold text-amber-400">Tarifa Oficial Quincenal</span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              Vigente
+            </span>
           </div>
-          <div class="fs-2 fw-bold text-white tabular-nums mb-1">
-            $<?php echo number_format($precioLitroLogin, 0, ',', '.'); ?> <span class="fs-6 fw-normal opacity-75">COP / Litro</span>
+          <div class="text-2xl font-bold text-white tabular-nums mb-1 font-mono">
+            $<?php echo number_format($precioLitroLogin, 0, ',', '.'); ?> <span class="text-sm font-normal text-slate-300">COP / Litro</span>
           </div>
-          <small class="text-light opacity-75 d-block">
-            <i class="fa-solid fa-clock-rotate-left me-1"></i> Turnos Mañana (5:30 AM) y Tarde (4:00 PM)
-          </small>
+          <span class="text-xs text-slate-400 flex items-center gap-1.5">
+            <i data-lucide="clock" style="width: 14px; height: 14px;"></i>
+            <span>Recepción: Turno AM (5:30 AM) y Turno PM (4:00 PM)</span>
+          </span>
         </div>
       </div>
 
-      <!-- Sellos de Confianza al pie del panel izquierdo -->
-      <div class="mt-4 pt-3 border-top border-white border-opacity-15 small text-light opacity-75">
-        <div class="d-flex flex-wrap gap-3">
-          <span><i class="fa-solid fa-shield-halved text-warning me-1"></i> NIT: <?php echo e(EMPRESA_NIT); ?></span>
-          <span><i class="fa-solid fa-location-dot text-warning me-1"></i> Carmen de Carupa</span>
+      <!-- Sellos al pie del panel izquierdo -->
+      <div class="mt-8 pt-4 border-t border-white/10 text-xs text-slate-400">
+        <div class="flex flex-wrap gap-4">
+          <span class="flex items-center gap-1.5"><i data-lucide="check" class="text-emerald-400" style="width: 14px; height: 14px;"></i> NIT: <?php echo e(EMPRESA_NIT); ?></span>
+          <span class="flex items-center gap-1.5"><i data-lucide="map-pin" class="text-emerald-400" style="width: 14px; height: 14px;"></i> Vereda Alizal, Carmen de Carupa</span>
         </div>
       </div>
     </div>
@@ -254,21 +281,37 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
     <div class="auth-panel-form">
       <div class="auth-card-main">
         
-        <div class="text-center text-md-start mb-4">
-          <h1 class="auth-title">Iniciar Sesión</h1>
-          <p class="auth-subtitle">Ingresa tu número de cédula y contraseña para acceder.</p>
+        <!-- Selector de Perfil Lineal (Pestañas Sobrias) -->
+        <div class="flex border-b border-slate-200 mb-6" id="profile-tabs" role="tablist">
+          <button type="button" class="flex-1 py-2.5 text-center text-sm font-semibold border-b-2 border-emerald-800 text-emerald-900 transition-colors focus:outline-none" id="tab-asociado" onclick="seleccionarPerfil('asociado')">
+            <span class="flex items-center justify-center gap-1.5">
+              <i data-lucide="user" style="width: 16px; height: 16px;"></i>
+              <span>ASOCIADO PRODUCTOR</span>
+            </span>
+          </button>
+          <button type="button" class="flex-1 py-2.5 text-center text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 transition-colors focus:outline-none" id="tab-admin" onclick="seleccionarPerfil('admin')">
+            <span class="flex items-center justify-center gap-1.5">
+              <i data-lucide="shield" style="width: 16px; height: 16px;"></i>
+              <span>ADMINISTRACIÓN</span>
+            </span>
+          </button>
+        </div>
+
+        <div class="mb-5 text-start">
+          <h1 class="text-2xl font-bold text-slate-900 mb-1" id="login-title">Iniciar Sesión</h1>
+          <p class="text-sm text-slate-600 mb-0" id="login-desc">Ingresa tu número de documento de identidad y tu clave de acceso.</p>
         </div>
 
         <?php if (!empty($errorMsg)): ?>
-          <div class="alert alert-danger rounded-3 py-2 px-3 small fw-bold mb-4 d-flex align-items-center gap-2" role="alert">
-            <i class="fa-solid fa-triangle-exclamation fs-5 flex-shrink-0"></i>
+          <div class="alert alert-danger rounded-lg py-2.5 px-3 text-sm font-medium mb-4 flex items-center gap-2 border border-red-200" role="alert">
+            <i data-lucide="alert-circle" class="text-red-600 flex-shrink-0" style="width: 18px; height: 18px;"></i>
             <span><?php echo e($errorMsg); ?></span>
           </div>
         <?php endif; ?>
 
         <?php if (isset($_GET['msg']) && $_GET['msg'] === 'sesion_expirada'): ?>
-          <div class="alert alert-warning rounded-3 py-2 px-3 small fw-bold mb-4 d-flex align-items-center gap-2" role="alert">
-            <i class="fa-solid fa-circle-info fs-5 flex-shrink-0"></i>
+          <div class="alert alert-warning rounded-lg py-2.5 px-3 text-sm font-medium mb-4 flex items-center gap-2 border border-amber-200" role="alert">
+            <i data-lucide="info" class="text-amber-600 flex-shrink-0" style="width: 18px; height: 18px;"></i>
             <span>Tu sesión ha expirado por inactividad. Por favor ingresa nuevamente.</span>
           </div>
         <?php endif; ?>
@@ -278,57 +321,57 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
 
           <!-- Campo Cédula -->
           <div class="input-group-auth">
-            <label for="cedula">Cédula de Ciudadanía *</label>
+            <label for="cedula" id="lbl-cedula">Cédula de Ciudadanía *</label>
             <div class="input-auth-wrapper">
-              <i class="fa-solid fa-id-card input-auth-icon"></i>
-              <input type="text" class="form-control-auth" id="cedula" name="cedula" inputmode="numeric" required placeholder="Ej. 79164451" value="<?php echo e($cedulaRecordada); ?>">
+              <i data-lucide="user" class="input-auth-icon" style="width: 18px; height: 18px;"></i>
+              <input type="text" class="form-control-auth font-mono" id="cedula" name="cedula" inputmode="numeric" required placeholder="Ej. 79164451" value="<?php echo e($cedulaRecordada); ?>">
             </div>
           </div>
 
           <!-- Campo Contraseña con Toggle Ojo -->
           <div class="input-group-auth">
-            <div class="d-flex justify-content-between align-items-center mb-1">
+            <div class="flex justify-between items-center mb-1">
               <label for="password" class="mb-0">Contraseña *</label>
-              <a href="olvide_password.php" class="small text-decoration-none fw-bold" style="color: var(--secondary-green);">¿Olvidaste tu clave?</a>
+              <a href="olvide_password.php" class="text-xs font-semibold text-emerald-800 hover:text-emerald-950 text-decoration-none">¿Olvidaste tu clave?</a>
             </div>
             <div class="input-auth-wrapper">
-              <i class="fa-solid fa-lock input-auth-icon"></i>
-              <input type="password" class="form-control-auth" id="password" name="password" required placeholder="Tu contraseña">
+              <i data-lucide="lock" class="input-auth-icon" style="width: 18px; height: 18px;"></i>
+              <input type="password" class="form-control-auth" id="password" name="password" required placeholder="Contraseña de acceso">
               <button type="button" class="btn-toggle-pass" id="btn-toggle-pass" title="Mostrar u ocultar contraseña">
-                <i class="fa-solid fa-eye" id="eye-icon"></i>
+                <i data-lucide="eye" id="eye-icon" style="width: 18px; height: 18px;"></i>
               </button>
             </div>
           </div>
 
           <!-- Verificación CAPTCHA -->
-          <div class="p-3 mb-3 rounded-3" style="background-color: var(--bg-surface-alt); border: 1px solid var(--border-subtle);">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <span class="small fw-bold text-dark">
-                <i class="fa-solid fa-shield-halved text-success me-1"></i> Código de Seguridad *
+          <div class="p-3 mb-4 rounded-lg bg-slate-50 border border-slate-200">
+            <div class="flex justify-between items-center mb-2">
+              <span class="text-xs font-semibold text-slate-700 flex items-center gap-1">
+                <i data-lucide="shield" class="text-emerald-700" style="width: 14px; height: 14px;"></i> Código de Seguridad *
               </span>
-              <button type="button" id="btn-recargar-captcha" class="btn btn-sm btn-link p-0 text-decoration-none small fw-bold" style="color: var(--secondary-green);">
-                <i class="fa-solid fa-arrows-rotate me-1"></i> Cambiar imagen
+              <button type="button" id="btn-recargar-captcha" class="btn btn-sm btn-link p-0 text-decoration-none text-xs font-semibold text-emerald-800 hover:text-emerald-950 flex items-center gap-1">
+                <i data-lucide="refresh-cw" style="width: 13px; height: 13px;"></i> Cambiar imagen
               </button>
             </div>
-            <div class="d-flex align-items-center gap-3">
-              <img src="includes/captcha_gd.php?t=<?php echo time(); ?>" alt="Código CAPTCHA" id="captcha-img" class="rounded-2 border bg-white" style="height: 48px; width: 140px; object-fit: contain;">
-              <input type="text" class="form-control text-center fw-bold text-uppercase fs-5" id="captcha-input" name="captcha" maxlength="5" required placeholder="Código" autocomplete="off" style="min-height: 48px;">
+            <div class="flex items-center gap-3">
+              <img src="includes/captcha_gd.php?t=<?php echo time(); ?>" alt="Código CAPTCHA" id="captcha-img" class="rounded border bg-white" style="height: 44px; width: 130px; object-fit: contain;">
+              <input type="text" class="form-control text-center font-mono font-bold tracking-widest text-lg" id="captcha-input" name="captcha" maxlength="5" required placeholder="Código" autocomplete="off" style="min-height: 44px;">
             </div>
-            <small class="text-muted d-block mt-1" style="font-size: 0.78rem;">Escribe los caracteres de la imagen.</small>
+            <span class="text-xs text-slate-500 block mt-1.5">Digita los 5 caracteres que aparecen en la imagen.</span>
           </div>
 
           <!-- Checkbox Recordarme -->
           <div class="form-check mb-4">
             <input class="form-check-input" type="checkbox" id="recordarme" name="recordarme" <?php echo !empty($cedulaRecordada) ? 'checked' : ''; ?>>
-            <label class="form-check-label small text-muted" for="recordarme">
-              Recordar mi número de documento en este equipo
+            <label class="form-check-label text-xs text-slate-600" for="recordarme">
+              Recordar documento en este dispositivo
             </label>
           </div>
 
           <!-- Botón de Ingreso Principal -->
-          <button type="submit" id="btn-submit" class="btn-auth-submit mb-3">
+          <button type="submit" id="btn-submit" class="btn-auth-submit mb-4">
             <span>Iniciar Sesión</span>
-            <i class="fa-solid fa-right-to-bracket"></i>
+            <i data-lucide="log-in" style="width: 18px; height: 18px;"></i>
           </button>
 
           <!-- Divisor -->
@@ -337,29 +380,30 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
           </div>
 
           <!-- Botón Oficial Google Identity Services (OAuth 2.0) -->
-          <div class="mb-4 d-flex justify-content-center">
+          <div class="mb-4 flex justify-center">
             <div id="g_id_onload"
                  data-client_id="<?php echo e(GOOGLE_CLIENT_ID); ?>"
                  data-callback="handleGoogleLogin"
                  data-auto_prompt="false">
             </div>
-            <div class="g_id_signin w-100 d-flex justify-content-center"
+            <div class="g_id_signin w-full flex justify-center"
                  data-type="standard"
                  data-shape="rectangular"
                  data-theme="outline"
                  data-text="signin_with"
                  data-size="large"
                  data-logo_alignment="left"
-                 data-width="380">
+                 data-width="360">
             </div>
           </div>
         </form>
 
         <!-- Registro de Nuevos Asociados -->
-        <div class="text-center pt-3 border-top">
-          <small class="text-muted d-block mb-2">¿Eres productor de la Vereda Alizal y aún no tienes acceso?</small>
-          <a href="registro.php" class="btn btn-outline-secondary w-100 py-2.5 rounded-3 fw-bold small text-decoration-none">
-            <i class="fa-solid fa-user-plus me-1.5"></i> Solicitar Registro como Asociado
+        <div class="text-center pt-3 border-t border-slate-200">
+          <span class="text-xs text-slate-600 block mb-2">¿Eres productor de la Vereda Alizal y aún no tienes cuenta?</span>
+          <a href="registro.php" class="btn btn-outline-secondary w-full py-2 rounded-lg font-semibold text-xs text-decoration-none inline-flex items-center justify-center gap-1.5">
+            <i data-lucide="user-plus" style="width: 15px; height: 15px;"></i>
+            <span>Solicitar Registro como Asociado</span>
           </a>
         </div>
 
@@ -373,6 +417,41 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
   <script>
+    // Inicializar iconos Lucide
+    if (window.lucide) {
+      lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
+    }
+
+    // Selector de Perfil Lineal
+    function seleccionarPerfil(tipo) {
+      const tabAsoc = document.getElementById('tab-asociado');
+      const tabAdm = document.getElementById('tab-admin');
+      const lblCedula = document.getElementById('lbl-cedula');
+      const inputCedula = document.getElementById('cedula');
+      const title = document.getElementById('login-title');
+      const desc = document.getElementById('login-desc');
+
+      if (tipo === 'admin') {
+        tabAdm.classList.add('border-emerald-800', 'text-emerald-900');
+        tabAdm.classList.remove('border-transparent', 'text-slate-500');
+        tabAsoc.classList.remove('border-emerald-800', 'text-emerald-900');
+        tabAsoc.classList.add('border-transparent', 'text-slate-500');
+        lblCedula.textContent = 'Cédula del Administrador *';
+        inputCedula.placeholder = 'Ej. 79164451';
+        title.textContent = 'Acceso Administrativo';
+        desc.textContent = 'Consola de gestión para funcionarios de ASOAGROALIZAL.';
+      } else {
+        tabAsoc.classList.add('border-emerald-800', 'text-emerald-900');
+        tabAsoc.classList.remove('border-transparent', 'text-slate-500');
+        tabAdm.classList.remove('border-emerald-800', 'text-emerald-900');
+        tabAdm.classList.add('border-transparent', 'text-slate-500');
+        lblCedula.textContent = 'Cédula de Ciudadanía *';
+        inputCedula.placeholder = 'Ej. 20444983';
+        title.textContent = 'Iniciar Sesión';
+        desc.textContent = 'Ingresa tu número de documento de identidad y tu clave de acceso.';
+      }
+    }
+
     // Callback oficial de Google Identity Services
     window.handleGoogleLogin = async function(response) {
       if (!response || !response.credential) {
@@ -398,7 +477,7 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
         if (res.ok && data.ok) {
           Swal.fire({
             icon: 'success',
-            title: '¡Acceso Concedido!',
+            title: 'Acceso Concedido',
             text: data.mensaje || 'Bienvenido a la plataforma.',
             showConfirmButton: false,
             timer: 1200
@@ -409,9 +488,9 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
           Swal.fire({
             icon: 'info',
             title: 'Vincular con tu Cédula',
-            html: `<p class="small text-muted mb-3">${data.error || 'Ingresa tu documento para vincular tu cuenta de Google:'}</p><input id="swal-cedula" class="form-control text-center fw-bold fs-5" placeholder="Número de Cédula" inputmode="numeric">`,
+            html: `<p class="small text-muted mb-3">${data.error || 'Ingresa tu documento para vincular tu cuenta de Google:'}</p><input id="swal-cedula" class="form-control text-center font-mono font-bold fs-5" placeholder="Número de Cédula" inputmode="numeric">`,
             showCancelButton: true,
-            confirmButtonColor: '#0B3B24',
+            confirmButtonColor: '#0A2E1C',
             confirmButtonText: 'Vincular y Entrar',
             cancelButtonText: 'Cancelar',
             preConfirm: () => {
@@ -433,7 +512,7 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
               if (resLink.ok && dataLink.ok) {
                 Swal.fire({
                   icon: 'success',
-                  title: '¡Cuenta Vinculada!',
+                  title: 'Cuenta Vinculada',
                   text: 'Tu Google ID ha sido vinculado a tu cédula.',
                   showConfirmButton: false,
                   timer: 1300
@@ -455,7 +534,7 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
     };
 
     document.addEventListener('DOMContentLoaded', function() {
-      // Toggle de contraseña
+      // Toggle de contraseña con Lucide
       const btnToggle = document.getElementById('btn-toggle-pass');
       const passInput = document.getElementById('password');
       const eyeIcon = document.getElementById('eye-icon');
@@ -463,10 +542,13 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
       btnToggle?.addEventListener('click', function() {
         if (passInput.type === 'password') {
           passInput.type = 'text';
-          eyeIcon.classList.replace('fa-eye', 'fa-eye-slash');
+          eyeIcon.setAttribute('data-lucide', 'eye-off');
         } else {
           passInput.type = 'password';
-          eyeIcon.classList.replace('fa-eye-slash', 'fa-eye');
+          eyeIcon.setAttribute('data-lucide', 'eye');
+        }
+        if (window.lucide) {
+          lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
         }
       });
 
@@ -526,7 +608,7 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
           if (res.ok && data.ok) {
             Swal.fire({
               icon: 'success',
-              title: '¡Acceso Concedido!',
+              title: 'Acceso Concedido',
               text: 'Bienvenido a la plataforma.',
               showConfirmButton: false,
               timer: 1100
@@ -536,7 +618,8 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
           } else {
             Swal.fire({ icon: 'error', title: 'Error de Acceso', text: data.error || 'Cédula o contraseña incorrecta.' });
             btn.disabled = false;
-            btn.innerHTML = `<span>Iniciar Sesión</span> <i class="fa-solid fa-right-to-bracket ms-1"></i>`;
+            btn.innerHTML = `<span>Iniciar Sesión</span> <i data-lucide="log-in" style="width: 18px; height: 18px;"></i>`;
+            if (window.lucide) lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
             btnRecargar?.click();
           }
         } catch (err) {
