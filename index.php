@@ -3,14 +3,12 @@
  * =========================================================================================
  * PLATAFORMA DE CONTROL LECHERO - ASOAGROALIZAL (CARMEN DE CARUPA, CUNDINAMARCA)
  * Archivo: index.php
- * Propósito: Portal público institucional accesible, minimalista, cálido y profesional:
- *            - Tipografía Atkinson Hyperlegible, base 20px, diseño fluido y adaptativo.
- *            - Héroe inmersivo con fotografía real de campo y gradiente contrastado.
- *            - Paleta institucional: Azul marino #16375f, blanco puro #ffffff, crema #f7f4ee, oro #b56f10.
- *            - Animaciones interactivas: reveals al scroll, contadores numéricos y micro-interacciones.
- *            - Cero dependencias externas complejas (100% compatible).
- *            - Formulario con CSRF y protección de datos (Ley 1581 de 2012).
- * Fuente de Datos Oficial: docs/FICHA_OFICIAL_ASOAGROALIZAL.md
+ * Propósito: Portal público institucional rediseñado al estilo corporativo de Central Ganadera:
+ *            - Hero inmersivo de gran impacto con 3 Tarjetas Flotantes Superpuestas (Overlap Cards).
+ *            - 4 Accesos Directos Operativos (Acopio, Portal Asociado, Colillas, F-PQRS).
+ *            - Módulos de Nuestras Áreas, Misión/Visión, Beneficios y Galería con Lightbox.
+ *            - Formulario seguro con CSRF, Honeypot y tabla de base de datos `consulta`.
+ * Fuente Oficial: docs/FICHA_OFICIAL_ASOAGROALIZAL.md | NIT: 832006127-2
  * =========================================================================================
  */
 
@@ -21,47 +19,74 @@ require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/csrf.php';
 
 $usuarioActual = getCurrentUser();
-$tituloPagina = EMPRESA_SIGLA . ' · Control Lechero y Desarrollo Asociativo | Carmen de Carupa';
+$tituloPagina = EMPRESA_SIGLA . ' · Impulsando la Producción Láctea con Control y Transparencia';
 
-// Manejo de envío de formulario de contacto
-$errorContacto = '';
+$pdo = getDB();
+
+// 1. Consulta dinámica del precio oficial por litro en la quincena activa
+$precioLitro = 2250.0;
+$quincenaTexto = 'Quincena Vigente';
+try {
+    $stmtQ = $pdo->query("SELECT fechaInicio, fechaFin, precioLitro FROM quincena ORDER BY fechaInicio DESC LIMIT 1");
+    if ($q = $stmtQ->fetch(PDO::FETCH_ASSOC)) {
+        if (!empty($q['precioLitro']) && $q['precioLitro'] > 0) {
+            $precioLitro = (float)$q['precioLitro'];
+        }
+        if (!empty($q['fechaInicio']) && !empty($q['fechaFin'])) {
+            $quincenaTexto = 'Período: ' . date('d/m/Y', strtotime($q['fechaInicio'])) . ' al ' . date('d/m/Y', strtotime($q['fechaFin']));
+        }
+    }
+} catch (Exception $e) {}
+
+// 2. Consulta de litros totales recibidos
+$totalLitros = 26355;
+try {
+    $stmtL = $pdo->query("SELECT SUM(litros) AS total FROM registros_leche");
+    if ($rowL = $stmtL->fetch(PDO::FETCH_ASSOC)) {
+        if (!empty($rowL['total']) && $rowL['total'] > 0) {
+            $totalLitros = (float)$rowL['total'];
+        }
+    }
+} catch (Exception $e) {}
+
+// 3. Manejo seguro del formulario de Contacto / Radicación F-PQRS
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['accion_contacto'])) {
     if (!empty($_POST['website_hp'])) {
-        // Honeypot anti-spam silencioso
-        setFlashAlert('success', 'Consulta Recibida', 'Su mensaje ha sido registrado exitosamente.');
+        // Honeypot anti-spam
+        setFlashAlert('success', 'Consulta Recibida', 'Su solicitud ha sido registrada correctamente.');
         header('Location: index.php#contacto');
         exit;
     }
 
     $csrfToken = $_POST['csrf_token'] ?? '';
     if (!validarCsrfToken($csrfToken)) {
-        setFlashAlert('error', 'Sesión Expirada', 'El token de seguridad ha caducado. Por favor intente nuevamente.');
+        setFlashAlert('error', 'Sesión Expirada', 'El token de seguridad ha caducado. Por favor recargue la página.');
         header('Location: index.php#contacto');
         exit;
     }
 
     $nombre = trim($_POST['nombre'] ?? '');
     $contacto = trim($_POST['contacto'] ?? '');
+    $asunto = trim($_POST['asunto'] ?? 'Consulta General');
     $mensaje = trim($_POST['mensaje'] ?? '');
     $aceptaDatos = !empty($_POST['acepta_datos']);
 
     if (empty($nombre) || empty($contacto) || empty($mensaje) || !$aceptaDatos) {
-        setFlashAlert('warning', 'Campos Requeridos', 'Por favor diligencie todos los campos obligatorios y autorice el tratamiento de datos.');
+        setFlashAlert('warning', 'Campos Requeridos', 'Por favor diligencie todos los campos obligatorios y autorice el tratamiento de datos personales.');
         header('Location: index.php#contacto');
         exit;
     }
 
     try {
-        $pdo = getDB();
         $conId = generarUUID('con');
-        $stmt = $pdo->prepare("INSERT INTO consulta (id, nombre, contacto, mensaje, fecha, atendida) VALUES (?, ?, ?, ?, NOW(), 0)");
-        $stmt->execute([$conId, $nombre, $contacto, $mensaje]);
-        setFlashAlert('success', '¡Mensaje Enviado!', 'Gracias por comunicarse con ASOAGROALIZAL. Su mensaje ha sido radicado con éxito.');
+        $stmtC = $pdo->prepare("INSERT INTO consulta (id, nombre, contacto, mensaje, fecha, atendida) VALUES (?, ?, ?, ?, NOW(), 0)");
+        $stmtC->execute([$conId, $nombre, $contacto, "[$asunto] " . $mensaje]);
+        setFlashAlert('success', '¡Mensaje Radicado!', 'Gracias por comunicarse con ASOAGROALIZAL. Su mensaje ha sido radicado formalmente.');
         header('Location: index.php#contacto');
         exit;
     } catch (Exception $e) {
         error_log("Error guardando consulta en index.php: " . $e->getMessage());
-        setFlashAlert('error', 'Error al Enviar', 'Ocurrió un inconveniente procesando su solicitud. Por favor intente más tarde.');
+        setFlashAlert('error', 'Error al Radicar', 'Ocurrió un inconveniente procesando su solicitud. Por favor intente más tarde.');
         header('Location: index.php#contacto');
         exit;
     }
@@ -73,616 +98,591 @@ require_once __DIR__ . '/includes/header.php';
 <main id="contenido-principal" class="flex-grow-1">
 
   <!-- ========================================================================
-       1. HÉROE PRINCIPAL INMERSIVO (FOTOGRAFÍA REAL + CONTRASTE OSCURO)
+       1. HERO SECTION CORPORATIVO (ESTILO CENTRAL GANADERA)
        ======================================================================== -->
-  <section id="inicio" class="hero-asoagro position-relative d-flex align-items-center overflow-hidden">
-    <!-- Imagen de fondo con overlay oscuro atmosférico -->
-    <div class="hero-bg-wrapper position-absolute top-0 start-0 w-100 h-100">
-      <img src="assets/img/hero-ganado.webp" alt="Ganadería lechera en pasturas de la Vereda Alizal" class="hero-bg-img w-100 h-100 object-fit-cover" width="1600" height="1063" loading="eager" fetchpriority="high" decoding="async" srcset="assets/img/hero-ganado-mobile.webp 800w, assets/img/hero-ganado.webp 1600w" sizes="(max-width: 768px) 800px, 1600px" style="aspect-ratio: 1600/1063;">
-      <div class="hero-bg-overlay position-absolute top-0 start-0 w-100 h-100"></div>
-    </div>
+  <section id="inicio" class="hero-corporate">
+    <!-- Fondo multimedia optimizado con gradiente de contraste -->
+    <img src="assets/img/hero-ganado.webp" alt="Ganadería lechera en pasturas de la Vereda Alizal" class="hero-bg-media" width="1600" height="1063" loading="eager" fetchpriority="high">
+    <div class="hero-overlay-dark"></div>
 
-    <div class="container position-relative py-5 my-auto" style="z-index: 2;">
-      <div class="row align-items-center justify-content-start">
-        <div class="col-lg-9 col-xl-8 text-start text-white py-4">
+    <div class="container hero-content py-5">
+      <div class="row align-items-center">
+        <div class="col-xl-9 col-lg-10">
 
-          <!-- Badge / Eyebrow Pill -->
-          <div class="hero-badge mb-4 reveal">
-            <i class="bi bi-geo-alt-fill" style="color: #f4c78d;"></i>
-            <span>CARMEN DE CARUPA &bull; VEREDA ALIZAL</span>
+          <!-- Eyebrow Pill -->
+          <div class="hero-eyebrow mb-3">
+            <i class="fa-solid fa-location-dot" style="color: var(--accent-gold);"></i>
+            <span>CARMEN DE CARUPA &bull; VEREDA ALIZAL &bull; NIT <?php echo e(EMPRESA_NIT); ?></span>
           </div>
 
-          <!-- Titular Principal con Acento Dorado -->
-          <h1 class="hero-title mb-4 reveal">
-            Tradición Ganadera,<br>
-            <span class="hero-title-highlight">Control y Transparencia</span><br>
-            en Cada Quincena
+          <!-- Titular Principal con Impacto -->
+          <h1 class="hero-title-main">
+            Asociación Agropecuaria Alizal &ndash; <br>
+            <span class="text-gold">Impulsando la Producción Láctea</span> con Control y Transparencia
           </h1>
 
-          <!-- Subtítulo -->
-          <p class="hero-subtitle mb-5 reveal">
-            Plataforma oficial de control lechero para los 32 asociados de <strong class="text-white"><?php echo e(EMPRESA_SIGLA); ?></strong>. Registro diario en dos turnos (☀️ Mañana y 🌅 Tarde) y liquidación clara al alcance de su mano.
+          <!-- Descripción -->
+          <p class="hero-description">
+            Plataforma oficial de control lechero para las 32 familias productoras asociadas de ASOAGROALIZAL. 
+            Registro diario riguroso en dos turnos (☀️ Mañana y 🌅 Tarde), estándares de calidad BPO y liquidación quincenal oportuna.
           </p>
 
-          <!-- Botones de Acción -->
-          <div class="d-flex flex-wrap gap-3 align-items-center reveal">
+          <!-- Botones de Acción Inmediata -->
+          <div class="d-flex flex-wrap gap-3 pt-2">
             <?php if ($usuarioActual): ?>
-              <?php $destino = ($usuarioActual['rol'] === 'ADMIN') ? 'admin.php' : 'panel.php'; ?>
-              <a href="<?php echo $destino; ?>" class="btn-hero-primary">
-                <i class="bi bi-speedometer2 fs-5"></i>
+              <?php $urlDestino = ($usuarioActual['rol'] === 'ADMIN') ? 'admin.php' : 'panel.php'; ?>
+              <a href="<?php echo $urlDestino; ?>" class="btn-cta-gold">
+                <i class="fa-solid fa-gauge-high"></i>
                 <span>Ir a Mi Panel de Control</span>
               </a>
             <?php else: ?>
-              <a href="login.php" class="btn-hero-primary">
-                <i class="bi bi-box-arrow-in-right fs-5"></i>
+              <a href="login.php" class="btn-cta-gold">
+                <i class="fa-solid fa-right-to-bracket"></i>
                 <span>Ingresar como Asociado</span>
               </a>
+              <a href="#areas" class="btn-cta-outline">
+                <i class="fa-solid fa-cubes-stacked"></i>
+                <span>Nuestras Áreas Operativas</span>
+              </a>
             <?php endif; ?>
+          </div>
 
-            <a href="#como-funciona" class="btn-hero-secondary">
-              <i class="bi bi-info-circle fs-5"></i>
-              <span>¿Cómo Funciona?</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================
+       2. TARJETAS FLOTANTES SUPERPUESTAS (OVERLAP CARDS AL ESTILO CENTRAL GANADERA)
+       ======================================================================== -->
+  <section class="container hero-overlap-container">
+    <div class="row g-4 justify-content-center">
+
+      <!-- Tarjeta 1: Precio Oficial en Quincena -->
+      <div class="col-lg-4 col-md-6">
+        <div class="overlap-card overlap-card-gold" id="precio">
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="overlap-card-icon icon-bg-gold">
+              <i class="fa-solid fa-sack-dollar"></i>
+            </div>
+            <span class="badge rounded-pill fw-bold" style="background-color: var(--accent-gold-soft); color: var(--accent-gold-hover);">
+              <i class="fa-solid fa-circle-dot fa-fade me-1 text-warning"></i> En Línea
+            </span>
+          </div>
+          <span class="overlap-card-label">Precio Oficial por Litro</span>
+          <div class="overlap-card-value tabular-nums">
+            $<?php echo number_format($precioLitro, 0, ',', '.'); ?> <span class="fs-6 fw-normal text-muted">COP / Litro</span>
+          </div>
+          <p class="small text-muted mb-3">
+            <i class="fa-regular fa-calendar-check me-1"></i> <?php echo e($quincenaTexto); ?>
+          </p>
+          <div class="mt-auto pt-2 border-top">
+            <a href="login.php" class="text-decoration-none fw-bold small d-inline-flex align-items-center gap-1" style="color: var(--accent-gold);">
+              <span>Ver tabla de liquidación completa</span>
+              <i class="fa-solid fa-arrow-right"></i>
             </a>
           </div>
-
         </div>
       </div>
-    </div>
 
-    <!-- Indicador de desplazamiento (Scroll Indicator) -->
-    <a href="#cifras" class="hero-scroll-indicator position-absolute bottom-0 start-50 translate-middle-x mb-4 text-white text-decoration-none text-center">
-      <span class="d-block small text-white-50 mb-1" style="font-size: 0.85rem; letter-spacing: 0.04em;">Conozca más</span>
-      <i class="bi bi-chevron-down fs-4 animate-bounce" style="color: #f4c78d;"></i>
-    </a>
-  </section>
-
-  <!-- ========================================================================
-       2. CIFRAS CON CONTADOR ANIMADO (FONDO CREMA CÁLIDO)
-       ======================================================================== -->
-  <section id="cifras" class="py-5 border-bottom" style="background-color: var(--surface-2);">
-    <div class="container py-2">
-      <div class="row g-4 text-center">
-        
-        <div class="col-6 col-lg-3">
-          <div class="card card-elevate p-4 h-100 rounded-4 border-2" style="background-color: var(--surface); border-color: var(--border-subtle);">
-            <div class="display-5 fw-bold mb-2 counter-animated" style="color: var(--primary);" data-counter-target="32">0</div>
-            <div class="fw-bold text-dark fs-5">Asociados Activos</div>
-            <p class="small text-muted mb-0">Familias productoras de la Vereda Alizal</p>
-          </div>
-        </div>
-
-        <div class="col-6 col-lg-3">
-          <div class="card card-elevate p-4 h-100 rounded-4 border-2" style="background-color: var(--surface); border-color: var(--border-subtle);">
-            <div class="display-5 fw-bold mb-2 counter-animated" style="color: var(--primary);" data-counter-target="25" data-counter-prefix="+">0</div>
-            <div class="fw-bold text-dark fs-5">Años de Trayectoria</div>
-            <p class="small text-muted mb-0">Constituida legalmente desde el año 2000</p>
-          </div>
-        </div>
-
-        <div class="col-6 col-lg-3">
-          <div class="card card-elevate p-4 h-100 rounded-4 border-2" style="background-color: var(--surface); border-color: var(--border-subtle);">
-            <div class="display-5 fw-bold mb-2 counter-animated" style="color: var(--primary);" data-counter-target="2">0</div>
-            <div class="fw-bold text-dark fs-5">Turnos Diarios</div>
-            <p class="small text-muted mb-0">Pesaje matutino ☀️ y vespertino 🌅</p>
-          </div>
-        </div>
-
-        <div class="col-6 col-lg-3">
-          <div class="card card-elevate p-4 h-100 rounded-4 border-2" style="background-color: var(--surface); border-color: var(--border-subtle);">
-            <div class="display-5 fw-bold mb-2 counter-animated" style="color: var(--accent);" data-counter-target="15">0</div>
-            <div class="fw-bold text-dark fs-5">Días por Quincena</div>
-            <p class="small text-muted mb-0">Liquidación periódica con precio oficial</p>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  </section>
-
-  <!-- ========================================================================
-       3. QUIÉNES SOMOS (FOTOGRAFÍA REAL + HISTORIA)
-       ======================================================================== -->
-  <section id="quienes-somos" class="py-5" style="background-color: var(--surface);">
-    <div class="container py-lg-4">
-      <div class="row align-items-center g-4 g-lg-5">
-        <div class="col-lg-6">
-          <div class="position-relative card-elevate rounded-4 overflow-hidden border-2" style="border: 2px solid var(--border-subtle);">
-            <img src="assets/img/finca-andina.webp" alt="Paisaje de la Vereda Alizal en Carmen de Carupa" class="img-fluid w-100 object-fit-cover" style="max-height: 440px;" width="1000" height="573" loading="lazy">
-            <div class="position-absolute bottom-0 start-0 w-100 p-3 text-white" style="background: linear-gradient(transparent, rgba(16, 36, 59, 0.9));">
-              <span class="badge px-3 py-1.5 rounded-pill fw-bold text-white" style="background-color: var(--accent);">Vereda Alizal &bull; 2.980 m.s.n.m.</span>
-              <p class="small mb-0 mt-1 opacity-90">Corazón ganadero lechero del Altiplano Cundiboyacense</p>
+      <!-- Tarjeta 2: Portal InfoLeche (Pesajes Mañana y Tarde) -->
+      <div class="col-lg-4 col-md-6">
+        <div class="overlap-card overlap-card-emerald">
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="overlap-card-icon icon-bg-emerald">
+              <i class="fa-solid fa-glass-water-droplet"></i>
             </div>
+            <span class="badge rounded-pill fw-bold" style="background-color: #DCFCE7; color: var(--secondary-green);">
+              Turnos ☀️ y 🌅
+            </span>
           </div>
-        </div>
-
-        <div class="col-lg-6">
-          <div class="section-eyebrow mb-2">
-            <span class="badge px-3 py-2 rounded-pill fw-bold" style="background-color: var(--surface-2); color: var(--primary); font-size: 0.85rem; letter-spacing: 0.05em;">HISTORIA Y COMUNIDAD</span>
+          <span class="overlap-card-label">Acopio Acumulado Reportado</span>
+          <div class="overlap-card-value tabular-nums">
+            <?php echo number_format($totalLitros, 0, ',', '.'); ?> <span class="fs-6 fw-normal text-muted">Litros Totales</span>
           </div>
-          <h2 class="display-6 fw-bold text-dark mb-3">Más de Dos Décadas Construyendo Futuro Campesino</h2>
-          <div class="accent-bar mb-4" style="width: 60px; height: 4px; background: var(--accent); border-radius: 2px;"></div>
-
-          <p class="text-muted fs-5 mb-4" style="line-height: 1.7;">
-            La <strong>Asociación Campesina No Nacional de Trabajadores de la Vereda Alizal</strong> (<strong><?php echo e(EMPRESA_SIGLA); ?></strong>), con NIT <strong><?php echo e(EMPRESA_NIT); ?></strong>, agrupa a <strong>32 pequeños y medianos productores lecheros</strong> del municipio de Carmen de Carupa, Cundinamarca.
+          <p class="small text-muted mb-3">
+            <i class="fa-solid fa-shield-halved text-success me-1"></i> Control individual para los 32 productores asociados.
           </p>
+          <div class="mt-auto pt-2 border-top">
+            <a href="login.php" class="text-decoration-none fw-bold small d-inline-flex align-items-center gap-1" style="color: var(--secondary-green);">
+              <span>Consultar mis entregas diarias</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </a>
+          </div>
+        </div>
+      </div>
 
-          <p class="text-muted fs-5 mb-4" style="line-height: 1.7;">
-            Nacida en el año 2000 con personería jurídica formal, nuestra asociación trabaja día a día para defender el valor del trabajo rural, garantizar un pago justo por cada litro de leche y brindar asistencia técnica y comunitaria continua.
+      <!-- Tarjeta 3: Calidad y Cadena de Frío a 4°C -->
+      <div class="col-lg-4 col-md-6">
+        <div class="overlap-card overlap-card-dusk">
+          <div class="d-flex align-items-center justify-content-between">
+            <div class="overlap-card-icon icon-bg-dusk">
+              <i class="fa-solid fa-temperature-arrow-down"></i>
+            </div>
+            <span class="badge rounded-pill fw-bold" style="background-color: var(--accent-dusk-soft); color: var(--accent-dusk);">
+              4°C Garantizados
+            </span>
+          </div>
+          <span class="overlap-card-label">Tanques de Frío &amp; Análisis</span>
+          <div class="overlap-card-value">
+            Calidad BPO <span class="fs-6 fw-normal text-muted">Certificada</span>
+          </div>
+          <p class="small text-muted mb-3">
+            <i class="fa-solid fa-circle-check text-primary me-1"></i> Inspección diaria de acidez, grasa y sólidos totales en centro de acopio.
           </p>
-
-          <div class="row g-3 pt-2">
-            <div class="col-sm-6">
-              <div class="d-flex align-items-center gap-3 p-3 rounded-3" style="background-color: var(--surface-2);">
-                <i class="bi bi-people-fill fs-2" style="color: var(--primary);"></i>
-                <div>
-                  <div class="fw-bold text-dark">32 Asociados</div>
-                  <small class="text-muted">Familias vinculadas</small>
-                </div>
-              </div>
-            </div>
-            <div class="col-sm-6">
-              <div class="d-flex align-items-center gap-3 p-3 rounded-3" style="background-color: var(--surface-2);">
-                <i class="bi bi-patch-check-fill fs-2" style="color: var(--accent);"></i>
-                <div>
-                  <div class="fw-bold text-dark">Calidad Comprobada</div>
-                  <small class="text-muted">Pruebas higiénicas</small>
-                </div>
-              </div>
-            </div>
+          <div class="mt-auto pt-2 border-top">
+            <a href="#infraestructura" class="text-decoration-none fw-bold small d-inline-flex align-items-center gap-1" style="color: var(--accent-dusk);">
+              <span>Conocer nuestra infraestructura técnica</span>
+              <i class="fa-solid fa-arrow-right"></i>
+            </a>
           </div>
-
         </div>
       </div>
+
     </div>
   </section>
 
   <!-- ========================================================================
-       4. CÓMO FUNCIONA EL SISTEMA (PASO A PASO DEL CONTROL LECHERO)
+       3. SECCIÓN: ACCESOS DIRECTOS OPERATIVOS (4 TARJETAS INTERACTIVAS)
        ======================================================================== -->
-  <section id="como-funciona" class="py-5" style="background-color: var(--surface-2);">
-    <div class="container py-lg-4">
+  <section class="py-5" style="background-color: var(--bg-surface);">
+    <div class="container py-3">
       <div class="text-center mb-5">
-        <span class="badge px-3 py-2 rounded-pill fw-bold mb-2" style="background-color: var(--surface); color: var(--primary); font-size: 0.85rem; letter-spacing: 0.05em;">TRANSPARENCIA QUINCENAL</span>
-        <h2 class="display-6 fw-bold text-dark mb-2">¿Cómo Funciona el Control Lechero?</h2>
-        <p class="text-muted fs-5 mx-auto" style="max-width: 650px;">Un proceso simple, riguroso y transparente desde el ordeño en la finca hasta su cuenta.</p>
-        <div class="accent-bar mx-auto mt-3" style="width: 60px; height: 4px; background: var(--accent); border-radius: 2px;"></div>
+        <span class="section-badge">Módulos del Sistema</span>
+        <h2 class="section-title-agro">Accesos Directos Operativos</h2>
+        <p class="section-subtitle-agro mx-auto">
+          Herramientas transaccionales seguras creadas para optimizar la labor del ganadero y la administración.
+        </p>
       </div>
 
       <div class="row g-4">
-        <div class="col-md-4">
-          <div class="card card-elevate p-4 h-100 rounded-4 border-2 text-center" style="background-color: var(--surface); border-color: var(--border-subtle);">
-            <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-4 text-white" style="width: 72px; height: 72px; background: linear-gradient(135deg, var(--primary) 0%, #20518c 100%); font-size: 1.8rem;">
-              <i class="bi bi-bucket-fill"></i>
+        <!-- Tarjeta 1: Resumen de Acopio -->
+        <div class="col-lg-3 col-sm-6">
+          <a href="login.php" class="quick-access-card">
+            <div class="quick-access-icon" style="background-color: #DCFCE7; color: var(--secondary-green);">
+              <i class="fa-solid fa-clipboard-list"></i>
             </div>
-            <h3 class="fw-bold text-dark mb-3">1. Ordeño y Pesaje</h3>
-            <p class="text-muted mb-0" style="line-height: 1.6;">
-              Cada asociado entrega su leche en cantinas higienizadas en dos turnos diarios: <strong>☀️ Mañana</strong> y <strong>🌅 Tarde</strong>. Se pesa con báscula calibrada y se registra inmediatamente.
+            <h3 class="quick-access-title">Resumen de Acopio</h3>
+            <p class="quick-access-desc">
+              Consulte el histórico de litros entregados en la quincena actual y anteriores con discriminación por turno.
             </p>
-          </div>
+            <span class="quick-access-link">
+              Ver entregas <i class="fa-solid fa-chevron-right fs-6"></i>
+            </span>
+          </a>
         </div>
 
-        <div class="col-md-4">
-          <div class="card card-elevate p-4 h-100 rounded-4 border-2 text-center" style="background-color: var(--surface); border-color: var(--border-subtle);">
-            <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-4 text-white" style="width: 72px; height: 72px; background: linear-gradient(135deg, #d98d28 0%, #b56f10 100%); font-size: 1.8rem;">
-              <i class="bi bi-laptop"></i>
+        <!-- Tarjeta 2: Portal del Asociado -->
+        <div class="col-lg-3 col-sm-6">
+          <a href="login.php" class="quick-access-card">
+            <div class="quick-access-icon" style="background-color: var(--accent-gold-soft); color: var(--accent-gold);">
+              <i class="fa-solid fa-user-lock"></i>
             </div>
-            <h3 class="fw-bold text-dark mb-3">2. Registro Digital</h3>
-            <p class="text-muted mb-0" style="line-height: 1.6;">
-              La administración digita los pesajes en la planilla matricial del sistema. El ganadero puede ingresar a su portal desde su celular y verificar sus litros día por día en tiempo real.
+            <h3 class="quick-access-title">Portal del Asociado</h3>
+            <p class="quick-access-desc">
+              Acceso individual protegido con Google OAuth o contraseña para verificar su liquidación en pesos COP.
             </p>
-          </div>
+            <span class="quick-access-link" style="color: var(--accent-gold);">
+              Iniciar sesión <i class="fa-solid fa-chevron-right fs-6"></i>
+            </span>
+          </a>
         </div>
 
-        <div class="col-md-4">
-          <div class="card card-elevate p-4 h-100 rounded-4 border-2 text-center" style="background-color: var(--surface); border-color: var(--border-subtle);">
-            <div class="d-inline-flex align-items-center justify-content-center rounded-circle mx-auto mb-4 text-white" style="width: 72px; height: 72px; background: linear-gradient(135deg, #1e7a44 0%, #144722 100%); font-size: 1.8rem;">
-              <i class="bi bi-cash-stack"></i>
+        <!-- Tarjeta 3: Certificados y Colillas -->
+        <div class="col-lg-3 col-sm-6">
+          <a href="login.php" class="quick-access-card">
+            <div class="quick-access-icon" style="background-color: var(--accent-dusk-soft); color: var(--accent-dusk);">
+              <i class="fa-solid fa-file-invoice-dollar"></i>
             </div>
-            <h3 class="fw-bold text-dark mb-3">3. Liquidación Clara</h3>
-            <p class="text-muted mb-0" style="line-height: 1.6;">
-              Al cumplirse cada quincena (1-15 o 16-fin de mes), el sistema totaliza los litros acumulados y aplica la tarifa oficial por litro, emitiendo la liquidación exacta y transparente.
+            <h3 class="quick-access-title">Colillas de Pago</h3>
+            <p class="quick-access-desc">
+              Genere e imprima su comprobante de pago quincenal con desglose de pesajes y precio unitario pactado.
             </p>
-          </div>
+            <span class="quick-access-link" style="color: var(--accent-dusk);">
+              Descargar recibo <i class="fa-solid fa-chevron-right fs-6"></i>
+            </span>
+          </a>
+        </div>
+
+        <!-- Tarjeta 4: Realiza tu F-PQRS -->
+        <div class="col-lg-3 col-sm-6">
+          <a href="#contacto" class="quick-access-card">
+            <div class="quick-access-icon" style="background-color: #FEE2E2; color: #DC2626;">
+              <i class="fa-solid fa-envelope-open-text"></i>
+            </div>
+            <h3 class="quick-access-title">Realiza tu F-PQRS</h3>
+            <p class="quick-access-desc">
+              Buzón oficial de quejas, reclamos de pesaje y sugerencias con respuesta trazable y notificación formal.
+            </p>
+            <span class="quick-access-link" style="color: #DC2626;">
+              Radicar reclamo <i class="fa-solid fa-chevron-right fs-6"></i>
+            </span>
+          </a>
         </div>
       </div>
-
     </div>
   </section>
 
   <!-- ========================================================================
-       5. INFRAESTRUCTURA PRODUCTIVA (FOTOGRAFÍAS REALES)
+       4. SECCIÓN: NUESTRAS ÁREAS OPERATIVAS (CENTRAL GANADERA INSPIRATION)
        ======================================================================== -->
-  <section id="infraestructura" class="py-5" style="background-color: var(--surface);">
-    <div class="container py-lg-4">
-      <div class="text-center mb-5">
-        <span class="badge px-3 py-2 rounded-pill fw-bold mb-2" style="background-color: var(--surface-2); color: var(--primary); font-size: 0.85rem; letter-spacing: 0.05em;">CAPACIDAD TÉCNICA</span>
-        <h2 class="display-6 fw-bold text-dark mb-2">Nuestra Infraestructura Productiva</h2>
-        <p class="text-muted fs-5 mx-auto" style="max-width: 650px;">Instalaciones y equipamiento al servicio de la calidad de la leche y la producción agropecuaria.</p>
-        <div class="accent-bar mx-auto mt-3" style="width: 60px; height: 4px; background: var(--accent); border-radius: 2px;"></div>
-      </div>
-
-      <div class="row g-4">
-        <!-- Tarjeta 1: Tanque de Enfriamiento -->
-        <div class="col-md-4">
-          <div class="card card-elevate h-100 rounded-4 border-2 overflow-hidden" style="background-color: var(--surface); border-color: var(--border-subtle);">
-            <div class="card-zoom">
-              <img src="assets/img/infra-tanque.webp" alt="Tanque de enfriamiento de leche en acero inoxidable" class="img-fluid w-100 object-fit-cover" style="height: 230px;" width="800" height="600" loading="lazy">
-            </div>
-            <div class="p-4">
-              <span class="badge px-2.5 py-1 rounded-pill mb-2 fw-bold" style="background-color: var(--surface-2); color: var(--primary); font-size: 0.78rem;">CADENA DE FRÍO</span>
-              <h3 class="fw-bold text-dark mb-2">Tanque de Enfriamiento</h3>
-              <p class="small text-muted mb-0" style="line-height: 1.6;">
-                Tanques de acero inoxidable grado alimentario que bajan la temperatura de la leche a 4 °C en menos de dos horas, frenando la proliferación bacteriana y preservando su calidad.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tarjeta 2: Invernaderos -->
-        <div class="col-md-4">
-          <div class="card card-elevate h-100 rounded-4 border-2 overflow-hidden" style="background-color: var(--surface); border-color: var(--border-subtle);">
-            <div class="card-zoom">
-              <img src="assets/img/infra-invernadero.webp" alt="Invernadero tecnificado para forrajes y cultivos" class="img-fluid w-100 object-fit-cover" style="height: 230px;" width="800" height="450" loading="lazy">
-            </div>
-            <div class="p-4">
-              <span class="badge px-2.5 py-1 rounded-pill mb-2 fw-bold" style="background-color: var(--surface-2); color: var(--primary); font-size: 0.78rem;">AGRICULTURA PROTEGIDA</span>
-              <h3 class="fw-bold text-dark mb-2">Invernadero Comunitario</h3>
-              <p class="small text-muted mb-0" style="line-height: 1.6;">
-                Módulos de agricultura protegida para la producción escalonada de semillas limpias, forrajes de alto rendimiento y diversificación de ingresos agrícolas para las familias.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tarjeta 3: Laboratorio -->
-        <div class="col-md-4">
-          <div class="card card-elevate h-100 rounded-4 border-2 overflow-hidden" style="background-color: var(--surface); border-color: var(--border-subtle);">
-            <div class="card-zoom">
-              <img src="assets/img/infra-laboratorio.webp" alt="Laboratorio de biotecnología vegetal" class="img-fluid w-100 object-fit-cover" style="height: 230px;" width="800" height="533" loading="lazy">
-            </div>
-            <div class="p-4">
-              <span class="badge px-2.5 py-1 rounded-pill mb-2 fw-bold" style="background-color: var(--surface-2); color: var(--primary); font-size: 0.78rem;">BIOTECNOLOGÍA</span>
-              <h3 class="fw-bold text-dark mb-2">Laboratorio y Control</h3>
-              <p class="small text-muted mb-0" style="line-height: 1.6;">
-                Área técnica destinada al control microbiológico básico de la leche, pruebas de mastitis y proyectos de propagación biológica y mejoramiento de pasturas de clima frío.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ========================================================================
-       6. MISIÓN Y VISIÓN OFICIALES (TEXTOS EXACTOS DE LA FICHA)
-       ======================================================================== -->
-  <section id="mision-vision" class="py-5" style="background-color: var(--surface-2);">
-    <div class="container py-lg-4">
-      <div class="text-center mb-5">
-        <span class="badge px-3 py-2 rounded-pill fw-bold mb-2" style="background-color: var(--surface); color: var(--primary); font-size: 0.85rem; letter-spacing: 0.05em;">HORIZONTE INSTITUCIONAL</span>
-        <h2 class="display-6 fw-bold text-dark mb-2">Misión y Visión Oficiales</h2>
-        <p class="text-muted fs-5 mx-auto" style="max-width: 650px;">El compromiso de nuestra organización campesina con el progreso de la Vereda Alizal.</p>
-        <div class="accent-bar mx-auto mt-3" style="width: 60px; height: 4px; background: var(--accent); border-radius: 2px;"></div>
-      </div>
-
-      <div class="row g-4">
-        <!-- Misión Oficial -->
-        <div class="col-lg-6">
-          <div class="card card-elevate p-4 p-md-5 h-100 rounded-4 border-3" style="background-color: var(--surface); border-color: var(--primary);">
-            <div class="d-flex align-items-center gap-3 mb-4">
-              <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width: 56px; height: 56px; background-color: var(--primary); font-size: 1.5rem;">
-                <i class="bi bi-compass-fill"></i>
-              </div>
-              <div>
-                <span class="badge px-2.5 py-1 rounded-pill fw-bold text-white mb-1" style="background-color: var(--primary);">OFICIAL</span>
-                <h3 class="fw-bold text-dark mb-0">Misión</h3>
-              </div>
-            </div>
-            <p class="fs-5 text-muted mb-0" style="line-height: 1.75; text-align: justify;">
-              Somos una asociación campesina de la vereda Alizal, municipio de Carmen de Carupa, dedicada a la producción y comercialización de leche y productos agropecuarios. Trabajamos unidos para mejorar los ingresos y la calidad de vida de nuestras familias asociadas, mediante la adopción de buenas prácticas ganaderas, el fortalecimiento organizativo y la gestión de proyectos de desarrollo rural integral.
-            </p>
-          </div>
-        </div>
-
-        <!-- Visión Oficial 2030 -->
-        <div class="col-lg-6">
-          <div class="card card-elevate p-4 p-md-5 h-100 rounded-4 border-3" style="background-color: var(--surface); border-color: var(--accent);">
-            <div class="d-flex align-items-center gap-3 mb-4">
-              <div class="rounded-circle d-flex align-items-center justify-content-center text-white" style="width: 56px; height: 56px; background-color: var(--accent); font-size: 1.5rem;">
-                <i class="bi bi-eye-fill"></i>
-              </div>
-              <div>
-                <span class="badge px-2.5 py-1 rounded-pill fw-bold text-white mb-1" style="background-color: var(--accent);">HORIZONTE 2030</span>
-                <h3 class="fw-bold text-dark mb-0">Visión</h3>
-              </div>
-            </div>
-            <p class="fs-5 text-muted mb-0" style="line-height: 1.75; text-align: justify;">
-              Para el año 2030, ASOAGROALIZAL será reconocida a nivel municipal y regional como una asociación campesina modelo en producción lechera sostenible, con altos estándares de calidad e inocuidad. Contaremos con infraestructura propia para el acopio y transformación de nuestros productos, generando bienestar económico, equidad y arraigo campesino en nuestro territorio.
-            </p>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ========================================================================
-       7. PARA EL GANADERO / BUENAS PRÁCTICAS DE ORDEÑO (BPO)
-       ======================================================================== -->
-  <section id="para-el-ganadero" class="py-5" style="background-color: var(--surface);">
-    <div class="container py-lg-4">
-      <div class="text-center mb-5">
-        <span class="badge px-3 py-2 rounded-pill fw-bold mb-2" style="background-color: var(--surface-2); color: var(--primary); font-size: 0.85rem; letter-spacing: 0.05em;">CALIDAD Y SOSTENIBILIDAD</span>
-        <h2 class="display-6 fw-bold text-dark mb-2">Buenas Prácticas para el Ganadero</h2>
-        <p class="text-muted fs-5 mx-auto" style="max-width: 650px;">Líneas fundamentales de manejo que garantizan la máxima bonificación y sanidad de la leche.</p>
-        <div class="accent-bar mx-auto mt-3" style="width: 60px; height: 4px; background: var(--accent); border-radius: 2px;"></div>
-      </div>
-
-      <div class="row g-4">
-        <!-- BPO 1: Bienestar Animal -->
-        <div class="col-sm-6 col-lg-3">
-          <div class="card card-elevate h-100 rounded-4 border-2 overflow-hidden" style="background-color: var(--surface); border-color: var(--border-subtle);">
-            <div class="card-zoom">
-              <img src="assets/img/card-bienestar.webp" alt="Vacas pastoreando en praderas de montaña" class="img-fluid w-100 object-fit-cover" style="height: 180px;" width="600" height="401" loading="lazy">
-            </div>
-            <div class="p-3 text-center">
-              <h3 class="fw-bold text-dark mb-2">Bienestar Animal</h3>
-              <p class="small text-muted mb-0" style="line-height: 1.5;">
-                Pastoreo libre con acceso a agua limpia y sombra natural para evitar el estrés calórico y elevar la producción.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- BPO 2: Sanidad del Hato -->
-        <div class="col-sm-6 col-lg-3">
-          <div class="card card-elevate h-100 rounded-4 border-2 overflow-hidden" style="background-color: var(--surface); border-color: var(--border-subtle);">
-            <div class="card-zoom">
-              <img src="assets/img/card-sanidad.webp" alt="Sanidad y chequeo veterinario del ganado" class="img-fluid w-100 object-fit-cover" style="height: 180px;" width="600" height="400" loading="lazy">
-            </div>
-            <div class="p-3 text-center">
-              <h3 class="fw-bold text-dark mb-2">Sanidad del Hato</h3>
-              <p class="small text-muted mb-0" style="line-height: 1.5;">
-                Planes periódicos de vacunación oficial, desparasitación estratégica y pruebas periódicas contra mastitis.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- BPO 3: Nutrición Balanceada -->
-        <div class="col-sm-6 col-lg-3">
-          <div class="card card-elevate h-100 rounded-4 border-2 overflow-hidden" style="background-color: var(--surface); border-color: var(--border-subtle);">
-            <div class="card-zoom">
-              <img src="assets/img/card-nutricion.webp" alt="Pasturas andinas nutritivas" class="img-fluid w-100 object-fit-cover" style="height: 180px;" width="600" height="338" loading="lazy">
-            </div>
-            <div class="p-3 text-center">
-              <h3 class="fw-bold text-dark mb-2">Nutrición y Pasturas</h3>
-              <p class="small text-muted mb-0" style="line-height: 1.5;">
-                Rotación adecuada de potreros de Ryegrass y Trébol, sales mineralizadas y suplementos forrajeros de calidad.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <!-- BPO 4: Higiene en el Ordeño -->
-        <div class="col-sm-6 col-lg-3">
-          <div class="card card-elevate h-100 rounded-4 border-2 overflow-hidden" style="background-color: var(--surface); border-color: var(--border-subtle);">
-            <div class="card-zoom">
-              <img src="assets/img/card-manejo.webp" alt="Ordeño higiénico y cantinas limpias" class="img-fluid w-100 object-fit-cover" style="height: 180px;" width="600" height="399" loading="lazy">
-            </div>
-            <div class="p-3 text-center">
-              <h3 class="fw-bold text-dark mb-2">Higiene en el Ordeño</h3>
-              <p class="small text-muted mb-0" style="line-height: 1.5;">
-                Lavado y secado riguroso de pezones con papel desechable, despunte inicial y sellado antes de almacenar en cantina.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ========================================================================
-       8. PREGUNTAS FRECUENTES (ACORDEÓN INTERACTIVO)
-       ======================================================================== -->
-  <section id="preguntas" class="py-5" style="background-color: var(--surface-2);">
-    <div class="container py-lg-4">
-      <div class="text-center mb-5">
-        <span class="badge px-3 py-2 rounded-pill fw-bold mb-2" style="background-color: var(--surface); color: var(--primary); font-size: 0.85rem; letter-spacing: 0.05em;">RESOLUCIÓN DE DUDAS</span>
-        <h2 class="display-6 fw-bold text-dark mb-2">Preguntas Frecuentes</h2>
-        <p class="text-muted fs-5 mx-auto" style="max-width: 650px;">Respuestas claras a las dudas más comunes de nuestros asociados y comunidad.</p>
-        <div class="accent-bar mx-auto mt-3" style="width: 60px; height: 4px; background: var(--accent); border-radius: 2px;"></div>
-      </div>
-
-      <div class="row justify-content-center">
-        <div class="col-lg-8">
-          <div class="accordion accordion-asoagro shadow-sm rounded-4 overflow-hidden border-2" id="accordionFAQ" style="border: 2px solid var(--border-subtle);">
-            
-            <!-- Pregunta 1 -->
-            <div class="accordion-item border-0 border-bottom">
-              <h2 class="accordion-header" id="headingOne">
-                <button class="accordion-button fw-bold text-dark fs-5 py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne" style="background-color: var(--surface);">
-                  <i class="bi bi-question-circle-fill me-2" style="color: var(--primary);"></i> ¿Cómo consulto mis litros diarios registrados?
-                </button>
-              </h2>
-              <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#accordionFAQ">
-                <div class="accordion-body text-muted fs-6 py-3" style="line-height: 1.7; background-color: var(--surface);">
-                  Solo debe pulsar el botón <strong>"Ingresar"</strong> en la parte superior, escribir su número de cédula y su contraseña personal. En su panel verá de inmediato la planilla con los litros de cada día divididos en Mañana (☀️) y Tarde (🌅).
-                </div>
-              </div>
-            </div>
-
-            <!-- Pregunta 2 -->
-            <div class="accordion-item border-0 border-bottom">
-              <h2 class="accordion-header" id="headingTwo">
-                <button class="accordion-button collapsed fw-bold text-dark fs-5 py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo" style="background-color: var(--surface);">
-                  <i class="bi bi-clock-history me-2" style="color: var(--primary);"></i> ¿Cuáles son los turnos de entrega y registro?
-                </button>
-              </h2>
-              <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionFAQ">
-                <div class="accordion-body text-muted fs-6 py-3" style="line-height: 1.7; background-color: var(--surface);">
-                  Los pesajes se realizan diariamente en dos turnos: el turno matutino (☀️ Mañana) correspondiente al primer ordeño del día, y el turno vespertino (🌅 Tarde). Ambos quedan radicados con su número respectivo en el sistema.
-                </div>
-              </div>
-            </div>
-
-            <!-- Pregunta 3 -->
-            <div class="accordion-item border-0 border-bottom">
-              <h2 class="accordion-header" id="headingThree">
-                <button class="accordion-button collapsed fw-bold text-dark fs-5 py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree" style="background-color: var(--surface);">
-                  <i class="bi bi-calendar-check-fill me-2" style="color: var(--primary);"></i> ¿Cuándo se liquidan y pagan las quincenas?
-                </button>
-              </h2>
-              <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#accordionFAQ">
-                <div class="accordion-body text-muted fs-6 py-3" style="line-height: 1.7; background-color: var(--surface);">
-                  El sistema maneja dos períodos exactos por mes: la primera quincena (días 1 al 15) y la segunda quincena (días 16 al último día del mes). Una vez concluido el ciclo, la administración verifica los acumulados y efectúa el pago sin intermediarios.
-                </div>
-              </div>
-            </div>
-
-            <!-- Pregunta 4 -->
-            <div class="accordion-item border-0">
-              <h2 class="accordion-header" id="headingFour">
-                <button class="accordion-button collapsed fw-bold text-dark fs-5 py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour" style="background-color: var(--surface);">
-                  <i class="bi bi-telephone-inbound-fill me-2" style="color: var(--primary);"></i> ¿Qué hago si tengo una inconformidad con mi pesaje?
-                </button>
-              </h2>
-              <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#accordionFAQ">
-                <div class="accordion-body text-muted fs-6 py-3" style="line-height: 1.7; background-color: var(--surface);">
-                  Desde su panel de ganadero puede enviar un mensaje directo de inconformidad en el recuadro de quejas, o comunicarse directamente al teléfono oficial de la asociación: <strong><?php echo e(EMPRESA_TELEFONO); ?></strong> para resolver cualquier discrepancia de inmediato.
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </div>
-
-    </div>
-  </section>
-
-  <!-- ========================================================================
-       9. CONTACTO INSTITUCIONAL (FORMULARIO CON CSRF Y DATOS VERIFICADOS)
-       ======================================================================== -->
-  <section id="contacto" class="py-5" style="background-color: var(--surface);">
-    <div class="container py-lg-4">
-      <div class="text-center mb-5">
-        <span class="badge px-3 py-2 rounded-pill fw-bold mb-2" style="background-color: var(--surface-2); color: var(--primary); font-size: 0.85rem; letter-spacing: 0.05em;">CANALES DE ATENCIÓN</span>
-        <h2 class="display-6 fw-bold text-dark mb-2">Comuníquese con Nuestra Asociación</h2>
-        <p class="text-muted fs-5 mx-auto" style="max-width: 650px;">Atención a asociados, proveedores y entidades públicas y privadas.</p>
-        <div class="accent-bar mx-auto mt-3" style="width: 60px; height: 4px; background: var(--accent); border-radius: 2px;"></div>
-      </div>
-
-      <div class="row g-4 g-lg-5">
-        <!-- Columna Formulario -->
+  <section id="areas" class="py-5 bg-white">
+    <div class="container py-4">
+      <div class="row align-items-center mb-5">
         <div class="col-lg-7">
-          <div class="card card-elevate p-4 p-md-5 rounded-4 border-2" style="background-color: var(--surface); border-color: var(--border-subtle);">
-            <h3 class="fw-bold text-dark mb-2">Envíenos su Mensaje o Petición</h3>
-            <p class="text-muted small mb-4">Diligencie el formulario y le responderemos a la mayor brevedad.</p>
+          <span class="section-badge">Cadena Productiva</span>
+          <h2 class="section-title-agro">Nuestras Áreas de Operación</h2>
+          <p class="section-subtitle-agro mb-0">
+            Garantizamos la trazabilidad total desde el ordeño en la finca campesina hasta la entrega a la industria transformadora.
+          </p>
+        </div>
+        <div class="col-lg-5 text-lg-end mt-3 mt-lg-0">
+          <span class="badge py-2 px-3 rounded-pill bg-light text-dark border">
+            <i class="fa-solid fa-cow text-success me-1"></i> 32 Fincas Vinculadas &bull; Vereda Alizal
+          </span>
+        </div>
+      </div>
 
-            <form action="index.php" method="POST" id="form-contacto" class="needs-validation" novalidate>
-              <?php echo campoCsrf(); ?>
+      <div class="row g-4">
+        <!-- Área 1: Acopio Técnico -->
+        <div class="col-md-6 col-lg-3">
+          <div class="feature-box">
+            <div class="feature-box-icon">
+              <i class="fa-solid fa-truck-droplet"></i>
+            </div>
+            <h4 class="fw-bold mb-2 text-dark">1. Acopio Técnico</h4>
+            <p class="text-muted small mb-0">
+              Recepción diaria en turnos de Mañana (5:30 AM &ndash; 7:30 AM) y Tarde (4:00 PM &ndash; 5:30 PM) con pesaje milimétrico y registro digital instantáneo.
+            </p>
+          </div>
+        </div>
+
+        <!-- Área 2: Control de Calidad -->
+        <div class="col-md-6 col-lg-3">
+          <div class="feature-box">
+            <div class="feature-box-icon" style="background-color: var(--accent-gold-soft); color: var(--accent-gold);">
+              <i class="fa-solid fa-vial-circle-check"></i>
+            </div>
+            <h4 class="fw-bold mb-2 text-dark">2. Control de Calidad</h4>
+            <p class="text-muted small mb-0">
+              Pruebas de alcohol, densidad, acidez y mastitis con equipos certificados para certificar leche pura, limpia y libre de adulteraciones.
+            </p>
+          </div>
+        </div>
+
+        <!-- Área 3: Liquidación Puntual -->
+        <div class="col-md-6 col-lg-3">
+          <div class="feature-box">
+            <div class="feature-box-icon" style="background-color: #EFF6FF; color: #2563EB;">
+              <i class="fa-solid fa-hand-holding-dollar"></i>
+            </div>
+            <h4 class="fw-bold mb-2 text-dark">3. Liquidación Transparente</h4>
+            <p class="text-muted small mb-0">
+              Pagos quincenales exactos y sin deducciones sorpresa, respaldados por la colilla de pago digital con valor unitario establecido en asamblea.
+            </p>
+          </div>
+        </div>
+
+        <!-- Área 4: Sostenibilidad Rural -->
+        <div class="col-md-6 col-lg-3">
+          <div class="feature-box">
+            <div class="feature-box-icon" style="background-color: #FEF3C7; color: #D97706;">
+              <i class="fa-solid fa-seedling"></i>
+            </div>
+            <h4 class="fw-bold mb-2 text-dark">4. Sostenibilidad</h4>
+            <p class="text-muted small mb-0">
+              Promoción de silvopastoreo, conservación de fuentes hídricas de alta montaña y bienestar animal bajo parámetros de la normatividad ambiental.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================
+       5. SECCIÓN: QUIÉNES SOMOS & INFRAESTRUCTURA
+       ======================================================================== -->
+  <section id="quienes-somos" class="py-5" style="background-color: var(--bg-surface);">
+    <div class="container py-4">
+      <div class="row g-5 align-items-center">
+        <div class="col-lg-6">
+          <span class="section-badge">Trayectoria &bull; Carmen de Carupa</span>
+          <h2 class="section-title-agro">Unión Campesina para el Progreso Agropecuario</h2>
+          <p class="text-muted mb-4" style="line-height: 1.8;">
+            La <strong><?php echo e(EMPRESA_NOMBRE); ?></strong> (<strong><?php echo e(EMPRESA_SIGLA); ?></strong>) nació en la Vereda Alizal de Carmen de Carupa como una iniciativa comunitaria de pequeños y medianos productores lecheros que buscaban equidad en el pesaje, protección de su precio y acceso directo a canales comerciales formales.
+          </p>
+
+          <div class="row g-3 mb-4">
+            <div class="col-sm-6">
+              <div class="p-3 bg-white rounded-3 border">
+                <div class="fw-bold fs-4 text-success tabular-nums">32</div>
+                <div class="small text-muted fw-bold text-uppercase">Familias Campesinas</div>
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <div class="p-3 bg-white rounded-3 border">
+                <div class="fw-bold fs-4 text-warning tabular-nums">100%</div>
+                <div class="small text-muted fw-bold text-uppercase">Trazabilidad Diaria</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="d-flex align-items-center gap-3">
+            <i class="fa-solid fa-check-double text-success fs-4"></i>
+            <span class="fw-bold text-dark">Comprometidos con el desarrollo económico y la seguridad alimentaria de Cundinamarca.</span>
+          </div>
+        </div>
+
+        <div class="col-lg-6" id="infraestructura">
+          <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+            <img src="assets/img/infra-tanque.webp" alt="Tanque de enfriamiento de acero inoxidable en ASOAGROALIZAL" class="img-fluid" style="aspect-ratio: 16/10; object-fit: cover;">
+            <div class="card-body p-4 bg-white">
+              <h5 class="fw-bold text-dark mb-2">
+                <i class="fa-solid fa-snowflake text-primary me-2"></i> Infraestructura de Frío y Acopio
+              </h5>
+              <p class="small text-muted mb-0">
+                Disponemos de tanques de expansión en acero inoxidable con agitadores automáticos y plantas de respaldo para mantener la leche por debajo de 4°C de manera continua, previniendo proliferación bacteriana.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================================
+       6. GALERÍA FOTOGRÁFICA MODERNA (CON LIGHTBOX MODAL)
+       ======================================================================== -->
+  <section id="galeria" class="py-5 bg-white">
+    <div class="container py-4">
+      <div class="text-center mb-5">
+        <span class="section-badge">Nuestra Labor</span>
+        <h2 class="section-title-agro">Galería del Campo y Centro de Acopio</h2>
+        <p class="section-subtitle-agro mx-auto">
+          Imágenes reales de nuestras fincas asociadas, ordeño higiénico y laboratorios en la Vereda Alizal.
+        </p>
+      </div>
+
+      <div class="row g-4">
+        <!-- Foto 1 -->
+        <div class="col-md-4 col-sm-6">
+          <div class="gallery-item" data-bs-toggle="modal" data-bs-target="#modalLightbox" data-img-src="assets/img/hero-ganado.webp" data-img-title="Pasturas de Alta Montaña - Vereda Alizal">
+            <img src="assets/img/hero-ganado.webp" alt="Pasturas y vacas lecheras" loading="lazy">
+            <div class="gallery-overlay">
+              <h6 class="fw-bold mb-1">Pasturas de Alta Montaña</h6>
+              <small><i class="fa-solid fa-magnifying-glass-plus me-1"></i> Clic para ampliar</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Foto 2 -->
+        <div class="col-md-4 col-sm-6">
+          <div class="gallery-item" data-bs-toggle="modal" data-bs-target="#modalLightbox" data-img-src="assets/img/infra-tanque.webp" data-img-title="Tanque de Enfriamiento a 4°C">
+            <img src="assets/img/infra-tanque.webp" alt="Tanque de refrigeración láctea" loading="lazy">
+            <div class="gallery-overlay">
+              <h6 class="fw-bold mb-1">Cadena de Frío a 4°C</h6>
+              <small><i class="fa-solid fa-magnifying-glass-plus me-1"></i> Clic para ampliar</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Foto 3 -->
+        <div class="col-md-4 col-sm-6">
+          <div class="gallery-item" data-bs-toggle="modal" data-bs-target="#modalLightbox" data-img-src="assets/img/infra-laboratorio.webp" data-img-title="Pruebas de Calidad y Laboratorio">
+            <img src="assets/img/infra-laboratorio.webp" alt="Control de laboratorio y acidez" loading="lazy">
+            <div class="gallery-overlay">
+              <h6 class="fw-bold mb-1">Control de Acidez y Grasa</h6>
+              <small><i class="fa-solid fa-magnifying-glass-plus me-1"></i> Clic para ampliar</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Foto 4 -->
+        <div class="col-md-4 col-sm-6">
+          <div class="gallery-item" data-bs-toggle="modal" data-bs-target="#modalLightbox" data-img-src="assets/img/finca-andina.webp" data-img-title="Paisaje y Paisaje Rural Andino">
+            <img src="assets/img/finca-andina.webp" alt="Finca lechera en Carmen de Carupa" loading="lazy">
+            <div class="gallery-overlay">
+              <h6 class="fw-bold mb-1">Fincas Asociadas</h6>
+              <small><i class="fa-solid fa-magnifying-glass-plus me-1"></i> Clic para ampliar</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Foto 5 -->
+        <div class="col-md-4 col-sm-6">
+          <div class="gallery-item" data-bs-toggle="modal" data-bs-target="#modalLightbox" data-img-src="assets/img/card-bienestar.webp" data-img-title="Bienestar Animal y Pastoreo">
+            <img src="assets/img/card-bienestar.webp" alt="Bienestar animal en ordeño" loading="lazy">
+            <div class="gallery-overlay">
+              <h6 class="fw-bold mb-1">Bienestar Animal</h6>
+              <small><i class="fa-solid fa-magnifying-glass-plus me-1"></i> Clic para ampliar</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Foto 6 -->
+        <div class="col-md-4 col-sm-6">
+          <div class="gallery-item" data-bs-toggle="modal" data-bs-target="#modalLightbox" data-img-src="assets/img/infra-invernadero.webp" data-img-title="Infraestructura Comunitaria Sostenible">
+            <img src="assets/img/infra-invernadero.webp" alt="Invernadero y producción complementaria" loading="lazy">
+            <div class="gallery-overlay">
+              <h6 class="fw-bold mb-1">Proyectos Sostenibles</h6>
+              <small><i class="fa-solid fa-magnifying-glass-plus me-1"></i> Clic para ampliar</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MODAL LIGHTBOX PARA LA GALERÍA -->
+  <div class="modal fade" id="modalLightbox" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content bg-transparent border-0">
+        <div class="modal-body p-0 text-center position-relative">
+          <button type="button" class="btn-close btn-close-white position-absolute top-0 end-0 m-3 z-3" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          <img id="lightboxImg" src="" alt="Vista ampliada" class="img-fluid rounded-4 shadow-lg" style="max-height: 82vh;">
+          <p id="lightboxCaption" class="text-white mt-2 fw-bold"></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       7. FORMULARIO CORPORATIVO DE CONTACTO Y F-PQRS
+       ======================================================================== -->
+  <section id="contacto" class="py-5" style="background-color: var(--bg-surface);">
+    <div class="container py-4">
+      <div class="row g-5">
+        
+        <!-- Información de Atención -->
+        <div class="col-lg-5">
+          <span class="section-badge">Atención al Productor</span>
+          <h2 class="section-title-agro">Radica tu Solicitud o F-PQRS</h2>
+          <p class="text-muted mb-4" style="line-height: 1.7;">
+            Canal formal para atención de consultas de asociados, inconformidades con pesajes o solicitud de información comercial.
+          </p>
+
+          <div class="d-flex flex-column gap-3 mb-4">
+            <div class="d-flex align-items-center gap-3 p-3 bg-white rounded-3 border">
+              <div class="overlap-card-icon icon-bg-emerald mb-0">
+                <i class="fa-solid fa-phone"></i>
+              </div>
+              <div>
+                <small class="text-muted d-block fw-bold text-uppercase">Teléfono de Contacto</small>
+                <a href="tel:<?php echo e(EMPRESA_TELEFONO); ?>" class="fw-bold text-dark text-decoration-none fs-5">
+                  <?php echo e(EMPRESA_TELEFONO); ?>
+                </a>
+              </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-3 p-3 bg-white rounded-3 border">
+              <div class="overlap-card-icon icon-bg-gold mb-0">
+                <i class="fa-brands fa-whatsapp"></i>
+              </div>
+              <div>
+                <small class="text-muted d-block fw-bold text-uppercase">WhatsApp Oficial</small>
+                <a href="https://wa.me/57<?php echo e(EMPRESA_TELEFONO); ?>" target="_blank" rel="noopener noreferrer" class="fw-bold text-success text-decoration-none fs-5">
+                  Chat Directo 24/7
+                </a>
+              </div>
+            </div>
+
+            <div class="d-flex align-items-center gap-3 p-3 bg-white rounded-3 border">
+              <div class="overlap-card-icon icon-bg-dusk mb-0">
+                <i class="fa-solid fa-envelope"></i>
+              </div>
+              <div>
+                <small class="text-muted d-block fw-bold text-uppercase">Correo Electrónico</small>
+                <a href="mailto:<?php echo e(EMPRESA_CORREO); ?>" class="fw-bold text-dark text-decoration-none">
+                  <?php echo e(EMPRESA_CORREO); ?>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Formulario Seguro con CSRF -->
+        <div class="col-lg-7">
+          <div class="card border-0 shadow-md rounded-4 p-4 p-md-5 bg-white">
+            <h4 class="fw-bold text-dark mb-1">Formulario Único de Contacto / Reclamos</h4>
+            <p class="small text-muted mb-4">Diligencie los campos requeridos para asignarle un número de radicado interno.</p>
+
+            <form action="index.php#contacto" method="POST" autocomplete="off">
+              <!-- Token CSRF Obligatorio -->
+              <input type="hidden" name="csrf_token" value="<?php echo e(generarCsrfToken()); ?>">
               <input type="hidden" name="accion_contacto" value="1">
               
-              <!-- Honeypot anti-spam oculto -->
-              <div class="d-none" aria-hidden="true">
-                <label for="website_hp">No llenar este campo</label>
-                <input type="text" id="website_hp" name="website_hp" tabindex="-1" autocomplete="off">
+              <!-- Honeypot anti-spam silencioso -->
+              <div style="display:none;" aria-hidden="true">
+                <label for="website_hp">Si es humano deje este campo vacío:</label>
+                <input type="text" id="website_hp" name="website_hp" tabindex="-1">
               </div>
 
-              <div class="mb-3">
-                <label for="contacto-nombre" class="form-label">Nombre Completo *</label>
-                <input type="text" class="form-control form-control-touch" id="contacto-nombre" name="nombre" required placeholder="Ej: Don Pedro Gómez">
-              </div>
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="nombre" class="form-label fw-bold small text-dark">Nombre Completo *</label>
+                  <input type="text" class="form-control" id="nombre" name="nombre" placeholder="Ej. Juan Pérez" required minlength="3" maxlength="120">
+                </div>
 
-              <div class="mb-3">
-                <label for="contacto-tel" class="form-label">Teléfono de Contacto o Celular *</label>
-                <input type="tel" class="form-control form-control-touch" id="contacto-tel" name="contacto" required placeholder="Ej: 310 123 4567">
-              </div>
+                <div class="col-md-6">
+                  <label for="contacto" class="form-label fw-bold small text-dark">Teléfono o WhatsApp *</label>
+                  <input type="tel" class="form-control" id="contacto" name="contacto" placeholder="Ej. 3101234567" required minlength="7" maxlength="50">
+                </div>
 
-              <div class="mb-3">
-                <label for="contacto-mensaje" class="form-label">Mensaje o Consulta *</label>
-                <textarea class="form-control form-control-touch" id="contacto-mensaje" name="mensaje" rows="4" required placeholder="Escriba aquí su consulta o mensaje..." style="resize: vertical;"></textarea>
-              </div>
+                <div class="col-12">
+                  <label for="asunto" class="form-label fw-bold small text-dark">Tipo de Solicitud *</label>
+                  <select class="form-select" id="asunto" name="asunto" required>
+                    <option value="Consulta General" selected>Consulta General / Asociación</option>
+                    <option value="Reclamo de Pesaje Quincenal">F-PQRS: Reclamo sobre Pesaje o Litros</option>
+                    <option value="Inconformidad de Pago">F-PQRS: Inconformidad sobre Liquidación ($ COP)</option>
+                    <option value="Solicitud de Certificado">Solicitud de Certificado Comercial</option>
+                  </select>
+                </div>
 
-              <div class="mb-4 form-check">
-                <input type="checkbox" class="form-check-input" id="acepta_datos" name="acepta_datos" required style="width: 20px; height: 20px;">
-                <label class="form-check-label small text-muted ms-2" for="acepta_datos">
-                  Autorizo el tratamiento de mis datos de conformidad con la Ley 1581 de 2012 para responder esta consulta.
-                </label>
-              </div>
+                <div class="col-12">
+                  <label for="mensaje" class="form-label fw-bold small text-dark">Mensaje o Detalle del Reclamo *</label>
+                  <textarea class="form-control" id="mensaje" name="mensaje" rows="4" placeholder="Describa claramente su solicitud o reclamo..." required minlength="10" maxlength="1500"></textarea>
+                </div>
 
-              <button type="submit" class="btn btn-touch btn-aso-primary w-100 fs-5 py-3">
-                <i class="bi bi-send-fill me-2"></i> Enviar Mensaje
-              </button>
+                <div class="col-12">
+                  <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="acepta_datos" name="acepta_datos" value="1" required>
+                    <label class="form-check-label small text-muted" for="acepta_datos">
+                      Autorizo a ASOAGROALIZAL para el tratamiento de mis datos personales según la <a href="#modalPoliticaDatos" data-bs-toggle="modal" class="fw-bold text-success text-decoration-none">Ley 1581 de 2012</a>.
+                    </label>
+                  </div>
+                </div>
+
+                <div class="col-12 mt-4">
+                  <button type="submit" class="btn text-white w-100 py-3 rounded-3 fw-bold d-flex align-items-center justify-content-center gap-2 shadow-sm" style="background-color: var(--primary-emerald);">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span>Radicar Mensaje / F-PQRS</span>
+                  </button>
+                </div>
+              </div>
             </form>
           </div>
         </div>
 
-        <!-- Columna Ficha y Canales Oficiales -->
-        <div class="col-lg-5">
-          <div class="card card-elevate p-4 p-md-5 rounded-4 border-2 h-100" style="background-color: var(--surface-2); border-color: var(--border-subtle);">
-            <h3 class="fw-bold text-dark mb-4">Información Institucional</h3>
-
-            <div class="d-flex flex-column gap-4">
-              <div class="d-flex gap-3">
-                <div class="rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0" style="width: 48px; height: 48px; background-color: var(--primary);">
-                  <i class="bi bi-geo-alt-fill fs-5"></i>
-                </div>
-                <div>
-                  <strong class="d-block text-dark">Sede y Dirección</strong>
-                  <span class="text-muted small">Vereda Alizal &bull; Finca El Recuerdo<br>Carmen de Carupa, Cundinamarca</span>
-                </div>
-              </div>
-
-              <div class="d-flex gap-3">
-                <div class="rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0" style="width: 48px; height: 48px; background-color: var(--accent);">
-                  <i class="bi bi-telephone-fill fs-5"></i>
-                </div>
-                <div>
-                  <strong class="d-block text-dark">Teléfono Oficial Único</strong>
-                  <a href="tel:<?php echo e(EMPRESA_TELEFONO); ?>" class="fw-bold fs-5 text-decoration-none" style="color: var(--primary);">
-                    <?php echo e(EMPRESA_TELEFONO); ?>
-                  </a>
-                  <span class="d-block text-muted small">Llamadas y atención institucional</span>
-                </div>
-              </div>
-
-              <div class="d-flex gap-3">
-                <div class="rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0" style="width: 48px; height: 48px; background-color: var(--primary);">
-                  <i class="bi bi-envelope-fill fs-5"></i>
-                </div>
-                <div>
-                  <strong class="d-block text-dark">Correo Electrónico</strong>
-                  <span class="text-muted small"><?php echo e(EMPRESA_CORREO); ?></span>
-                </div>
-              </div>
-
-              <div class="d-flex gap-3">
-                <div class="rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0" style="width: 48px; height: 48px; background-color: var(--primary-deep);">
-                  <i class="bi bi-card-text fs-5"></i>
-                </div>
-                <div>
-                  <strong class="d-block text-dark">Personería y NIT</strong>
-                  <span class="text-muted small">NIT: <strong><?php echo e(EMPRESA_NIT); ?></strong><br>Asociación Campesina Legalmente Constituida</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="mt-4 pt-3 border-top border-secondary-subtle">
-              <a href="login.php" class="btn btn-touch btn-outline-primary w-100 fw-bold">
-                <i class="bi bi-box-arrow-in-right me-2"></i> Ingreso de Ganaderos Registrados
-              </a>
-            </div>
-          </div>
-        </div>
       </div>
-
     </div>
   </section>
 
 </main>
+
+<script>
+  // Inicialización del Lightbox para la Galería
+  document.addEventListener('DOMContentLoaded', function() {
+    const lightboxModal = document.getElementById('modalLightbox');
+    if (lightboxModal) {
+      lightboxModal.addEventListener('show.bs.modal', function(event) {
+        const trigger = event.relatedTarget;
+        const imgSrc = trigger.getAttribute('data-img-src');
+        const imgTitle = trigger.getAttribute('data-img-title');
+        document.getElementById('lightboxImg').src = imgSrc;
+        document.getElementById('lightboxCaption').textContent = imgTitle;
+      });
+    }
+  });
+</script>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>

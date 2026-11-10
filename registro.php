@@ -3,7 +3,9 @@
  * =========================================================================================
  * PLATAFORMA DE CONTROL LECHERO - ASOAGROALIZAL (CARMEN DE CARUPA)
  * Archivo: registro.php
- * Propósito: Registro seguro de nuevos ganaderos asociados con validación, CAPTCHA y CSRF.
+ * Propósito: Registro seguro de nuevos ganaderos asociados al estilo Split-Screen:
+ *            - Validación estricta en servidor, hashing criptográfico Argon2id y CSRF.
+ *            - Panel institucional coordinado con Central Ganadera y medidor de clave.
  * =========================================================================================
  */
 
@@ -24,6 +26,17 @@ $pdo = getDB();
 $errorMsg = '';
 $exitoMsg = '';
 
+// Consulta de precio en vivo
+$precioLitroReg = 2250.0;
+try {
+    $stmtQP = $pdo->query("SELECT precioLitro FROM quincena ORDER BY fechaInicio DESC LIMIT 1");
+    if ($qp = $stmtQP->fetch(PDO::FETCH_ASSOC)) {
+        if (!empty($qp['precioLitro']) && $qp['precioLitro'] > 0) {
+            $precioLitroReg = (float)$qp['precioLitro'];
+        }
+    }
+} catch (Exception $e) {}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $token = $_POST['csrf_token'] ?? '';
     if (!validarCsrfToken($token)) {
@@ -40,15 +53,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $recaptchaToken = $_POST['g-recaptcha-response'] ?? null;
 
         if (empty($cedula) || empty($nombre) || empty($telefono) || empty($password)) {
-            $errorMsg = 'Por favor diligencia todos los campos obligatorios.';
+            $errorMsg = 'Por favor diligencia todos los campos requeridos con asterisco (*).';
         } elseif (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errorMsg = 'El formato del correo electrónico es inválido.';
+            $errorMsg = 'El formato del correo electrónico no es válido.';
         } elseif (!CaptchaService::validar($captcha, $recaptchaToken)) {
-            $errorMsg = 'El código de seguridad (CAPTCHA) es incorrecto o ha expirado.';
+            $errorMsg = 'El código de seguridad (CAPTCHA) es incorrecto o ha vencido.';
         } elseif (strlen($nombre) < 3 || strlen($nombre) > 100) {
             $errorMsg = 'El nombre completo debe tener entre 3 y 100 caracteres.';
         } elseif (strlen($password) < 8) {
-            $errorMsg = 'La contraseña debe tener como mínimo 8 caracteres.';
+            $errorMsg = 'La contraseña debe contener al menos 8 caracteres.';
         } elseif ($password !== $passwordConfirm) {
             $errorMsg = 'La contraseña y su confirmación no coinciden.';
         } else {
@@ -65,204 +78,261 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $stmtIns = $pdo->prepare("INSERT INTO usuario (id, cedula, nombre, email, telefono, finca, passwordHash, rol, activo, debeCambiarPassword, sessionVersion) VALUES (?, ?, ?, ?, ?, ?, ?, 'GANADERO', 1, 0, 1)");
                     $stmtIns->execute([$userId, $cedula, $nombre, $emailVal, $telefono, $finca, $hash]);
 
-                    registrarAuditoria($pdo, 'REGISTRO_GANADERO', $userId, $cedula, "Nombre: $nombre | Email: $email");
-                    setFlashAlert('success', '¡Registro Exitoso!', 'Tu cuenta ha sido creada con seguridad Argon2id. Ya puedes iniciar sesión con tu cédula o Google.');
+                    registrarAuditoria($pdo, 'REGISTRO_GANADERO', $userId, $cedula, "Nombre: $nombre | Finca: $finca");
+                    setFlashAlert('success', '¡Registro Exitoso!', 'Tu cuenta ha sido creada correctamente con cifrado Argon2id. Ya puedes iniciar sesión.');
                     header('Location: login.php');
                     exit;
                 } catch (Exception $e) {
                     error_log("Error en registro: " . $e->getMessage());
-                    $errorMsg = 'Ocurrió un error al registrar la cuenta. Inténtalo de nuevo.';
+                    $errorMsg = 'Ocurrió un error al procesar el registro. Por favor intente más tarde.';
                 }
             }
         }
     }
 }
-
-$tituloPagina = 'Registro de Asociado | ' . EMPRESA_SIGLA;
-require_once __DIR__ . '/includes/header.php';
 ?>
+<!DOCTYPE html>
+<html lang="es" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <title>Registro de Asociado &bull; <?php echo e(EMPRESA_SIGLA); ?></title>
 
-<main class="container my-auto py-5" style="max-width: 640px;">
-  <div class="card card-rural border-0 shadow-lg overflow-hidden">
-    <!-- Encabezado Institucional -->
-    <div class="p-4 text-center text-white" style="background: var(--grad-primary);">
-      <div class="rounded-circle text-white mx-auto d-flex align-items-center justify-content-center mb-3" style="width: 58px; height: 58px; font-size: 1.6rem; background: var(--grad-accent); box-shadow: var(--shadow-glow-gold);">
-        <i class="bi bi-person-plus-fill"></i>
-      </div>
-      <h3 class="fw-bold mb-1">Registro de Ganadero Asociado</h3>
-      <p class="small opacity-75 mb-0">Habilita tu acceso personal al Control Lechero de <?php echo e(EMPRESA_SIGLA); ?></p>
-    </div>
+  <!-- Favicon Oficial -->
+  <link rel="icon" type="image/webp" href="assets/img/logo.webp">
 
-    <div class="p-4 p-md-5">
-      <?php if (!empty($errorMsg)): ?>
-        <div class="alert alert-danger rounded-4 py-3 small fw-bold mb-4" role="alert">
-          <i class="bi bi-exclamation-triangle-fill me-2 fs-5 align-middle"></i>
-          <?php echo e($errorMsg); ?>
-        </div>
-      <?php endif; ?>
+  <!-- Google Fonts: Plus Jakarta Sans, Inter, JetBrains Mono -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap">
 
-      <form action="registro.php" method="POST" id="form-registro" class="needs-validation" novalidate>
-        <?php echo campoCsrf(); ?>
+  <!-- Bootstrap 5.3 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+  
+  <!-- FontAwesome 6 Free -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 
-        <div class="mb-3">
-          <label for="cedula" class="form-label fw-bold small text-muted">Cédula de Ciudadanía *</label>
-          <div class="input-group">
-            <span class="input-group-text bg-transparent text-primary border-2" style="border-radius: var(--radius-md) 0 0 var(--radius-md); border-right: none;">
-              <i class="bi bi-person-vcard fs-5"></i>
-            </span>
-            <input type="text" class="form-control form-control-touch border-start-0" id="cedula" name="cedula" inputmode="numeric" required placeholder="Ej: 20444983" style="border-radius: 0 var(--radius-md) var(--radius-md) 0;" value="<?php echo e($_POST['cedula'] ?? ''); ?>">
-          </div>
-          <small class="text-muted" style="font-size: 0.78rem;">Será tu número de usuario de ingreso.</small>
-        </div>
+  <!-- Estilos Globales Corporativos -->
+  <link rel="stylesheet" href="assets/css/theme.css">
+  <link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body class="bg-light">
 
-        <div class="mb-3">
-          <label for="nombre" class="form-label fw-bold small text-muted">Nombres y Apellidos Completos *</label>
-          <input type="text" class="form-control form-control-touch" id="nombre" name="nombre" required placeholder="Ej: Hilda Gómez" value="<?php echo e($_POST['nombre'] ?? ''); ?>">
-        </div>
+  <div class="auth-split-wrapper">
 
-        <div class="row g-3 mb-3">
-          <div class="col-sm-6">
-            <label for="telefono" class="form-label fw-bold small text-muted">Teléfono Celular *</label>
-            <input type="tel" class="form-control form-control-touch" id="telefono" name="telefono" required placeholder="Ej: 3101234567" value="<?php echo e($_POST['telefono'] ?? ''); ?>">
-          </div>
-          <div class="col-sm-6">
-            <label for="email" class="form-label fw-bold small text-muted">Correo Electrónico (Para Google)</label>
-            <input type="email" class="form-control form-control-touch" id="email" name="email" placeholder="ejemplo@gmail.com" value="<?php echo e($_POST['email'] ?? ''); ?>">
-          </div>
-        </div>
-
-        <div class="mb-3">
-          <label for="finca" class="form-label fw-bold small text-muted">Nombre de Finca / Predio</label>
-          <input type="text" class="form-control form-control-touch" id="finca" name="finca" placeholder="Ej: Finca La Esperanza" value="<?php echo e($_POST['finca'] ?? ''); ?>">
-        </div>
-
-        <div class="row g-3 mb-3">
-          <div class="col-sm-6">
-            <label for="password" class="form-label fw-bold small text-muted">Contraseña *</label>
-            <div class="input-group">
-              <input type="password" class="form-control form-control-touch border-end-0" id="password" name="password" required minlength="8" placeholder="Mínimo 8 caracteres">
-              <button class="btn btn-outline-secondary border-2 border-start-0" type="button" onclick="const p = document.getElementById('password'); p.type = p.type === 'password' ? 'text' : 'password'; this.querySelector('i').classList.toggle('bi-eye-slash-fill');">
-                <i class="bi bi-eye-fill"></i>
-              </button>
-            </div>
-          </div>
-          <div class="col-sm-6">
-            <label for="password_confirm" class="form-label fw-bold small text-muted">Confirmar Contraseña *</label>
-            <div class="input-group">
-              <input type="password" class="form-control form-control-touch border-end-0" id="password_confirm" name="password_confirm" required minlength="8" placeholder="Repite la contraseña">
-              <button class="btn btn-outline-secondary border-2 border-start-0" type="button" onclick="const p = document.getElementById('password_confirm'); p.type = p.type === 'password' ? 'text' : 'password'; this.querySelector('i').classList.toggle('bi-eye-slash-fill');">
-                <i class="bi bi-eye-fill"></i>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- CAPTCHA GD NATIVO -->
-        <div class="mb-4 p-3 rounded-4" style="background: var(--aso-secondary-light); border: 1px solid var(--card-border);">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <label for="captcha" class="form-label fw-bold small mb-0 text-primary">
-              <i class="bi bi-shield-check me-1"></i> Verificación de Seguridad *
-            </label>
-            <button type="button" class="btn btn-sm btn-link text-primary fw-bold text-decoration-none p-0" onclick="AsoagroUI.refreshCaptcha('#captcha-img', '#captcha')">
-              <i class="bi bi-arrow-clockwise"></i> Cambiar
-            </button>
-          </div>
-          <div class="d-flex align-items-center gap-3">
-            <img src="includes/captcha_gd.php?t=<?php echo time(); ?>" alt="CAPTCHA" id="captcha-img" class="rounded-3 shadow-sm" style="height: 44px; width: 140px; object-fit: contain;">
-            <input type="text" class="form-control form-control-touch text-center fw-bold text-uppercase fs-5" id="captcha" name="captcha" maxlength="5" required placeholder="Código" autocomplete="off">
-          </div>
-        </div>
-
-        <button type="submit" class="btn btn-touch btn-aso-primary w-100 shadow mb-3">
-          <i class="bi bi-check2-circle fs-5"></i>
-          <span>Completar Registro</span>
-        </button>
-
-        <!-- Opción Google Identity -->
-        <div class="d-flex align-items-center my-3">
-          <hr class="flex-grow-1 border-secondary-subtle my-0">
-          <span class="px-3 text-muted small fw-bold text-uppercase" style="font-size: 0.75rem;">o regístrate con</span>
-          <hr class="flex-grow-1 border-secondary-subtle my-0">
-        </div>
-
-        <div class="mb-3 d-flex justify-content-center">
-          <div id="g_id_onload"
-               data-client_id="<?php echo e(GOOGLE_CLIENT_ID); ?>"
-               data-callback="handleGoogleLogin"
-               data-auto_prompt="false">
-          </div>
-          <div class="g_id_signin w-100 d-flex justify-content-center"
-               data-type="standard"
-               data-shape="rectangular"
-               data-theme="outline"
-               data-text="signup_with"
-               data-size="large"
-               data-logo_alignment="left"
-               data-width="320">
-          </div>
-        </div>
-      </form>
-
-      <div class="text-center pt-3 border-top border-secondary-subtle">
-        <small class="text-muted">¿Ya estás registrado?</small>
-        <a href="login.php" class="small fw-bold text-primary text-decoration-none ms-1 hover-underline">
-          Inicia sesión aquí
+    <!-- PANEL IZQUIERDO INSTITUCIONAL -->
+    <div class="auth-panel-brand">
+      <div>
+        <a href="index.php" class="d-inline-flex align-items-center gap-2 text-white text-decoration-none mb-4 opacity-90">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span class="small fw-bold">Volver al Portal Principal</span>
         </a>
+
+        <div class="mb-4">
+          <img src="assets/img/logo.webp" alt="Logo <?php echo e(EMPRESA_SIGLA); ?>" class="auth-brand-logo bg-white p-2 rounded-4 shadow-sm">
+          <h2 class="fw-bold text-white mb-1" style="font-size: 1.85rem;"><?php echo e(EMPRESA_NOMBRE); ?></h2>
+          <span class="auth-badge-role">
+            <i class="fa-solid fa-user-plus"></i>
+            <span>Afiliación de Productores Lecheros</span>
+          </span>
+        </div>
+
+        <p class="text-light opacity-85 small mb-4" style="line-height: 1.7;">
+          Únete a la asociación oficial de ganaderos de la Vereda Alizal. Con tu cuenta podrás consultar diariamente tus litros recibidos en turnos Mañana (☀️) y Tarde (🌅), tu historial de pagos y descargar tus colillas de liquidación.
+        </p>
+
+        <!-- Tarjeta Flotante con Precio Oficial -->
+        <div class="auth-price-pill shadow-sm">
+          <div class="d-flex align-items-center justify-content-between mb-1">
+            <span class="small text-uppercase fw-bold text-warning">Tarifa Oficial Vigente</span>
+            <span class="badge bg-success rounded-pill px-2 py-0.5" style="font-size: 0.72rem;">Activa</span>
+          </div>
+          <div class="fs-2 fw-bold text-white tabular-nums mb-1">
+            $<?php echo number_format($precioLitroReg, 0, ',', '.'); ?> <span class="fs-6 fw-normal opacity-75">COP / Litro</span>
+          </div>
+          <small class="text-light opacity-75 d-block">
+            <i class="fa-solid fa-check-double text-warning me-1"></i> Liquidación quincenal garantizada
+          </small>
+        </div>
+      </div>
+
+      <div class="mt-4 pt-3 border-top border-white border-opacity-15 small text-light opacity-75">
+        <span><i class="fa-solid fa-lock text-warning me-1"></i> Cifrado de alta seguridad Argon2id &bull; NIT: <?php echo e(EMPRESA_NIT); ?></span>
       </div>
     </div>
+
+    <!-- PANEL DERECHO CON FORMULARIO ESTRUCTURADO -->
+    <div class="auth-panel-form">
+      <div class="auth-card-main" style="max-width: 580px;">
+        
+        <div class="mb-4">
+          <h1 class="auth-title">Solicitud de Registro</h1>
+          <p class="auth-subtitle">Completa tus datos personales para habilitar tu acceso al control lechero.</p>
+        </div>
+
+        <?php if (!empty($errorMsg)): ?>
+          <div class="alert alert-danger rounded-3 py-2 px-3 small fw-bold mb-4 d-flex align-items-center gap-2" role="alert">
+            <i class="fa-solid fa-triangle-exclamation fs-5 flex-shrink-0"></i>
+            <span><?php echo e($errorMsg); ?></span>
+          </div>
+        <?php endif; ?>
+
+        <form action="registro.php" method="POST" id="form-registro" novalidate>
+          <?php echo campoCsrf(); ?>
+
+          <div class="row g-3">
+            <!-- Cédula -->
+            <div class="col-md-6">
+              <label for="cedula" class="form-label fw-bold small text-dark">Cédula de Ciudadanía *</label>
+              <div class="input-auth-wrapper">
+                <i class="fa-solid fa-id-card input-auth-icon"></i>
+                <input type="text" class="form-control-auth" id="cedula" name="cedula" inputmode="numeric" required placeholder="Ej. 20444983" value="<?php echo e($_POST['cedula'] ?? ''); ?>">
+              </div>
+            </div>
+
+            <!-- Teléfono -->
+            <div class="col-md-6">
+              <label for="telefono" class="form-label fw-bold small text-dark">Teléfono / WhatsApp *</label>
+              <div class="input-auth-wrapper">
+                <i class="fa-solid fa-phone input-auth-icon"></i>
+                <input type="tel" class="form-control-auth" id="telefono" name="telefono" required placeholder="Ej. 3185235690" value="<?php echo e($_POST['telefono'] ?? ''); ?>">
+              </div>
+            </div>
+
+            <!-- Nombre Completo -->
+            <div class="col-12">
+              <label for="nombre" class="form-label fw-bold small text-dark">Nombre y Apellidos Completos *</label>
+              <div class="input-auth-wrapper">
+                <i class="fa-solid fa-user input-auth-icon"></i>
+                <input type="text" class="form-control-auth" id="nombre" name="nombre" required placeholder="Ej. Hilda Inés Montaño" value="<?php echo e($_POST['nombre'] ?? ''); ?>">
+              </div>
+            </div>
+
+            <!-- Finca / Vereda -->
+            <div class="col-md-6">
+              <label for="finca" class="form-label fw-bold small text-dark">Nombre de la Finca o Predio</label>
+              <div class="input-auth-wrapper">
+                <i class="fa-solid fa-house-chimney-window input-auth-icon"></i>
+                <input type="text" class="form-control-auth" id="finca" name="finca" placeholder="Ej. Finca El Recuerdo" value="<?php echo e($_POST['finca'] ?? 'Vereda Alizal'); ?>">
+              </div>
+            </div>
+
+            <!-- Correo Electrónico (para Google OAuth) -->
+            <div class="col-md-6">
+              <label for="email" class="form-label fw-bold small text-dark">Correo Electrónico (Recomendado)</label>
+              <div class="input-auth-wrapper">
+                <i class="fa-solid fa-envelope input-auth-icon"></i>
+                <input type="email" class="form-control-auth" id="email" name="email" placeholder="usuario@gmail.com" value="<?php echo e($_POST['email'] ?? ''); ?>">
+              </div>
+              <small class="text-muted" style="font-size: 0.74rem;">Permite iniciar sesión con Google en 1 clic.</small>
+            </div>
+
+            <!-- Contraseña -->
+            <div class="col-md-6">
+              <label for="password" class="form-label fw-bold small text-dark">Contraseña (Mín. 8 caract.) *</label>
+              <div class="input-auth-wrapper">
+                <i class="fa-solid fa-lock input-auth-icon"></i>
+                <input type="password" class="form-control-auth" id="password" name="password" required placeholder="Crea tu contraseña">
+              </div>
+            </div>
+
+            <!-- Confirmar Contraseña -->
+            <div class="col-md-6">
+              <label for="password_confirm" class="form-label fw-bold small text-dark">Confirmar Contraseña *</label>
+              <div class="input-auth-wrapper">
+                <i class="fa-solid fa-lock-open input-auth-icon"></i>
+                <input type="password" class="form-control-auth" id="password_confirm" name="password_confirm" required placeholder="Repite la clave">
+              </div>
+            </div>
+
+            <!-- Medidor de Fortaleza de Clave -->
+            <div class="col-12">
+              <div class="progress" style="height: 5px;">
+                <div id="password-strength-bar" class="progress-bar bg-danger" role="progressbar" style="width: 0%;"></div>
+              </div>
+              <small id="password-strength-text" class="text-muted d-block mt-1" style="font-size: 0.74rem;">Seguridad de la contraseña</small>
+            </div>
+
+            <!-- CAPTCHA -->
+            <div class="col-12">
+              <div class="p-3 rounded-3" style="background-color: var(--bg-surface-alt); border: 1px solid var(--border-subtle);">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <span class="small fw-bold text-dark">
+                    <i class="fa-solid fa-shield-halved text-success me-1"></i> Código de Seguridad *
+                  </span>
+                  <button type="button" id="btn-recargar-captcha" class="btn btn-sm btn-link p-0 text-decoration-none small fw-bold" style="color: var(--secondary-green);">
+                    <i class="fa-solid fa-arrows-rotate me-1"></i> Cambiar imagen
+                  </button>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                  <img src="includes/captcha_gd.php?t=<?php echo time(); ?>" alt="Código CAPTCHA" id="captcha-img" class="rounded-2 border bg-white" style="height: 48px; width: 140px; object-fit: contain;">
+                  <input type="text" class="form-control text-center fw-bold text-uppercase fs-5" id="captcha-input" name="captcha" maxlength="5" required placeholder="Código" autocomplete="off" style="min-height: 48px;">
+                </div>
+              </div>
+            </div>
+
+            <!-- Botón Submit -->
+            <div class="col-12 mt-4">
+              <button type="submit" class="btn-auth-submit">
+                <i class="fa-solid fa-user-check"></i>
+                <span>Crear Cuenta de Asociado</span>
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <div class="text-center pt-3 border-top mt-4">
+          <small class="text-muted d-block mb-1">¿Ya tienes una cuenta registrada en ASOAGROALIZAL?</small>
+          <a href="login.php" class="fw-bold small text-decoration-none" style="color: var(--secondary-green);">
+            Iniciar Sesión con Cédula o Google &rarr;
+          </a>
+        </div>
+
+      </div>
+    </div>
+
   </div>
-</main>
 
-<!-- Script Google Identity Services -->
-<script src="https://accounts.google.com/gsi/client" async defer></script>
-<script>
-window.handleGoogleLogin = async function(response) {
-  if (!response || !response.credential) return;
-  Swal.fire({
-    title: 'Validando con Google...',
-    allowOutsideClick: false,
-    didOpen: () => { Swal.showLoading(); }
-  });
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Recarga de CAPTCHA
+      const btnRecargar = document.getElementById('btn-recargar-captcha');
+      const captchaImg = document.getElementById('captcha-img');
+      const captchaInput = document.getElementById('captcha-input');
+      btnRecargar?.addEventListener('click', function() {
+        captchaImg.src = 'includes/captcha_gd.php?t=' + new Date().getTime();
+        if (captchaInput) captchaInput.value = '';
+      });
 
-  try {
-    const cedula = document.getElementById('cedula').value.trim();
-    const res = await fetch('api/auth_google.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ credential: response.credential, cedula: cedula })
+      // Medidor de fortaleza de contraseña
+      const pass = document.getElementById('password');
+      const bar = document.getElementById('password-strength-bar');
+      const txt = document.getElementById('password-strength-text');
+
+      pass?.addEventListener('input', function() {
+        const val = pass.value;
+        let score = 0;
+        if (val.length >= 8) score += 25;
+        if (/[A-Z]/.test(val)) score += 25;
+        if (/[0-9]/.test(val)) score += 25;
+        if (/[^A-Za-z0-9]/.test(val)) score += 25;
+
+        bar.style.width = score + '%';
+        if (score <= 25) {
+          bar.className = 'progress-bar bg-danger';
+          txt.textContent = 'Contraseña débil (mínimo 8 caracteres)';
+        } else if (score <= 50) {
+          bar.className = 'progress-bar bg-warning';
+          txt.textContent = 'Contraseña moderada (agrega números y mayúsculas)';
+        } else if (score <= 75) {
+          bar.className = 'progress-bar bg-info';
+          txt.textContent = 'Contraseña buena';
+        } else {
+          bar.className = 'progress-bar bg-success';
+          txt.textContent = 'Contraseña muy segura';
+        }
+      });
     });
-    const data = await res.json();
-
-    if (res.ok && data.ok) {
-      Swal.fire({
-        icon: 'success',
-        title: '¡Cuenta Vinculada!',
-        text: data.mensaje || 'Bienvenido.',
-        showConfirmButton: false,
-        timer: 1200
-      }).then(() => {
-        window.location.href = data.redirect || 'panel.php';
-      });
-    } else if (data.unregistered) {
-      if (data.google_email) {
-        document.getElementById('email').value = data.google_email;
-      }
-      if (data.google_name && !document.getElementById('nombre').value) {
-        document.getElementById('nombre').value = data.google_name;
-      }
-      Swal.fire({
-        icon: 'info',
-        title: 'Cuenta de Google detectada',
-        text: 'Completa tu número de cédula y teléfono para finalizar tu afiliación asociativa.',
-        confirmButtonColor: '#16375f'
-      });
-    } else {
-      AsoagroUI.showError('Aviso', data.error || 'No fue posible registrar con Google.');
-    }
-  } catch (e) {
-    AsoagroUI.showError('Error', 'Fallo de conexión al validar con Google.');
-  }
-};
-</script>
-
-<?php require_once __DIR__ . '/includes/footer.php'; ?>
+  </script>
+</body>
+</html>

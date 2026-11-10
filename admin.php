@@ -102,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         setFlashAlert('error', 'Cédula Duplicada', 'Ya existe otro ganadero con este número de cédula.');
                     } else {
                         if (!empty($password)) {
-                            $hash = password_hash($password, PASSWORD_DEFAULT);
+                            $hash = hashPassword($password);
                             $upd = $pdo->prepare("UPDATE usuario SET cedula = ?, nombre = ?, telefono = ?, finca = ?, passwordHash = ?, activo = ?, sessionVersion = sessionVersion + 1 WHERE id = ?");
                             $upd->execute([$cedula, $nombre, $telefono, $finca, $hash, $activo, $asocId]);
                         } else {
@@ -118,13 +118,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         setFlashAlert('error', 'Cédula Registrada', 'Ya existe un usuario con este número de cédula.');
                     } else {
                         $claveAsignar = !empty($password) ? $password : '123456';
-                        $hash = password_hash($claveAsignar, PASSWORD_DEFAULT);
+                        $hash = hashPassword($claveAsignar);
                         $newId = generarUUID('usr');
 
                         $ins = $pdo->prepare("INSERT INTO usuario (id, cedula, nombre, telefono, finca, passwordHash, rol, activo, debeCambiarPassword, sessionVersion, creadoEn)
                                               VALUES (?, ?, ?, ?, ?, ?, 'GANADERO', ?, 1, 1, NOW())");
                         $ins->execute([$newId, $cedula, $nombre, $telefono, $finca, $hash, $activo]);
-                        setFlashAlert('success', '¡Asociado Creado!', "Ganadero registrado correctamente. Clave temporal asignada: {$claveAsignar}");
+                        setFlashAlert('success', '¡Asociado Creado!', "Ganadero registrado correctamente con cifrado Argon2id. Clave temporal asignada: {$claveAsignar}");
                     }
                 }
             } catch (Exception $e) {
@@ -142,7 +142,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!empty($asocId)) {
             try {
                 $claveTemp = '123456';
-                $hash = password_hash($claveTemp, PASSWORD_DEFAULT);
+                $hash = hashPassword($claveTemp);
                 $upd = $pdo->prepare("UPDATE usuario SET passwordHash = ?, debeCambiarPassword = 1, sessionVersion = sessionVersion + 1 WHERE id = ?");
                 $upd->execute([$hash, $asocId]);
                 setFlashAlert('success', 'Clave Reestablecida', "Se asignó la clave temporal '{$claveTemp}' con cambio obligatorio en su próximo acceso.");
@@ -308,31 +308,36 @@ require_once __DIR__ . '/includes/header.php';
 ?>
 
 <!-- BARRA DE PESTAÑAS PRINCIPALES (MÓDULOS DEL ADMINISTRADOR) -->
-<div class="tabbar-premium bg-body-tertiary border-bottom py-2">
+<div class="tabbar-premium bg-white border-bottom py-2.5 shadow-xs">
   <div class="container-fluid px-3 px-md-4">
     <ul class="nav nav-pills gap-2 flex-wrap" id="pills-tab" role="tablist">
       <li class="nav-item">
         <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'planilla') ? 'active text-white' : ''; ?> fw-bold" href="admin.php?tab=planilla&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>">
-          <i class="bi bi-grid-3x3-gap-fill me-1"></i> Planilla Matricial de Pesajes
+          <i class="fa-solid fa-table me-1.5"></i> Planilla Matricial de Pesajes
         </a>
       </li>
       <li class="nav-item">
         <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'ganaderos') ? 'active text-white' : ''; ?> fw-bold" href="admin.php?tab=ganaderos">
-          <i class="bi bi-people-fill me-1"></i> Gestión de Asociados (<?php echo count($listaTodosGanaderos); ?>)
+          <i class="fa-solid fa-users me-1.5"></i> Gestión de Asociados (<?php echo count($listaTodosGanaderos); ?>)
         </a>
       </li>
       <li class="nav-item">
         <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'quincenas') ? 'active text-white' : ''; ?> fw-bold" href="admin.php?tab=quincenas&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>">
-          <i class="bi bi-cash-coin me-1"></i> Precios de Quincena
+          <i class="fa-solid fa-calendar-check me-1.5"></i> Precios y Quincenas
         </a>
       </li>
       <li class="nav-item">
         <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'buzon') ? 'active text-white' : ''; ?> fw-bold position-relative" href="admin.php?tab=buzon">
-          <i class="bi bi-inbox-fill me-1"></i> Buzón de Inconformidades y Consultas
+          <i class="fa-solid fa-envelope-open-text me-1.5"></i> Buzón F-PQRS
           <?php if (count($listaAlertas) > 0): ?>
             <span class="badge rounded-pill bg-danger ms-1"><?php echo count($listaAlertas); ?></span>
           <?php endif; ?>
         </a>
+      </li>
+      <li class="nav-item">
+        <button type="button" class="nav-link nav-link-custom fw-bold" onclick="abrirModalBitacora()">
+          <i class="fa-solid fa-clock-rotate-left me-1.5 text-warning"></i> Bitácora de Auditoría
+        </button>
       </li>
     </ul>
   </div>
@@ -345,45 +350,51 @@ require_once __DIR__ . '/includes/header.php';
        ==================================================================== -->
   <?php if ($pestañaActiva === 'planilla'): ?>
 
-    <!-- TARJETAS DE RESUMEN SUPERIORES (4 KPIS AVANZADOS) -->
+    <!-- TARJETAS DE RESUMEN SUPERIORES (4 KPIS AVANZADOS ESTILO CENTRAL GANADERA) -->
     <div class="row g-3 mb-4">
       <div class="col-md-3 col-6">
-        <div class="kpi-card text-center">
-          <small class="kpi-label">Acopio Hoy</small>
-          <div class="kpi-value my-1" id="kpi-litros-hoy" style="color: var(--primary);">
-            <?php echo number_format($litrosHoyTotal, 1, ',', '.'); ?> L
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100" style="border-top: 4px solid var(--primary-emerald) !important;">
+          <small class="text-uppercase fw-bold text-muted" style="font-size: 0.76rem; letter-spacing: 0.05em;">Acopio Hoy</small>
+          <div class="fs-2 fw-bold my-1 tabular-nums" id="kpi-litros-hoy" style="color: var(--primary-emerald);">
+            <?php echo number_format($litrosHoyTotal, 1, ',', '.'); ?> <span class="fs-6 fw-normal text-muted">L</span>
           </div>
-          <small class="text-muted">☀️ M: <?php echo number_format($litrosHoyM, 1, ',', '.'); ?> L &bull; 🌅 T: <?php echo number_format($litrosHoyT, 1, ',', '.'); ?> L</small>
+          <small class="text-muted d-block">
+            <span class="badge-shift-m py-0.5 px-2">☀️ M: <?php echo number_format($litrosHoyM, 1, ',', '.'); ?> L</span> &bull; 
+            <span class="badge-shift-t py-0.5 px-2">🌅 T: <?php echo number_format($litrosHoyT, 1, ',', '.'); ?> L</span>
+          </small>
         </div>
       </div>
 
       <div class="col-md-3 col-6">
-        <div class="kpi-card text-center">
-          <small class="kpi-label">Variación vs Ayer</small>
-          <div class="kpi-value my-1" style="color: <?php echo $variacionAyer >= 0 ? '#15803d' : '#b91c1c'; ?>;">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100" style="border-top: 4px solid <?php echo $variacionAyer >= 0 ? 'var(--secondary-green)' : '#DC2626'; ?> !important;">
+          <small class="text-uppercase fw-bold text-muted" style="font-size: 0.76rem; letter-spacing: 0.05em;">Variación vs Ayer</small>
+          <div class="fs-2 fw-bold my-1 tabular-nums" style="color: <?php echo $variacionAyer >= 0 ? '#15803d' : '#b91c1c'; ?>;">
             <?php echo ($variacionAyer >= 0 ? '+' : '') . number_format($variacionAyer, 1, ',', '.'); ?>%
           </div>
-          <small class="text-muted">Ayer: <?php echo number_format($litrosAyerTotal, 1, ',', '.'); ?> L acopiados</small>
+          <small class="text-muted d-block">Ayer: <?php echo number_format($litrosAyerTotal, 1, ',', '.'); ?> L acopiados</small>
         </div>
       </div>
 
       <div class="col-md-3 col-6">
-        <div class="kpi-card kpi-gold text-center">
-          <small class="kpi-label">Total a Liquidar</small>
-          <div class="kpi-value my-1" id="kpi-liquidacion" style="color: var(--accent);">
+        <div class="card border-0 shadow-sm rounded-4 p-3 text-white h-100" style="background: linear-gradient(135deg, var(--primary-emerald) 0%, #166534 100%);">
+          <div class="d-flex align-items-center justify-content-between">
+            <small class="text-uppercase fw-bold text-warning" style="font-size: 0.76rem; letter-spacing: 0.05em;">Total Quincena a Liquidar</small>
+            <i class="fa-solid fa-coins text-warning"></i>
+          </div>
+          <div class="fs-2 fw-bold my-1 tabular-nums text-white" id="kpi-liquidacion">
             <?php echo formatoMonedaCOP($totalLiquidacionGeneral); ?>
           </div>
-          <small class="text-muted">Tarifa: <?php echo $precioLitroActual ? formatoMonedaCOP($precioLitroActual) . ' / L' : 'Por fijar'; ?></small>
+          <small class="text-light opacity-85 d-block">Tarifa: <?php echo $precioLitroActual ? formatoMonedaCOP($precioLitroActual) . ' / L' : 'Por fijar'; ?></small>
         </div>
       </div>
 
       <div class="col-md-3 col-6">
-        <div class="kpi-card text-center">
-          <small class="kpi-label">Entregas de Hoy</small>
-          <div class="kpi-value my-1" style="color: #0e7490;">
+        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100" style="border-top: 4px solid #0284C7 !important;">
+          <small class="text-uppercase fw-bold text-muted" style="font-size: 0.76rem; letter-spacing: 0.05em;">Entregas de Hoy</small>
+          <div class="fs-2 fw-bold my-1 tabular-nums text-dark">
             <?php echo $ganaderosEntregaronHoy; ?> <small class="fs-6 text-muted fw-normal">/ <?php echo $totalGanaderosActivos; ?></small>
           </div>
-          <small class="text-muted"><span class="text-success fw-bold"><?php echo $ganaderosEntregaronHoy; ?> entregaron</span> &bull; <span class="text-warning-emphasis fw-bold"><?php echo $ganaderosPendientesHoy; ?> pendientes</span></small>
+          <small class="text-muted d-block"><span class="text-success fw-bold"><?php echo $ganaderosEntregaronHoy; ?> entregaron</span> &bull; <span class="text-warning fw-bold"><?php echo $ganaderosPendientesHoy; ?> pendientes</span></small>
         </div>
       </div>
     </div>
@@ -447,21 +458,21 @@ require_once __DIR__ . '/includes/header.php';
           </div>
 
           <div class="d-flex align-items-center gap-2">
-            <button type="button" id="btn-importar-excel" class="btn btn-touch btn-aso-primary btn-sm rounded-pill px-3 shadow-sm" <?php echo $quincenaEstaCerrada ? 'disabled' : ''; ?> title="Importar pesajes desde Excel (.xlsx, .xls) o CSV">
-              <i class="bi bi-file-earmark-arrow-up-fill me-1"></i> Importar Excel
+            <button type="button" id="btn-importar-excel" class="btn btn-touch btn-sm rounded-pill px-3 shadow-sm text-white fw-bold" style="background-color: var(--primary-emerald);" <?php echo $quincenaEstaCerrada ? 'disabled' : ''; ?> title="Importar pesajes desde Excel (.xlsx, .xls) o CSV">
+              <i class="fa-solid fa-file-arrow-up me-1"></i> Importar Excel
             </button>
             <input type="file" id="input-importar-excel" accept=".xlsx, .xls, .csv" class="d-none">
 
-            <button type="button" id="btn-exportar-xlsx" class="btn btn-touch btn-success btn-sm rounded-pill px-3 shadow-sm" title="Descargar planilla completa en formato Excel (.xlsx)">
-              <i class="bi bi-file-earmark-spreadsheet-fill me-1"></i> Excel (.xlsx)
+            <button type="button" id="btn-exportar-xlsx" class="btn btn-touch btn-sm rounded-pill px-3 shadow-sm fw-bold text-white" style="background-color: var(--accent-gold); border: none;" title="Descargar planilla completa en formato Excel (.xlsx)">
+              <i class="fa-solid fa-file-excel me-1"></i> Excel (.xlsx)
             </button>
 
-            <button type="button" id="btn-exportar-csv" class="btn btn-touch btn-outline-primary btn-sm rounded-pill px-3" title="Descargar planilla en formato CSV">
-              <i class="bi bi-file-earmark-excel-fill me-1"></i> CSV
+            <button type="button" id="btn-exportar-csv" class="btn btn-touch btn-outline-success btn-sm rounded-pill px-3 fw-bold" title="Descargar planilla en formato CSV">
+              <i class="fa-solid fa-file-csv me-1"></i> CSV
             </button>
 
-            <button type="button" id="btn-bitacora" class="btn btn-touch btn-outline-secondary btn-sm rounded-pill px-3" onclick="abrirModalBitacora()" title="Consultar historial de auditoría y bitácora de cambios">
-              <i class="bi bi-clock-history me-1"></i> Bitácora
+            <button type="button" id="btn-bitacora" class="btn btn-touch btn-outline-secondary btn-sm rounded-pill px-3 fw-bold" onclick="abrirModalBitacora()" title="Consultar historial de auditoría y bitácora de cambios">
+              <i class="fa-solid fa-clock-rotate-left me-1 text-warning"></i> Bitácora
             </button>
           </div>
         </div>
