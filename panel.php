@@ -98,7 +98,7 @@ if (empty($quincenasDisponibles)) {
 }
 
 // 7. VERIFICAR INCONFORMIDAD / RECLAMO DE ESTA QUINCENA (LÍMITE 1 POR QUINCENA)
-$stmtAlerta = $pdo->prepare("SELECT id, mensaje, litrosAlMomento, estado, creadoEn 
+$stmtAlerta = $pdo->prepare("SELECT id, mensaje, litrosAlMomento, estado, respuestaAdmin, respondidoEn, respondidoPor, creadoEn 
                              FROM alertaquincena 
                              WHERE usuarioId = ? AND fechaInicio = ? AND fechaFin = ? 
                              LIMIT 1");
@@ -359,9 +359,14 @@ require_once __DIR__ . '/includes/header.php';
             </h4>
             <small class="text-white-50">Tus pesajes registrados día a día en la Finca El Recuerdo</small>
           </div>
-          <span class="badge px-3 py-2 rounded-pill fw-bold text-white fs-6" style="background-color: var(--accent);">
-            <?php echo count($entregasQuincena); ?> Registros en el Periodo
-          </span>
+          <div class="d-flex align-items-center gap-2">
+            <button type="button" class="btn btn-touch btn-light btn-sm rounded-pill fw-bold text-primary shadow-sm no-print" onclick="window.print()">
+              <i class="bi bi-printer-fill me-1"></i> Imprimir Liquidación
+            </button>
+            <span class="badge px-3 py-2 rounded-pill fw-bold text-white fs-6 d-none d-md-inline-block" style="background-color: var(--accent);">
+              <?php echo count($entregasQuincena); ?> Registros en el Periodo
+            </span>
+          </div>
         </div>
 
         <div class="card-body p-4">
@@ -480,6 +485,28 @@ require_once __DIR__ . '/includes/header.php';
             <p class="mb-0 text-dark fst-italic">"<?php echo e($alertaExistente['mensaje']); ?>"</p>
             <small class="text-muted mt-1 d-block">Litros registrados al momento del reclamo: <?php echo formatoLitros($alertaExistente['litrosAlMomento']); ?></small>
           </div>
+
+          <?php if (!empty($alertaExistente['respuestaAdmin'])): ?>
+            <div class="mt-3 p-3 rounded-4 border-2 border-success bg-success-subtle text-success-emphasis">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <strong class="d-flex align-items-center gap-2 fs-6">
+                  <i class="bi bi-patch-check-fill text-success fs-5"></i> Respuesta Oficial de la Administración:
+                </strong>
+                <span class="badge bg-success text-white px-3 py-1 rounded-pill fw-bold">
+                  <?php echo e($alertaExistente['estado']); ?>
+                </span>
+              </div>
+              <p class="mb-2 text-dark fs-6" style="line-height: 1.6;"><?php echo nl2br(e($alertaExistente['respuestaAdmin'])); ?></p>
+              <small class="text-muted d-block">
+                Respondido por: <strong><?php echo e($alertaExistente['respondidoPor'] ?: 'Administración General'); ?></strong> 
+                <?php if (!empty($alertaExistente['respondidoEn'])): ?> &bull; <?php echo formatoFechaEspanol($alertaExistente['respondidoEn']); ?><?php endif; ?>
+              </small>
+            </div>
+          <?php else: ?>
+            <div class="mt-2 text-muted small">
+              <i class="bi bi-hourglass-split me-1 text-warning"></i> Tu solicitud está en revisión oficial por parte de la administración.
+            </div>
+          <?php endif; ?>
         <?php endif; ?>
 
         <?php if (!empty($errorReclamo)): ?>

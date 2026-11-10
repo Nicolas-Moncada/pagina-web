@@ -31,6 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $cedula = normalizarCedula($_POST['cedula'] ?? '');
         $nombre = trim($_POST['nombre'] ?? '');
+        $email = strtolower(trim($_POST['email'] ?? ''));
         $telefono = trim($_POST['telefono'] ?? '');
         $finca = trim($_POST['finca'] ?? 'Vereda Alizal');
         $password = $_POST['password'] ?? '';
@@ -40,6 +41,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (empty($cedula) || empty($nombre) || empty($telefono) || empty($password)) {
             $errorMsg = 'Por favor diligencia todos los campos obligatorios.';
+        } elseif (!empty($email) && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errorMsg = 'El formato del correo electrónico es inválido.';
         } elseif (!CaptchaService::validar($captcha, $recaptchaToken)) {
             $errorMsg = 'El código de seguridad (CAPTCHA) es incorrecto o ha expirado.';
         } elseif (strlen($nombre) < 3 || strlen($nombre) > 100) {
@@ -49,20 +52,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($password !== $passwordConfirm) {
             $errorMsg = 'La contraseña y su confirmación no coinciden.';
         } else {
-            // Verificar si la cédula ya existe
-            $stmtCheck = $pdo->prepare("SELECT id FROM usuario WHERE cedula = ? LIMIT 1");
-            $stmtCheck->execute([$cedula]);
+            // Verificar si la cédula o email ya existen
+            $stmtCheck = $pdo->prepare("SELECT id FROM usuario WHERE cedula = ? OR (email IS NOT NULL AND email != '' AND email = ?) LIMIT 1");
+            $stmtCheck->execute([$cedula, $email]);
             if ($stmtCheck->fetch()) {
-                $errorMsg = 'Ya existe una cuenta asociada a este número de cédula. Por favor inicia sesión.';
+                $errorMsg = 'Ya existe una cuenta asociada a este número de cédula o correo electrónico. Por favor inicia sesión.';
             } else {
                 try {
                     $userId = generarUUID('usr');
-                    $hash = password_hash($password, PASSWORD_DEFAULT);
-                    $stmtIns = $pdo->prepare("INSERT INTO usuario (id, cedula, nombre, telefono, finca, passwordHash, rol, activo, debeCambiarPassword, sessionVersion) VALUES (?, ?, ?, ?, ?, ?, 'GANADERO', 1, 0, 1)");
-                    $stmtIns->execute([$userId, $cedula, $nombre, $telefono, $finca, $hash]);
+                    $hash = hashPassword($password);
+                    $emailVal = !empty($email) ? $email : null;
+                    $stmtIns = $pdo->prepare("INSERT INTO usuario (id, cedula, nombre, email, telefono, finca, passwordHash, rol, activo, debeCambiarPassword, sessionVersion) VALUES (?, ?, ?, ?, ?, ?, ?, 'GANADERO', 1, 0, 1)");
+                    $stmtIns->execute([$userId, $cedula, $nombre, $emailVal, $telefono, $finca, $hash]);
 
-                    registrarAuditoria($pdo, 'REGISTRO_GANADERO', $userId, $cedula, "Nombre: $nombre");
-                    setFlashAlert('success', '¡Registro Exitoso!', 'Tu cuenta ha sido creada. Ya puedes iniciar sesión con tu cédula y contraseña.');
+                    registrarAuditoria($pdo, 'REGISTRO_GANADERO', $userId, $cedula, "Nombre: $nombre | Email: $email");
+                    setFlashAlert('success', '¡Registro Exitoso!', 'Tu cuenta ha sido creada con seguridad Argon2id. Ya puedes iniciar sesión con tu cédula o Google.');
                     header('Location: login.php');
                     exit;
                 } catch (Exception $e) {
@@ -122,19 +126,34 @@ require_once __DIR__ . '/includes/header.php';
             <input type="tel" class="form-control form-control-touch" id="telefono" name="telefono" required placeholder="Ej: 3101234567" value="<?php echo e($_POST['telefono'] ?? ''); ?>">
           </div>
           <div class="col-sm-6">
-            <label for="finca" class="form-label fw-bold small text-muted">Nombre de Finca / Predio</label>
-            <input type="text" class="form-control form-control-touch" id="finca" name="finca" placeholder="Ej: Finca La Esperanza" value="<?php echo e($_POST['finca'] ?? ''); ?>">
+            <label for="email" class="form-label fw-bold small text-muted">Correo Electrónico (Para Google)</label>
+            <input type="email" class="form-control form-control-touch" id="email" name="email" placeholder="ejemplo@gmail.com" value="<?php echo e($_POST['email'] ?? ''); ?>">
           </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="finca" class="form-label fw-bold small text-muted">Nombre de Finca / Predio</label>
+          <input type="text" class="form-control form-control-touch" id="finca" name="finca" placeholder="Ej: Finca La Esperanza" value="<?php echo e($_POST['finca'] ?? ''); ?>">
         </div>
 
         <div class="row g-3 mb-3">
           <div class="col-sm-6">
             <label for="password" class="form-label fw-bold small text-muted">Contraseña *</label>
-            <input type="password" class="form-control form-control-touch" id="password" name="password" required minlength="8" placeholder="Mínimo 8 caracteres">
+            <div class="input-group">
+              <input type="password" class="form-control form-control-touch border-end-0" id="password" name="password" required minlength="8" placeholder="Mínimo 8 caracteres">
+              <button class="btn btn-outline-secondary border-2 border-start-0" type="button" onclick="const p = document.getElementById('password'); p.type = p.type === 'password' ? 'text' : 'password'; this.querySelector('i').classList.toggle('bi-eye-slash-fill');">
+                <i class="bi bi-eye-fill"></i>
+              </button>
+            </div>
           </div>
           <div class="col-sm-6">
             <label for="password_confirm" class="form-label fw-bold small text-muted">Confirmar Contraseña *</label>
-            <input type="password" class="form-control form-control-touch" id="password_confirm" name="password_confirm" required minlength="8" placeholder="Repite la contraseña">
+            <div class="input-group">
+              <input type="password" class="form-control form-control-touch border-end-0" id="password_confirm" name="password_confirm" required minlength="8" placeholder="Repite la contraseña">
+              <button class="btn btn-outline-secondary border-2 border-start-0" type="button" onclick="const p = document.getElementById('password_confirm'); p.type = p.type === 'password' ? 'text' : 'password'; this.querySelector('i').classList.toggle('bi-eye-slash-fill');">
+                <i class="bi bi-eye-fill"></i>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -158,6 +177,30 @@ require_once __DIR__ . '/includes/header.php';
           <i class="bi bi-check2-circle fs-5"></i>
           <span>Completar Registro</span>
         </button>
+
+        <!-- Opción Google Identity -->
+        <div class="d-flex align-items-center my-3">
+          <hr class="flex-grow-1 border-secondary-subtle my-0">
+          <span class="px-3 text-muted small fw-bold text-uppercase" style="font-size: 0.75rem;">o regístrate con</span>
+          <hr class="flex-grow-1 border-secondary-subtle my-0">
+        </div>
+
+        <div class="mb-3 d-flex justify-content-center">
+          <div id="g_id_onload"
+               data-client_id="<?php echo e(GOOGLE_CLIENT_ID); ?>"
+               data-callback="handleGoogleLogin"
+               data-auto_prompt="false">
+          </div>
+          <div class="g_id_signin w-100 d-flex justify-content-center"
+               data-type="standard"
+               data-shape="rectangular"
+               data-theme="outline"
+               data-text="signup_with"
+               data-size="large"
+               data-logo_alignment="left"
+               data-width="320">
+          </div>
+        </div>
       </form>
 
       <div class="text-center pt-3 border-top border-secondary-subtle">
@@ -169,5 +212,57 @@ require_once __DIR__ . '/includes/header.php';
     </div>
   </div>
 </main>
+
+<!-- Script Google Identity Services -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+window.handleGoogleLogin = async function(response) {
+  if (!response || !response.credential) return;
+  Swal.fire({
+    title: 'Validando con Google...',
+    allowOutsideClick: false,
+    didOpen: () => { Swal.showLoading(); }
+  });
+
+  try {
+    const cedula = document.getElementById('cedula').value.trim();
+    const res = await fetch('api/auth_google.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential: response.credential, cedula: cedula })
+    });
+    const data = await res.json();
+
+    if (res.ok && data.ok) {
+      Swal.fire({
+        icon: 'success',
+        title: '¡Cuenta Vinculada!',
+        text: data.mensaje || 'Bienvenido.',
+        showConfirmButton: false,
+        timer: 1200
+      }).then(() => {
+        window.location.href = data.redirect || 'panel.php';
+      });
+    } else if (data.unregistered) {
+      if (data.google_email) {
+        document.getElementById('email').value = data.google_email;
+      }
+      if (data.google_name && !document.getElementById('nombre').value) {
+        document.getElementById('nombre').value = data.google_name;
+      }
+      Swal.fire({
+        icon: 'info',
+        title: 'Cuenta de Google detectada',
+        text: 'Completa tu número de cédula y teléfono para finalizar tu afiliación asociativa.',
+        confirmButtonColor: '#16375f'
+      });
+    } else {
+      AsoagroUI.showError('Aviso', data.error || 'No fue posible registrar con Google.');
+    }
+  } catch (e) {
+    AsoagroUI.showError('Error', 'Fallo de conexión al validar con Google.');
+  }
+};
+</script>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>

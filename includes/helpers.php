@@ -329,3 +329,49 @@ function registrarAuditoria(PDO $pdo, string $evento, ?string $usuarioId = null,
         error_log("Error en registrarAuditoria: " . $e->getMessage());
     }
 }
+
+/**
+ * Hashea una contraseña usando el algoritmo Argon2id (con fallback seguro).
+ */
+function hashPassword(string $password): string {
+    if (defined('PASSWORD_ARGON2ID')) {
+        return password_hash($password, PASSWORD_ARGON2ID, [
+            'memory_cost' => 65536,
+            'time_cost'   => 4,
+            'threads'     => 1
+        ]);
+    }
+    return password_hash($password, PASSWORD_DEFAULT);
+}
+
+/**
+ * Verifica si un hash almacenado requiere rehashearse con Argon2id.
+ */
+function needsRehash(string $hash): bool {
+    if (defined('PASSWORD_ARGON2ID')) {
+        return password_needs_rehash($hash, PASSWORD_ARGON2ID, [
+            'memory_cost' => 65536,
+            'time_cost'   => 4,
+            'threads'     => 1
+        ]);
+    }
+    return password_needs_rehash($hash, PASSWORD_DEFAULT);
+}
+
+/**
+ * Registra una acción de modificación u operativa en audit_logs.
+ */
+function registrarBitacoraCambio(PDO $pdo, string $accion, string $tabla, ?string $registroId = null, ?string $campo = null, ?string $valorAnterior = null, ?string $valorNuevo = null, ?string $detalles = null, ?string $usuarioId = null): void {
+    try {
+        if ($usuarioId === null && isset($_SESSION['usuario']['id'])) {
+            $usuarioId = $_SESSION['usuario']['id'];
+        }
+        $ip = getClientIP();
+
+        $stmt = $pdo->prepare("INSERT INTO audit_logs (usuarioId, accion, tabla, registroId, campo, valorAnterior, valorNuevo, ip, detalles, creadoEn)
+                               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())");
+        $stmt->execute([$usuarioId, $accion, $tabla, $registroId, $campo, $valorAnterior, $valorNuevo, $ip, $detalles]);
+    } catch (Exception $e) {
+        error_log("Error en registrarBitacoraCambio: " . $e->getMessage());
+    }
+}

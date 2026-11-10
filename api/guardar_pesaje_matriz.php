@@ -12,12 +12,12 @@ require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/helpers.php';
 require_once __DIR__ . '/../includes/csrf.php';
-require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/auth_middleware.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
-// 1. Control de acceso estricto (solo Administrador)
-$usuarioAdmin = requireAuth('ADMIN');
+// 1. Control de acceso estricto (solo Administrador verificado por middleware)
+$usuarioAdmin = requireAdminAuth(false);
 $pdo = getDB();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -147,11 +147,22 @@ if ($action === 'batch') {
             $totalesColumnas[$k] = (float)($stmtTotC->fetchColumn() ?: 0.0);
         }
 
+        // Totales Diarios Unificados (M + T)
+        $totalesDias = [];
+        $stmtTotD = $pdo->prepare("SELECT SUM(litros) FROM entrega WHERE fecha = ?");
+        foreach ($columnasAfectadas as $c) {
+            if (!isset($totalesDias[$c['fecha']])) {
+                $stmtTotD->execute([$c['fecha']]);
+                $totalesDias[$c['fecha']] = (float)($stmtTotD->fetchColumn() ?: 0.0);
+            }
+        }
+
         $stmtGranTot = $pdo->prepare("SELECT SUM(litros) FROM entrega WHERE fecha >= ? AND fecha <= ?");
         $stmtGranTot->execute([$fechaInicioQ, $fechaFinQ]);
         $granTotal = (float)($stmtGranTot->fetchColumn() ?: 0.0);
 
         registrarAuditoria($pdo, 'PLANILLA_LOTE_EXCEL', $usuarioAdmin['id'], $usuarioAdmin['cedula'], "Actualizados: $actualizados pesajes");
+        registrarBitacoraCambio($pdo, 'IMPORTAR_EXCEL_LOTE', 'entrega', $fechaInicioQ . '_' . $fechaFinQ, 'litros', null, null, "Importación masiva: $actualizados pesajes actualizados", $usuarioAdmin['id']);
 
         echo json_encode([
             'ok' => true,
@@ -159,6 +170,7 @@ if ($action === 'batch') {
             'actualizados' => $actualizados,
             'totalesGanaderos' => $totalesGanaderos,
             'totalesColumnas' => $totalesColumnas,
+            'totalesDias' => $totalesDias,
             'granTotal' => $granTotal
         ]);
         exit;
@@ -204,6 +216,11 @@ if (!$ganadero) {
 }
 
 try {
+    // Obtener valor anterior para registro de auditoría
+    $stmtPrev = $pdo->prepare("SELECT litros FROM entrega WHERE usuarioId = ? AND fecha = ? AND turno = ? LIMIT 1");
+    $stmtPrev->execute([$usuarioId, $fecha, $turno]);
+    $valorPrevio = $stmtPrev->fetchColumn();
+
     $nuevoValor = null;
 
     if ($valRaw === null || $valRaw === '') {
@@ -232,6 +249,24 @@ try {
         $stmtR->execute([$idEnt, $usuarioId, $fecha, $turno, $litros]);
     }
 
+    // Registrar en Bitácora de Auditoría si el valor cambió efectivamente
+    $valPrevioNum = ($valorPrevio !== false && $valorPrevio !== null) ? (float)$valorPrevio : null;
+    if ($valPrevioNum !== $nuevoValor) {
+        $txtAnt = ($valPrevioNum !== null) ? number_format($valPrevioNum, 1) . ' L' : 'Vacío';
+        $txtNue = ($nuevoValor !== null) ? number_format($nuevoValor, 1) . ' L' : 'Eliminado';
+        registrarBitacoraCambio(
+            $pdo,
+            'EDITAR_PESAJE',
+            'entrega',
+            $usuarioId,
+            "{$fecha} [{$turno}]",
+            $txtAnt,
+            $txtNue,
+            "Pesaje {$turno} ({$fecha}) modificado para {$ganadero['nombre']}",
+            $usuarioAdmin['id']
+        );
+    }
+
     // Recálculo seguro en servidor
     $stmtTotG = $pdo->prepare("SELECT SUM(litros) FROM entrega WHERE usuarioId = ? AND fecha >= ? AND fecha <= ?");
     $stmtTotG->execute([$usuarioId, $fechaInicioQ, $fechaFinQ]);
@@ -240,6 +275,11 @@ try {
     $stmtTotC = $pdo->prepare("SELECT SUM(litros) FROM entrega WHERE fecha = ? AND turno = ?");
     $stmtTotC->execute([$fecha, $turno]);
     $totalColumna = (float)($stmtTotC->fetchColumn() ?: 0.0);
+
+    // Total del Día Unificado (Mañana + Tarde)
+    $stmtTotDia = $pdo->prepare("SELECT SUM(litros) FROM entrega WHERE fecha = ?");
+    $stmtTotDia->execute([$fecha]);
+    $totalDia = (float)($stmtTotDia->fetchColumn() ?: 0.0);
 
     $stmtGranTot = $pdo->prepare("SELECT SUM(litros) FROM entrega WHERE fecha >= ? AND fecha <= ?");
     $stmtGranTot->execute([$fechaInicioQ, $fechaFinQ]);
@@ -250,6 +290,7 @@ try {
         'litros' => $nuevoValor,
         'totalGanadero' => $totalGanadero,
         'totalColumna' => $totalColumna,
+        'totalDia' => $totalDia,
         'granTotal' => $granTotal
     ]);
     exit;

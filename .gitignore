@@ -22,6 +22,9 @@ __pycache__/
 tools/*.py
 scratch/
 test_*.py
+check_*.py
+lh.json
+.vscode/
 
 # 4. Archivos de Registro y Temporales
 *.log

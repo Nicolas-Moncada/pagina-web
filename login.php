@@ -98,9 +98,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
                         limpiarIntentosFallidos($pdo, $cedula, $ip);
                         session_regenerate_id(true);
 
-                        // Si el hash necesita actualización, rehashear transparentemente
-                        if (password_needs_rehash($user['passwordHash'], PASSWORD_DEFAULT)) {
-                            $nuevoHash = password_hash($password, PASSWORD_DEFAULT);
+                        // Si el hash necesita actualización a Argon2id, rehashear transparentemente
+                        if (needsRehash($user['passwordHash'])) {
+                            $nuevoHash = hashPassword($password);
                             try {
                                 $upd = $pdo->prepare("UPDATE usuario SET passwordHash = ? WHERE id = ?");
                                 $upd->execute([$nuevoHash, $user['id']]);
@@ -176,6 +176,9 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
   
   <!-- Estilos Globales Premium de Alta Accesibilidad (Azul Marino / Crema / Oro) -->
   <link rel="stylesheet" href="assets/css/theme.css">
+
+  <!-- Google Identity Services (OAuth 2.0) -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 
   <?php if (USE_RECAPTCHA_V2 && !empty(RECAPTCHA_SITE_KEY)): ?>
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
@@ -321,6 +324,31 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
                   <span>Ingresar a la Plataforma</span>
                   <i class="bi bi-arrow-right fs-4"></i>
                 </button>
+
+                <!-- Separador o Google Sign-In -->
+                <div class="d-flex align-items-center my-3">
+                  <hr class="flex-grow-1 border-secondary-subtle my-0">
+                  <span class="px-3 text-muted small fw-bold text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.05em;">o continúa con</span>
+                  <hr class="flex-grow-1 border-secondary-subtle my-0">
+                </div>
+
+                <!-- Botón Oficial Google Identity Services (OAuth 2.0) -->
+                <div class="mb-3 d-flex justify-content-center">
+                  <div id="g_id_onload"
+                       data-client_id="<?php echo e(GOOGLE_CLIENT_ID); ?>"
+                       data-callback="handleGoogleLogin"
+                       data-auto_prompt="false">
+                  </div>
+                  <div class="g_id_signin w-100 d-flex justify-content-center"
+                       data-type="standard"
+                       data-shape="rectangular"
+                       data-theme="outline"
+                       data-text="signin_with"
+                       data-size="large"
+                       data-logo_alignment="left"
+                       data-width="320">
+                  </div>
+                </div>
               </form>
 
               <!-- Enlace de Afiliación / Registro -->
@@ -352,6 +380,103 @@ $cedulaRecordada = $_COOKIE['asoagro_recordar_cedula'] ?? '';
   <script src="assets/js/theme.js"></script>
 
   <script>
+    // Callback oficial de Google Identity Services
+    window.handleGoogleLogin = async function(response) {
+      if (!response || !response.credential) {
+        if (window.AsoagroUI) {
+          AsoagroUI.showError('Error de Google', 'No se recibió la credencial de autenticación.');
+        } else {
+          alert('No se recibió la credencial de autenticación de Google.');
+        }
+        return;
+      }
+
+      Swal.fire({
+        title: 'Verificando con Google...',
+        text: 'Validando identidad de forma segura en el servidor.',
+        allowOutsideClick: false,
+        didOpen: () => { Swal.showLoading(); }
+      });
+
+      try {
+        const res = await fetch('api/auth_google.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ credential: response.credential })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.ok) {
+          Swal.fire({
+            icon: 'success',
+            title: '¡Acceso Concedido!',
+            text: data.mensaje || 'Bienvenido a la plataforma.',
+            showConfirmButton: false,
+            timer: 1200
+          }).then(() => {
+            window.location.href = data.redirect || 'panel.php';
+          });
+        } else if (data.unregistered) {
+          Swal.fire({
+            icon: 'info',
+            title: 'Cuenta no vinculada',
+            html: `<p class="small text-muted mb-3">${data.error}</p><label class="form-label small fw-bold text-dark text-start d-block">Ingresa tu Cédula para vincular:</label><input id="swal-cedula" class="form-control text-center fw-bold fs-5" placeholder="Número de Cédula" inputmode="numeric">`,
+            showCancelButton: true,
+            confirmButtonColor: '#16375f',
+            confirmButtonText: 'Vincular y Continuar',
+            cancelButtonText: 'Cancelar',
+            preConfirm: () => {
+              const c = document.getElementById('swal-cedula').value.trim();
+              if (!c) {
+                Swal.showValidationMessage('Debes ingresar tu número de cédula para vincular tu cuenta');
+              }
+              return c;
+            }
+          }).then(async (result) => {
+            if (result.isConfirmed) {
+              Swal.fire({ title: 'Vinculando cuenta...', didOpen: () => Swal.showLoading() });
+              const resLink = await fetch('api/auth_google.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ credential: response.credential, cedula: result.value })
+              });
+              const dataLink = await resLink.json();
+              if (resLink.ok && dataLink.ok) {
+                Swal.fire({
+                  icon: 'success',
+                  title: '¡Cuenta Vinculada con Éxito!',
+                  text: 'Tu Google ID ha sido vinculado a tu cédula.',
+                  showConfirmButton: false,
+                  timer: 1300
+                }).then(() => {
+                  window.location.href = dataLink.redirect || 'panel.php';
+                });
+              } else {
+                if (window.AsoagroUI) {
+                  AsoagroUI.showError('Error de Vinculación', dataLink.error || 'No se pudo vincular la cuenta.');
+                } else {
+                  alert(dataLink.error || 'No se pudo vincular la cuenta.');
+                }
+              }
+            }
+          });
+        } else {
+          if (window.AsoagroUI) {
+            AsoagroUI.showError('Error de Autenticación', data.error || 'No fue posible iniciar sesión con Google.');
+          } else {
+            alert(data.error || 'No fue posible iniciar sesión con Google.');
+          }
+        }
+      } catch (err) {
+        console.error(err);
+        if (window.AsoagroUI) {
+          AsoagroUI.showError('Error de Red', 'Error de comunicación al contactar el servidor de autenticación.');
+        } else {
+          alert('Error de comunicación con el servidor.');
+        }
+      }
+    };
+
     document.addEventListener('DOMContentLoaded', function() {
       // Toggle de visualización de contraseña
       const btnToggle = document.getElementById('btn-toggle-pass');

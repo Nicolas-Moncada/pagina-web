@@ -14,9 +14,10 @@ require_once __DIR__ . '/includes/config.php';
 require_once __DIR__ . '/includes/db.php';
 require_once __DIR__ . '/includes/helpers.php';
 require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/api/auth_middleware.php';
 
-// 1. CONTROL DE ACCESO ESTRICTO (ROL ADMINISTRADOR)
-$usuario = requireAuth('ADMIN');
+// 1. CONTROL DE ACCESO ESTRICTO (ROL ADMINISTRADOR VERIFICADO POR MIDDLEWARE)
+$usuario = requireAdminAuth(false);
 $pdo = getDB();
 
 // 2. DETECCIÓN Y PARÁMETROS DE QUINCENA
@@ -265,8 +266,30 @@ $totalLiquidacionGeneral = $precioLitroActual ? ($granTotalMatriz * $precioLitro
 $cantDias = count($diasQuincena);
 $promedioDiarioGeneral = ($cantDias > 0) ? ($granTotalMatriz / $cantDias) : 0.0;
 
-// 7. CONSULTAS PARA BUZÓN
-$stmtAlertas = $pdo->query("SELECT a.id, a.usuarioId, a.fechaInicio, a.fechaFin, a.mensaje, a.litrosAlMomento, a.estado, a.creadoEn,
+// CÁLCULO DE KPIS AVANZADOS EN TIEMPO REAL
+$fechaHoy = date('Y-m-d');
+$fechaAyer = date('Y-m-d', strtotime('-1 day'));
+
+$litrosHoyM = (float)($totalesPorColumna["{$fechaHoy}_MANANA"] ?? 0.0);
+$litrosHoyT = (float)($totalesPorColumna["{$fechaHoy}_TARDE"] ?? 0.0);
+$litrosHoyTotal = $litrosHoyM + $litrosHoyT;
+
+$litrosAyerM = (float)($totalesPorColumna["{$fechaAyer}_MANANA"] ?? 0.0);
+$litrosAyerT = (float)($totalesPorColumna["{$fechaAyer}_TARDE"] ?? 0.0);
+$litrosAyerTotal = $litrosAyerM + $litrosAyerT;
+$variacionAyer = ($litrosAyerTotal > 0) ? round((($litrosHoyTotal - $litrosAyerTotal) / $litrosAyerTotal) * 100, 1) : 0.0;
+
+// Ganaderos que han entregado hoy vs pendientes de entrega
+$ganaderosEntregaronHoy = 0;
+foreach ($ganaderosPlanilla as $g) {
+    if (isset($mapaMatriz[$g['id']]["{$fechaHoy}_MANANA"]) || isset($mapaMatriz[$g['id']]["{$fechaHoy}_TARDE"])) {
+        $ganaderosEntregaronHoy++;
+    }
+}
+$ganaderosPendientesHoy = max(0, $totalGanaderosActivos - $ganaderosEntregaronHoy);
+
+// 7. CONSULTAS PARA BUZÓN (Con soporte de respuestas oficiales)
+$stmtAlertas = $pdo->query("SELECT a.id, a.usuarioId, a.fechaInicio, a.fechaFin, a.mensaje, a.litrosAlMomento, a.estado, a.respuestaAdmin, a.respondidoEn, a.respondidoPor, a.creadoEn,
                                    u.nombre AS ganaderoNombre, u.cedula AS ganaderoCedula
                             FROM alertaquincena a
                             JOIN usuario u ON a.usuarioId = u.id
@@ -322,25 +345,25 @@ require_once __DIR__ . '/includes/header.php';
        ==================================================================== -->
   <?php if ($pestañaActiva === 'planilla'): ?>
 
-    <!-- TARJETAS DE RESUMEN SUPERIORES -->
+    <!-- TARJETAS DE RESUMEN SUPERIORES (4 KPIS AVANZADOS) -->
     <div class="row g-3 mb-4">
       <div class="col-md-3 col-6">
         <div class="kpi-card text-center">
-          <small class="kpi-label">Litros Recolectados</small>
-          <div class="kpi-value my-1" id="kpi-gran-total">
-            <?php echo number_format($granTotalMatriz, 1, ',', '.'); ?> L
+          <small class="kpi-label">Acopio Hoy</small>
+          <div class="kpi-value my-1" id="kpi-litros-hoy" style="color: var(--primary);">
+            <?php echo number_format($litrosHoyTotal, 1, ',', '.'); ?> L
           </div>
-          <small class="text-muted">Total quincena en acopio</small>
+          <small class="text-muted">☀️ M: <?php echo number_format($litrosHoyM, 1, ',', '.'); ?> L &bull; 🌅 T: <?php echo number_format($litrosHoyT, 1, ',', '.'); ?> L</small>
         </div>
       </div>
 
       <div class="col-md-3 col-6">
         <div class="kpi-card text-center">
-          <small class="kpi-label">Promedio Diario</small>
-          <div class="kpi-value my-1" id="kpi-promedio-diario">
-            <?php echo number_format($promedioDiarioGeneral, 1, ',', '.'); ?> L
+          <small class="kpi-label">Variación vs Ayer</small>
+          <div class="kpi-value my-1" style="color: <?php echo $variacionAyer >= 0 ? '#15803d' : '#b91c1c'; ?>;">
+            <?php echo ($variacionAyer >= 0 ? '+' : '') . number_format($variacionAyer, 1, ',', '.'); ?>%
           </div>
-          <small class="text-muted"><?php echo $cantDias; ?> días en el periodo</small>
+          <small class="text-muted">Ayer: <?php echo number_format($litrosAyerTotal, 1, ',', '.'); ?> L acopiados</small>
         </div>
       </div>
 
@@ -356,11 +379,11 @@ require_once __DIR__ . '/includes/header.php';
 
       <div class="col-md-3 col-6">
         <div class="kpi-card text-center">
-          <small class="kpi-label">Asociados en Planilla</small>
-          <div class="kpi-value counter-animated" data-target="<?php echo (int)$totalGanaderosActivos; ?>" style="color: #0e7490;">
-            <?php echo $totalGanaderosActivos; ?>
+          <small class="kpi-label">Entregas de Hoy</small>
+          <div class="kpi-value my-1" style="color: #0e7490;">
+            <?php echo $ganaderosEntregaronHoy; ?> <small class="fs-6 text-muted fw-normal">/ <?php echo $totalGanaderosActivos; ?></small>
           </div>
-          <small class="text-muted">Ganaderos activos registrados</small>
+          <small class="text-muted"><span class="text-success fw-bold"><?php echo $ganaderosEntregaronHoy; ?> entregaron</span> &bull; <span class="text-warning-emphasis fw-bold"><?php echo $ganaderosPendientesHoy; ?> pendientes</span></small>
         </div>
       </div>
     </div>
@@ -401,15 +424,26 @@ require_once __DIR__ . '/includes/header.php';
           <span class="badge <?php echo $quincenaEstaCerrada ? 'bg-secondary' : 'bg-primary'; ?> px-3 py-2 rounded-pill ms-lg-2">
             <?php echo $quincenaEstaCerrada ? '🔒 Cerrada' : '🔵 Abierta para edición'; ?>
           </span>
+
+          <!-- Botón de Cierre / Reapertura de Quincena -->
+          <?php if ($quincenaEstaCerrada): ?>
+            <button type="button" class="btn btn-touch btn-warning btn-sm rounded-pill px-3 shadow-sm ms-lg-1" onclick="solicitarReaperturaQuincena()" title="Reabrir esta quincena con validación de clave">
+              <i class="bi bi-unlock-fill me-1"></i> Reabrir Quincena
+            </button>
+          <?php else: ?>
+            <button type="button" class="btn btn-touch btn-outline-danger btn-sm rounded-pill px-3 shadow-sm ms-lg-1" onclick="solicitarCierreQuincena()" title="Cerrar y congelar edición inline de esta quincena">
+              <i class="bi bi-lock-fill me-1"></i> Cerrar Quincena
+            </button>
+          <?php endif; ?>
         </div>
 
         <!-- Buscador en tiempo real de ganaderos y exportación -->
         <div class="d-flex flex-wrap align-items-center gap-2">
-          <div class="input-group input-group-sm" style="min-width: 240px;">
+          <div class="input-group input-group-sm" style="min-width: 220px;">
             <span class="input-group-text bg-transparent border-2 text-primary">
               <i class="bi bi-search"></i>
             </span>
-            <input type="text" id="filtro-matriz" class="form-control form-control-touch form-control-sm border-start-0" placeholder="Buscar por nombre o cédula...">
+            <input type="text" id="filtro-matriz" class="form-control form-control-touch form-control-sm border-start-0" placeholder="Buscar ganadero o cédula...">
           </div>
 
           <div class="d-flex align-items-center gap-2">
@@ -418,8 +452,16 @@ require_once __DIR__ . '/includes/header.php';
             </button>
             <input type="file" id="input-importar-excel" accept=".xlsx, .xls, .csv" class="d-none">
 
+            <button type="button" id="btn-exportar-xlsx" class="btn btn-touch btn-success btn-sm rounded-pill px-3 shadow-sm" title="Descargar planilla completa en formato Excel (.xlsx)">
+              <i class="bi bi-file-earmark-spreadsheet-fill me-1"></i> Excel (.xlsx)
+            </button>
+
             <button type="button" id="btn-exportar-csv" class="btn btn-touch btn-outline-primary btn-sm rounded-pill px-3" title="Descargar planilla en formato CSV">
-              <i class="bi bi-file-earmark-excel-fill me-1"></i> Descargar CSV
+              <i class="bi bi-file-earmark-excel-fill me-1"></i> CSV
+            </button>
+
+            <button type="button" id="btn-bitacora" class="btn btn-touch btn-outline-secondary btn-sm rounded-pill px-3" onclick="abrirModalBitacora()" title="Consultar historial de auditoría y bitácora de cambios">
+              <i class="bi bi-clock-history me-1"></i> Bitácora
             </button>
           </div>
         </div>
@@ -488,11 +530,18 @@ require_once __DIR__ . '/includes/header.php';
                 <tr class="fila-matriz" data-uid="<?php echo e($g['id']); ?>" data-cedula="<?php echo e($g['cedula']); ?>" data-idx="<?php echo $idx; ?>" data-texto="<?php echo strtolower(e($g['nombre'] . ' ' . $g['cedula'])); ?>">
                   <!-- Columna Asociado Fija a la Izquierda -->
                   <td class="col-sticky-name">
-                    <div class="fw-bold text-truncate" style="max-width: 210px;" title="<?php echo e($g['nombre']); ?>">
-                      <?php echo e($g['nombre']); ?>
-                    </div>
-                    <div class="text-muted font-monospace small">
-                      C.C. <?php echo e($g['cedula']); ?><?php if (!empty($g['finca'])) echo ' &bull; ' . e($g['finca']); ?>
+                    <div class="d-flex align-items-center justify-content-between gap-1">
+                      <div class="overflow-hidden">
+                        <div class="fw-bold text-truncate" style="max-width: 170px;" title="<?php echo e($g['nombre']); ?>">
+                          <?php echo e($g['nombre']); ?>
+                        </div>
+                        <div class="text-muted font-monospace small">
+                          C.C. <?php echo e($g['cedula']); ?><?php if (!empty($g['finca'])) echo ' &bull; ' . e($g['finca']); ?>
+                        </div>
+                      </div>
+                      <button type="button" class="btn btn-sm btn-outline-success p-1 px-2 rounded-pill no-print flex-shrink-0" title="Generar Colilla de Liquidación" onclick="abrirColillaPago('<?php echo e($g['id']); ?>', '<?php echo e(addslashes($g['nombre'])); ?>', '<?php echo e($g['cedula']); ?>', '<?php echo e(addslashes($g['finca'] ?? 'Vereda Alizal')); ?>', <?php echo (float)$totG; ?>)">
+                        <i class="bi bi-receipt"></i>
+                      </button>
                     </div>
                   </td>
 
@@ -746,18 +795,24 @@ require_once __DIR__ . '/includes/header.php';
             <table id="tabla-alertas-admin" class="table table-hover align-middle w-100">
               <thead class="table-light">
                 <tr>
-                  <th>Fecha Radicación</th>
+                  <th>Fecha</th>
                   <th>Ganadero</th>
                   <th>Periodo</th>
-                  <th class="text-end">Litros al Reclamar</th>
-                  <th>Detalle de la Inconformidad</th>
+                  <th class="text-end">Litros</th>
+                  <th>Detalle Inconformidad</th>
+                  <th>Respuesta Oficial</th>
                   <th class="text-center">Estado</th>
                   <th class="text-center">Acción</th>
                 </tr>
               </thead>
               <tbody>
                 <?php foreach ($listaAlertas as $alt): ?>
-                  <tr>
+                  <?php
+                    $badgeClass = 'bg-danger';
+                    if ($alt['estado'] === 'EN_REVISION') $badgeClass = 'bg-warning text-dark';
+                    elseif ($alt['estado'] === 'RESUELTO' || $alt['estado'] === 'ATENDIDO') $badgeClass = 'bg-success';
+                  ?>
+                  <tr id="fila-alerta-<?php echo e($alt['id']); ?>">
                     <td class="small text-muted"><?php echo formatoFechaEspanol($alt['creadoEn']); ?></td>
                     <td>
                       <strong><?php echo e($alt['ganaderoNombre']); ?></strong><br>
@@ -765,24 +820,27 @@ require_once __DIR__ . '/includes/header.php';
                     </td>
                     <td class="small"><?php echo e($alt['fechaInicio']); ?> al <?php echo e($alt['fechaFin']); ?></td>
                     <td class="text-end fw-bold text-success"><?php echo formatoLitros($alt['litrosAlMomento']); ?></td>
-                    <td class="small fst-italic" style="max-width: 320px;">
+                    <td class="small fst-italic" style="max-width: 250px;">
                       "<?php echo e($alt['mensaje']); ?>"
                     </td>
+                    <td class="small" style="max-width: 250px;" id="celda-resp-<?php echo e($alt['id']); ?>">
+                      <?php if (!empty($alt['respuestaAdmin'])): ?>
+                        <div class="p-2 rounded bg-light border border-success-subtle text-dark">
+                          <strong><?php echo e($alt['respondidoPor'] ?: 'Admin'); ?>:</strong> <?php echo e($alt['respuestaAdmin']); ?>
+                        </div>
+                      <?php else: ?>
+                        <span class="text-muted fst-italic">Sin respuesta registrada aún</span>
+                      <?php endif; ?>
+                    </td>
                     <td class="text-center">
-                      <span class="badge bg-<?php echo ($alt['estado'] === 'PENDIENTE') ? 'danger' : 'success'; ?>">
+                      <span class="badge <?php echo $badgeClass; ?> rounded-pill px-3 py-1" id="badge-estado-<?php echo e($alt['id']); ?>">
                         <?php echo e($alt['estado']); ?>
                       </span>
                     </td>
                     <td class="text-center">
-                      <form action="admin.php?tab=buzon" method="POST" class="d-inline">
-                        <?php echo campoCsrf(); ?>
-                        <input type="hidden" name="accion" value="atender_reclamo">
-                        <input type="hidden" name="alertaId" value="<?php echo e($alt['id']); ?>">
-                        <input type="hidden" name="estado" value="<?php echo ($alt['estado'] === 'PENDIENTE') ? 'ATENDIDO' : 'PENDIENTE'; ?>">
-                        <button type="submit" class="btn btn-sm btn-outline-success rounded-pill px-3">
-                          Marcar <?php echo ($alt['estado'] === 'PENDIENTE') ? 'Atendido' : 'Pendiente'; ?>
-                        </button>
-                      </form>
+                      <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="abrirModalRespuestaReclamo('<?php echo e($alt['id']); ?>', '<?php echo e(addslashes($alt['ganaderoNombre'])); ?>', '<?php echo e($alt['estado']); ?>', '<?php echo e(addslashes($alt['mensaje'])); ?>', '<?php echo e(addslashes($alt['respuestaAdmin'] ?? '')); ?>')">
+                        <i class="bi bi-chat-left-dots-fill me-1"></i> Responder
+                      </button>
                     </td>
                   </tr>
                 <?php endforeach; ?>
@@ -913,6 +971,265 @@ require_once __DIR__ . '/includes/header.php';
           </button>
         </div>
       </form>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL 1: CONFIRMAR CIERRE DE QUINCENA -->
+<div class="modal fade" id="modalConfirmarCierreQuincena" tabindex="-1" aria-labelledby="modalCierreLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow-lg">
+      <div class="modal-header bg-danger text-white p-4">
+        <h5 class="modal-title fw-bold" id="modalCierreLabel">
+          <i class="bi bi-lock-fill me-2"></i> Cerrar y Liquidar Quincena
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="alert alert-warning rounded-3 small mb-3">
+          <strong>Atención:</strong> Al cerrar la quincena <strong><?php echo formatoFechaEspanol($fechaInicioSel); ?> al <?php echo formatoFechaEspanol($fechaFinSel); ?></strong>, la planilla quedará en modo de <em>solo lectura</em> y se congelará la edición inline.
+        </div>
+        <p class="small text-muted mb-3">Para autorizar este cierre, por favor ingresa tu contraseña de Administrador:</p>
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Contraseña de Administrador *</label>
+          <input type="password" id="pass-cierre-quincena" class="form-control form-control-touch" placeholder="Tu contraseña actual" autocomplete="current-password">
+        </div>
+      </div>
+      <div class="modal-footer p-3 bg-body-tertiary">
+        <button type="button" class="btn btn-touch btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-touch btn-danger rounded-pill px-4" onclick="confirmarAccionQuincena('cerrar')">
+          <i class="bi bi-lock-fill me-1"></i> Confirmar Cierre
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL 2: CONFIRMAR REAPERTURA DE QUINCENA -->
+<div class="modal fade" id="modalConfirmarReaperturaQuincena" tabindex="-1" aria-labelledby="modalReaperturaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow-lg">
+      <div class="modal-header bg-warning text-dark p-4">
+        <h5 class="modal-title fw-bold" id="modalReaperturaLabel">
+          <i class="bi bi-unlock-fill me-2"></i> Reabrir Quincena para Edición
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div class="alert alert-info rounded-3 small mb-3">
+          Al reabrir la quincena <strong><?php echo formatoFechaEspanol($fechaInicioSel); ?> al <?php echo formatoFechaEspanol($fechaFinSel); ?></strong>, se habilitará nuevamente la edición inline y el pegado de pesajes.
+        </div>
+        <p class="small text-muted mb-3">Ingresa tu contraseña de Administrador para confirmar:</p>
+        <div class="mb-3">
+          <label class="form-label small fw-bold">Contraseña de Administrador *</label>
+          <input type="password" id="pass-reapertura-quincena" class="form-control form-control-touch" placeholder="Tu contraseña actual" autocomplete="current-password">
+        </div>
+      </div>
+      <div class="modal-footer p-3 bg-body-tertiary">
+        <button type="button" class="btn btn-touch btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-touch btn-warning text-dark rounded-pill px-4" onclick="confirmarAccionQuincena('reabrir')">
+          <i class="bi bi-unlock-fill me-1"></i> Confirmar Reapertura
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL 3: BITÁCORA DE CAMBIOS / HISTORIAL DE AUDITORÍA -->
+<div class="modal fade" id="modalBitacoraAuditoria" tabindex="-1" aria-labelledby="modalBitacoraLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+    <div class="modal-content rounded-4 border-0 shadow-lg">
+      <div class="modal-header bg-dark text-white p-4">
+        <h5 class="modal-title fw-bold" id="modalBitacoraLabel">
+          <i class="bi bi-clock-history me-2"></i> Historial de Auditoría y Bitácora de Cambios
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p class="small text-muted mb-3">Registro de modificaciones de pesajes, tarifas, cierres y accesos:</p>
+        <div class="table-responsive">
+          <table class="table table-hover table-striped align-middle small w-100" id="tabla-bitacora">
+            <thead class="table-dark">
+              <tr>
+                <th>Fecha / Hora</th>
+                <th>Usuario</th>
+                <th>Acción</th>
+                <th>Campo Modificado</th>
+                <th>Valor Anterior</th>
+                <th>Valor Nuevo</th>
+                <th>Detalles</th>
+                <th>IP</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-bitacora">
+              <tr>
+                <td colspan="8" class="text-center py-4 text-muted">
+                  <span class="spinner-border spinner-border-sm me-2"></span> Cargando registros de auditoría...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer p-3 bg-body-tertiary d-flex justify-content-between">
+        <small class="text-muted"><i class="bi bi-shield-lock-fill text-success me-1"></i> Trazabilidad Completa</small>
+        <button type="button" class="btn btn-touch btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL 4: COLILLA DE PAGO / RECIBO DE LIQUIDACIÓN QUINCENAL -->
+<div class="modal fade" id="modalColillaPago" tabindex="-1" aria-labelledby="modalColillaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+    <div class="modal-content rounded-4 border-0 shadow-lg">
+      <div class="modal-header bg-success text-white p-4 no-print">
+        <h5 class="modal-title fw-bold" id="modalColillaLabel">
+          <i class="bi bi-receipt me-2"></i> Recibo de Liquidación Quincenal
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body p-4">
+        <!-- ÁREA IMPRIMIBLE DE LA COLILLA -->
+        <div id="colilla-imprimible" class="p-3 p-md-4 border rounded-3 bg-white">
+          <!-- Membrete Oficial -->
+          <div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-3">
+            <div class="d-flex align-items-center gap-3">
+              <img src="assets/img/logo.png" alt="Logo" style="max-height: 55px; width: auto;" class="img-fluid">
+              <div>
+                <h5 class="fw-bold mb-0 text-success"><?php echo e(EMPRESA_SIGLA); ?></h5>
+                <small class="text-muted d-block"><?php echo e(EMPRESA_NOMBRE); ?></small>
+                <small class="fw-bold text-dark">NIT: <?php echo e(EMPRESA_NIT); ?> &bull; <?php echo e(EMPRESA_UBICACION); ?></small>
+              </div>
+            </div>
+            <div class="text-end">
+              <span class="badge bg-success-subtle text-success fs-6 px-3 py-2 border border-success-subtle rounded-pill">
+                Colilla de Liquidación
+              </span>
+              <small class="d-block text-muted mt-1">Fecha Emisión: <?php echo date('d/m/Y'); ?></small>
+            </div>
+          </div>
+
+          <!-- Datos del Ganadero y Periodo -->
+          <div class="row g-2 mb-3 p-3 rounded-3" style="background-color: var(--surface-2);">
+            <div class="col-sm-6">
+              <small class="text-muted d-block">Ganadero Asociado:</small>
+              <strong class="fs-6 text-dark" id="colilla-nombre">-</strong>
+            </div>
+            <div class="col-sm-6 text-sm-end">
+              <small class="text-muted d-block">Cédula de Ciudadanía:</small>
+              <strong class="font-monospace fs-6 text-dark" id="colilla-cedula">-</strong>
+            </div>
+            <div class="col-sm-6">
+              <small class="text-muted d-block">Finca / Predio:</small>
+              <span class="fw-bold text-dark" id="colilla-finca">-</span>
+            </div>
+            <div class="col-sm-6 text-sm-end">
+              <small class="text-muted d-block">Periodo Quincenal:</small>
+              <span class="fw-bold text-primary" id="colilla-periodo"><?php echo formatoFechaEspanol($fechaInicioSel); ?> al <?php echo formatoFechaEspanol($fechaFinSel); ?></span>
+            </div>
+          </div>
+
+          <!-- Desglose Diario Mañana / Tarde -->
+          <div class="table-responsive mb-3">
+            <table class="table table-bordered table-sm text-center align-middle mb-0" id="colilla-tabla-dias">
+              <thead class="table-light small">
+                <tr>
+                  <th>Fecha</th>
+                  <th>Día</th>
+                  <th>☀️ Mañana (L)</th>
+                  <th>🌅 Tarde (L)</th>
+                  <th>🥛 Total Día (L)</th>
+                </tr>
+              </thead>
+              <tbody id="colilla-tbody-dias" class="small">
+                <!-- Se llena dinámicamente con JavaScript -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Resumen Financiero Quincenal -->
+          <div class="row g-2 p-3 bg-light rounded-3 border mb-4">
+            <div class="col-4 text-center border-end">
+              <small class="text-muted d-block text-uppercase fw-bold">Total Litros</small>
+              <strong class="fs-5 text-dark" id="colilla-total-litros">0,0 L</strong>
+            </div>
+            <div class="col-4 text-center border-end">
+              <small class="text-muted d-block text-uppercase fw-bold">Precio por Litro</small>
+              <strong class="fs-5 text-dark" id="colilla-precio-litro"><?php echo $precioLitroActual ? formatoMonedaCOP($precioLitroActual) : '$ 0'; ?></strong>
+            </div>
+            <div class="col-4 text-center">
+              <small class="text-muted d-block text-uppercase fw-bold text-success">Neto a Liquidar</small>
+              <strong class="fs-4 text-success" id="colilla-total-neto">$ 0</strong>
+            </div>
+          </div>
+
+          <!-- Firmas -->
+          <div class="row pt-4 mt-4 border-top text-center text-muted small">
+            <div class="col-6">
+              <div class="border-top border-dark mx-auto pt-2" style="max-width: 200px;">
+                Firma Administrador<br>
+                <small class="text-muted"><?php echo e($usuario['nombre']); ?></small>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="border-top border-dark mx-auto pt-2" style="max-width: 200px;">
+                Firma Ganadero Asociado<br>
+                <small class="text-muted">Recibido Conforme</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer p-3 bg-body-tertiary no-print d-flex justify-content-between">
+        <button type="button" class="btn btn-touch btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-touch btn-success rounded-pill px-4" onclick="window.print()">
+          <i class="bi bi-printer-fill me-1"></i> Imprimir / Guardar como PDF
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL 5: GESTIONAR RESPUESTA A RECLAMO -->
+<div class="modal fade" id="modalRespuestaReclamo" tabindex="-1" aria-labelledby="modalRespReclamoLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content rounded-4 border-0 shadow-lg">
+      <div class="modal-header bg-primary text-white p-4">
+        <h5 class="modal-title fw-bold" id="modalRespReclamoLabel">
+          <i class="bi bi-chat-left-dots-fill me-2"></i> Responder Inconformidad Quincenal
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body p-4">
+        <input type="hidden" id="resp-alerta-id" value="">
+        <div class="mb-3 p-3 bg-light rounded-3 border">
+          <small class="text-muted d-block">Ganadero Asociado:</small>
+          <strong class="text-dark d-block mb-2" id="resp-ganadero-nombre">-</strong>
+          <small class="text-muted d-block">Mensaje de inconformidad radicado:</small>
+          <p class="small fst-italic mb-0 text-dark" id="resp-mensaje-reclamo">-</p>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-dark">Estado del Reclamo *</label>
+          <select id="resp-nuevo-estado" class="form-select form-select-touch">
+            <option value="PENDIENTE">🔴 Pendiente</option>
+            <option value="EN_REVISION">🟡 En Revisión</option>
+            <option value="RESUELTO">🟢 Resuelto</option>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-bold text-dark">Respuesta Oficial del Administrador *</label>
+          <textarea id="resp-texto-admin" class="form-control" rows="4" placeholder="Escribe la explicación o resolución oficial que el ganadero verá en su panel..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer p-3 bg-body-tertiary">
+        <button type="button" class="btn btn-touch btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-touch btn-primary rounded-pill px-4" onclick="guardarRespuestaReclamo()">
+          <i class="bi bi-send-fill me-1"></i> Guardar Respuesta
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -1332,6 +1649,26 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  // 4b. DESCARGAR PLANILLA MATRICIAL EN EXCEL (.XLSX) CON SHEETJS
+  const btnXlsx = document.getElementById('btn-exportar-xlsx');
+  if (btnXlsx && tablaMatriz) {
+    btnXlsx.addEventListener('click', function () {
+      if (typeof XLSX === 'undefined') {
+        alert('Librería SheetJS no disponible.');
+        return;
+      }
+      try {
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.table_to_sheet(tablaMatriz, { raw: false });
+        XLSX.utils.book_append_sheet(wb, ws, 'Control Lechero');
+        XLSX.writeFile(wb, `Planilla_Matricial_${FECHA_INICIO}_a_${FECHA_FIN}.xlsx`);
+      } catch (err) {
+        console.error(err);
+        alert('Error al generar archivo Excel: ' + err.message);
+      }
+    });
+  }
+
   // 5. IMPORTAR PLANILLA MATRICIAL DESDE EXCEL (.XLSX, .XLS, .CSV)
   const btnImportarExcel = document.getElementById('btn-importar-excel');
   const inputImportarExcel = document.getElementById('input-importar-excel');
@@ -1583,6 +1920,233 @@ function editarGanadero(g) {
 
   const modal = new bootstrap.Modal(document.getElementById('modalNuevoGanadero'));
   modal.show();
+}
+
+// 1. CIERRE Y REAPERTURA DE QUINCENAS CON CLAVE DE ADMINISTRADOR
+function solicitarCierreQuincena() {
+  document.getElementById('pass-cierre-quincena').value = '';
+  const modal = new bootstrap.Modal(document.getElementById('modalConfirmarCierreQuincena'));
+  modal.show();
+}
+
+function solicitarReaperturaQuincena() {
+  document.getElementById('pass-reapertura-quincena').value = '';
+  const modal = new bootstrap.Modal(document.getElementById('modalConfirmarReaperturaQuincena'));
+  modal.show();
+}
+
+async function confirmarAccionQuincena(accion) {
+  const inputId = (accion === 'cerrar') ? 'pass-cierre-quincena' : 'pass-reapertura-quincena';
+  const pass = document.getElementById(inputId).value.trim();
+
+  if (!pass) {
+    if (window.AsoagroUI) {
+      AsoagroUI.showWarning('Contraseña Requerida', 'Por favor ingresa tu contraseña de Administrador.');
+    } else {
+      alert('Por favor ingresa tu contraseña de Administrador.');
+    }
+    return;
+  }
+
+  Swal.fire({
+    title: accion === 'cerrar' ? 'Cerrando quincena...' : 'Reabriendo quincena...',
+    allowOutsideClick: false,
+    didOpen: () => Swal.showLoading()
+  });
+
+  try {
+    const res = await fetch('api/gestionar_quincena.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        csrf_token: '<?php echo generarCsrfToken(); ?>',
+        accion: accion,
+        fechaInicio: '<?php echo $fechaInicioSel; ?>',
+        fechaFin: '<?php echo $fechaFinSel; ?>',
+        password: pass
+      })
+    });
+    const data = await res.json();
+
+    if (res.ok && data.ok) {
+      Swal.fire({
+        icon: 'success',
+        title: accion === 'cerrar' ? '¡Quincena Cerrada!' : '¡Quincena Reabierta!',
+        text: data.mensaje,
+        showConfirmButton: false,
+        timer: 1400
+      }).then(() => {
+        location.reload();
+      });
+    } else {
+      if (window.AsoagroUI) {
+        AsoagroUI.showError('No Autorizado', data.error || 'Contraseña incorrecta.');
+      } else {
+        alert(data.error || 'Contraseña incorrecta.');
+      }
+    }
+  } catch (err) {
+    console.error(err);
+    alert('Error al procesar la solicitud.');
+  }
+}
+
+// 2. HISTORIAL DE AUDITORÍA (BITÁCORA DE CAMBIOS)
+async function abrirModalBitacora() {
+  const modalEl = document.getElementById('modalBitacoraAuditoria');
+  const modal = new bootstrap.Modal(modalEl);
+  modal.show();
+
+  const tbody = document.getElementById('tbody-bitacora');
+  tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted"><span class="spinner-border spinner-border-sm me-2"></span> Cargando registros de auditoría...</td></tr>';
+
+  try {
+    const res = await fetch('api/obtener_bitacora.php?limit=50');
+    const data = await res.json();
+
+    if (res.ok && data.ok && data.logs && data.logs.length > 0) {
+      let html = '';
+      data.logs.forEach(l => {
+        let badgeAccion = 'bg-secondary';
+        if (l.accion.includes('EDITAR')) badgeAccion = 'bg-primary';
+        else if (l.accion.includes('CERRAR')) badgeAccion = 'bg-danger';
+        else if (l.accion.includes('REABRIR')) badgeAccion = 'bg-warning text-dark';
+        else if (l.accion.includes('LOGIN')) badgeAccion = 'bg-success';
+        else if (l.accion.includes('EXCEL')) badgeAccion = 'bg-info text-dark';
+
+        html += `<tr>
+          <td class="font-monospace text-nowrap">${l.fecha}</td>
+          <td><strong>${l.usuarioNombre}</strong></td>
+          <td><span class="badge ${badgeAccion} rounded-pill">${l.accion}</span></td>
+          <td class="font-monospace">${l.campo}</td>
+          <td class="text-danger-emphasis">${l.valorAnterior}</td>
+          <td class="text-success-emphasis fw-bold">${l.valorNuevo}</td>
+          <td class="small">${l.detalles}</td>
+          <td class="font-monospace text-muted">${l.ip}</td>
+        </tr>`;
+      });
+      tbody.innerHTML = html;
+    } else {
+      tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-muted">No se registran eventos de auditoría recientes.</td></tr>';
+    }
+  } catch (err) {
+    console.error(err);
+    tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4 text-danger">Error cargando registros de auditoría.</td></tr>';
+  }
+}
+
+// 3. GENERACIÓN DE COLILLA DE PAGO
+function abrirColillaPago(ganaderoId, nombre, cedula, finca, totalLitros) {
+  document.getElementById('colilla-nombre').textContent = nombre;
+  document.getElementById('colilla-cedula').textContent = 'C.C. ' + cedula;
+  document.getElementById('colilla-finca').textContent = finca || 'Vereda Alizal';
+  document.getElementById('colilla-total-litros').textContent = (parseFloat(totalLitros || 0).toFixed(1)).replace('.', ',') + ' L';
+
+  const precioLitro = <?php echo (float)$precioLitroActual; ?>;
+  const neto = totalLitros * precioLitro;
+  document.getElementById('colilla-precio-litro').textContent = precioLitro > 0 ? (window.AsoagroUI?.formatCOP(precioLitro) || '$ ' + precioLitro) : 'Por fijar';
+  document.getElementById('colilla-total-neto').textContent = window.AsoagroUI?.formatCOP(neto) || '$ ' + Math.round(neto);
+
+  // Obtener desglose diario desde la fila de la matriz
+  const tbodyColilla = document.getElementById('colilla-tbody-dias');
+  tbodyColilla.innerHTML = '';
+
+  const trGanadero = document.querySelector(`tr.fila-matriz[data-uid="${ganaderoId}"]`);
+  const diasQuincenaList = <?php echo json_encode(array_values($diasQuincena)); ?>;
+
+  if (trGanadero) {
+    let rowsHtml = '';
+    diasQuincenaList.forEach((d, idx) => {
+      const tdM = trGanadero.querySelector(`td[data-fecha="${d.fecha}"][data-turno="MANANA"] input`);
+      const tdT = trGanadero.querySelector(`td[data-fecha="${d.fecha}"][data-turno="TARDE"] input`);
+
+      const valM = tdM && tdM.value.trim() !== '' ? parseFloat(tdM.value) : 0.0;
+      const valT = tdT && tdT.value.trim() !== '' ? parseFloat(tdT.value) : 0.0;
+      const totDia = valM + valT;
+
+      rowsHtml += `<tr>
+        <td class="text-muted font-monospace">${d.fecha}</td>
+        <td><strong>${d.diaSemana} ${d.dia}</strong></td>
+        <td>${valM > 0 ? valM.toFixed(1).replace('.', ',') + ' L' : '-'}</td>
+        <td>${valT > 0 ? valT.toFixed(1).replace('.', ',') + ' L' : '-'}</td>
+        <td class="fw-bold text-success">${totDia > 0 ? totDia.toFixed(1).replace('.', ',') + ' L' : '-'}</td>
+      </tr>`;
+    });
+    tbodyColilla.innerHTML = rowsHtml;
+  }
+
+  const modal = new bootstrap.Modal(document.getElementById('modalColillaPago'));
+  modal.show();
+}
+
+// 4. GESTIÓN INTERACTIVA DE RECLAMOS
+function abrirModalRespuestaReclamo(id, ganaderoNombre, estado, mensaje, respuesta) {
+  document.getElementById('resp-alerta-id').value = id;
+  document.getElementById('resp-ganadero-nombre').textContent = ganaderoNombre;
+  document.getElementById('resp-mensaje-reclamo').textContent = `"${mensaje}"`;
+  document.getElementById('resp-nuevo-estado').value = (estado === 'ATENDIDO') ? 'RESUELTO' : estado;
+  document.getElementById('resp-texto-admin').value = respuesta || '';
+
+  const modal = new bootstrap.Modal(document.getElementById('modalRespuestaReclamo'));
+  modal.show();
+}
+
+async function guardarRespuestaReclamo() {
+  const id = document.getElementById('resp-alerta-id').value;
+  const nuevoEstado = document.getElementById('resp-nuevo-estado').value;
+  const texto = document.getElementById('resp-texto-admin').value.trim();
+
+  if (!texto) {
+    alert('Por favor redacta la respuesta oficial para el ganadero.');
+    return;
+  }
+
+  Swal.fire({ title: 'Guardando respuesta...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+  try {
+    const res = await fetch('api/responder_reclamo.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        csrf_token: '<?php echo generarCsrfToken(); ?>',
+        alertaId: id,
+        estado: nuevoEstado,
+        respuesta: texto
+      })
+    });
+    const data = await res.json();
+
+    if (res.ok && data.ok) {
+      // Actualizar DOM en la fila de la tabla
+      const badge = document.getElementById(`badge-estado-${id}`);
+      if (badge) {
+        badge.textContent = nuevoEstado;
+        badge.className = 'badge rounded-pill px-3 py-1 ' + (nuevoEstado === 'RESUELTO' ? 'bg-success' : (nuevoEstado === 'EN_REVISION' ? 'bg-warning text-dark' : 'bg-danger'));
+      }
+
+      const celdaResp = document.getElementById(`celda-resp-${id}`);
+      if (celdaResp) {
+        celdaResp.innerHTML = `<div class="p-2 rounded bg-light border border-success-subtle text-dark"><strong>${data.respondidoPor}:</strong> ${data.respuestaAdmin}</div>`;
+      }
+
+      const modalEl = document.getElementById('modalRespuestaReclamo');
+      const modal = bootstrap.Modal.getInstance(modalEl);
+      if (modal) modal.hide();
+
+      Swal.fire({
+        icon: 'success',
+        title: '¡Respuesta Guardada!',
+        text: 'La resolución ha sido registrada y el ganadero ya puede verla en su panel.',
+        showConfirmButton: false,
+        timer: 1500
+      });
+    } else {
+      AsoagroUI.showError('Error', data.error || 'No se pudo guardar la respuesta.');
+    }
+  } catch (err) {
+    console.error(err);
+    alert('Error al guardar la respuesta.');
+  }
 }
 </script>
 
