@@ -118,9 +118,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         extend: {
           colors: {
             brand: {
-              primary: '#0A2E1C',
-              secondary: '#14532D',
-              canvas: '#F8FAFC',
+              primary: '#0F4C3A',
+              dark: '#082F24',
+              secondary: '#15803D',
+              accent: '#D97706',
+              canvas: '#F4F7F5',
               surface: '#FFFFFF'
             }
           }
@@ -130,61 +132,62 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </script>
 
   <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
 
   <!-- Estilos Globales Corporativos -->
   <link rel="stylesheet" href="assets/css/theme.css">
   <link rel="stylesheet" href="assets/css/styles.css">
 </head>
-<body class="bg-slate-50 min-vh-100 flex flex-col justify-center">
+<body class="min-vh-100">
 
   <div class="auth-split-wrapper">
 
     <!-- PANEL IZQUIERDO INSTITUCIONAL -->
-    <div class="auth-panel-brand" style="background-color: var(--brand-primary, #0A2E1C);">
-      <div>
-        <a href="index.php" class="inline-flex items-center gap-2 text-white/80 hover:text-white text-decoration-none mb-8 transition-colors">
+    <div class="auth-panel-brand">
+      <div class="position-relative" style="z-index: 2;">
+        <a href="index.php" class="d-inline-flex align-items-center gap-2 text-white text-decoration-none mb-4 opacity-75">
           <i data-lucide="arrow-left" style="width: 18px; height: 18px;"></i>
-          <span class="text-sm font-medium">Volver al Portal Principal</span>
+          <span class="small fw-semibold">Volver al Portal Principal</span>
         </a>
 
-        <div class="mb-6">
-          <div class="inline-block p-2 bg-white rounded-xl shadow-sm mb-4">
-            <img src="assets/img/logo.webp" alt="Logo <?php echo e(EMPRESA_SIGLA); ?>" style="height: 52px; width: auto; object-fit: contain;">
+        <div class="mb-4">
+          <div class="d-inline-block p-2 bg-white rounded-3 shadow-sm mb-3">
+            <img src="assets/img/logo.webp" alt="Logo <?php echo e(EMPRESA_SIGLA); ?>" style="height: 50px; width: auto; object-fit: contain;">
           </div>
-          <h2 class="font-bold text-white mb-2" style="font-size: 1.75rem; line-height: 1.25;"><?php echo e(EMPRESA_NOMBRE); ?></h2>
-          <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-900/60 text-emerald-200 border border-emerald-700/50">
-            <i data-lucide="user-plus" style="width: 14px; height: 14px;"></i>
+          <h2 class="fw-bold text-white mb-1" style="font-size: 1.85rem;"><?php echo e(EMPRESA_SIGLA); ?></h2>
+          <p class="small mb-3" style="color: #CBD5E1; line-height: 1.45;"><?php echo e(EMPRESA_NOMBRE); ?></p>
+          <span class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill small fw-semibold" style="background-color: rgba(255,255,255,0.12); color: #FDE68A; border: 1px solid rgba(255,255,255,0.22);">
+            <i data-lucide="user-plus" style="width: 15px; height: 15px;"></i>
             <span>Afiliación de Productores Lecheros</span>
           </span>
         </div>
 
-        <p class="text-slate-300 text-sm mb-6 leading-relaxed">
-          Únete a la asociación oficial de ganaderos de la Vereda Alizal. Con tu cuenta podrás consultar diariamente tus litros recibidos en turnos Mañana (Turno AM) y Tarde (Turno PM), tu historial de pagos y descargar tus colillas de liquidación.
+        <p class="small mb-4" style="color: #E2ECE7; line-height: 1.65;">
+          Únete a la plataforma digital de la asociación. Consulta tus pesajes diarios en Turno AM y Turno PM, verifica el acumulado quincenal y genera tu colilla de liquidación.
         </p>
 
         <!-- Tarjeta Flotante con Precio Oficial -->
-        <div class="p-4 rounded-xl border border-emerald-800/80 bg-emerald-950/40 backdrop-blur-sm mb-6">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-xs uppercase tracking-wider font-bold text-amber-400">Tarifa Oficial Vigente</span>
-            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+        <div class="p-3.5 rounded-4" style="background-color: rgba(8, 47, 36, 0.55); border: 1px solid rgba(255, 255, 255, 0.18);">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="text-uppercase fw-bold" style="font-size: 0.72rem; letter-spacing: 0.06em; color: #FCD34D;">Tarifa Oficial Vigente</span>
+            <span class="badge rounded-pill px-2 py-1" style="background-color: rgba(21, 128, 61, 0.45); color: #A7F3D0; font-size: 0.7rem;">
               Activa
             </span>
           </div>
-          <div class="text-2xl font-bold text-white tabular-nums mb-1 font-mono">
-            $<?php echo number_format($precioLitroReg, 0, ',', '.'); ?> <span class="text-sm font-normal text-slate-300">COP / Litro</span>
+          <div class="fs-2 fw-bold text-white font-mono mb-1">
+            $<?php echo number_format($precioLitroReg, 0, ',', '.'); ?> <span class="fs-6 fw-normal" style="color: #CBD5E1;">COP / Litro</span>
           </div>
-          <span class="text-xs text-slate-400 flex items-center gap-1.5">
-            <i data-lucide="check-check" class="text-emerald-400" style="width: 14px; height: 14px;"></i>
+          <span class="small d-flex align-items-center gap-1.5" style="color: #CBD5E1; font-size: 0.78rem;">
+            <i data-lucide="check-check" style="width: 14px; height: 14px; color: #6EE7B7;"></i>
             <span>Liquidación quincenal garantizada</span>
           </span>
         </div>
       </div>
 
-      <div class="mt-8 pt-4 border-t border-white/10 text-xs text-slate-400">
-        <span class="flex items-center gap-1.5">
-          <i data-lucide="shield-check" class="text-emerald-400" style="width: 14px; height: 14px;"></i>
-          <span>Cifrado de alta seguridad Argon2id &bull; NIT: <?php echo e(EMPRESA_NIT); ?></span>
+      <div class="mt-4 pt-3 border-top small position-relative" style="border-color: rgba(255,255,255,0.16) !important; color: #CBD5E1; z-index: 2;">
+        <span class="d-inline-flex align-items-center gap-1.5">
+          <i data-lucide="shield-check" style="width: 14px; height: 14px; color: #6EE7B7;"></i>
+          <span>Cifrado Argon2id &bull; NIT: <?php echo e(EMPRESA_NIT); ?></span>
         </span>
       </div>
     </div>
@@ -293,7 +296,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                   </button>
                 </div>
                 <div class="flex items-center gap-3">
-                  <img src="includes/captcha_gd.php?t=<?php echo time(); ?>" alt="Código CAPTCHA" id="captcha-img" class="rounded border bg-white" style="height: 44px; width: 130px; object-fit: contain;">
+                  <img src="api/captcha_img.php?t=<?php echo time(); ?>" alt="Código CAPTCHA" id="captcha-img" class="rounded border bg-white" style="height: 44px; width: 135px; object-fit: contain;">
                   <input type="text" class="form-control text-center font-mono font-bold tracking-widest text-lg" id="captcha-input" name="captcha" maxlength="5" required placeholder="Código" autocomplete="off" style="min-height: 44px;">
                 </div>
               </div>
@@ -334,7 +337,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       const captchaImg = document.getElementById('captcha-img');
       const captchaInput = document.getElementById('captcha-input');
       btnRecargar?.addEventListener('click', function() {
-        captchaImg.src = 'includes/captcha_gd.php?t=' + new Date().getTime();
+        captchaImg.src = 'api/captcha_img.php?t=' + new Date().getTime();
         if (captchaInput) captchaInput.value = '';
       });
 

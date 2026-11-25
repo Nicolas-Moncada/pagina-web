@@ -165,39 +165,39 @@ require_once __DIR__ . '/includes/header.php';
 <main class="container-fluid px-3 px-md-4 py-4 flex-grow-1">
 
   <!-- ==============================================================
-       1. HEADER DEL ASOCIADO (ESTILO CORPORATIVO CENTRAL GANADERA)
+       1. HEADER DEL ASOCIADO (BOSQUE ESMERALDA)
        ============================================================== -->
-  <div class="card border border-slate-200 shadow-sm rounded-2xl p-4 p-md-5 text-white mb-4" style="background-color: var(--brand-primary, #0A2E1C);">
+  <div class="card border shadow-sm rounded-4 p-4 p-md-5 text-white mb-4" style="background: linear-gradient(135deg, var(--brand-primary-dark) 0%, var(--brand-primary) 100%);">
     <div class="row align-items-center g-3">
       <div class="col-lg-8">
         <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
-          <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-900/60 text-emerald-200 border border-emerald-700/50">
+          <span class="badge rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1" style="background-color: rgba(255,255,255,0.14); color: #FDE68A;">
             <i data-lucide="shield-check" style="width: 14px; height: 14px;"></i>
             <span>Productor Asociado</span>
           </span>
-          <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-white text-slate-900 font-mono">
+          <span class="badge rounded-pill bg-white text-dark font-mono px-3 py-1.5 fw-bold">
             C.C. <?php echo e($usuario['cedula']); ?>
           </span>
-          <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+          <span class="badge rounded-pill px-3 py-1.5 fw-semibold d-inline-flex align-items-center gap-1" style="background-color: rgba(21,128,61,0.45); color: #A7F3D0;">
             <i data-lucide="check" style="width: 13px; height: 13px;"></i>
             <span>Cuenta Activa</span>
           </span>
         </div>
-        <h2 class="font-bold mb-1 text-white text-2xl md:text-3xl">
-          ¡Bienvenido, <?php echo e($usuario['nombre']); ?>!
+        <h2 class="fw-bold mb-1 text-white" style="font-size: clamp(1.45rem, 2.5vw, 2rem);">
+          Bienvenido, <?php echo e($usuario['nombre']); ?>
         </h2>
-        <p class="text-xs text-slate-300 mb-0 flex items-center gap-2 flex-wrap">
-          <span class="flex items-center gap-1"><i data-lucide="map-pin" class="text-amber-400" style="width: 14px; height: 14px;"></i> Predio: <strong><?php echo e($usuario['finca'] ?? 'Vereda Alizal'); ?></strong></span>
+        <p class="small mb-0 d-flex align-items-center gap-2 flex-wrap" style="color: #CBD5E1;">
+          <span class="d-inline-flex align-items-center gap-1"><i data-lucide="map-pin" style="width: 14px; height: 14px; color: #FCD34D;"></i> Predio: <strong class="text-white"><?php echo e($usuario['finca'] ?? 'Vereda Alizal'); ?></strong></span>
           <span>&bull;</span>
-          <span>Sede: Carmen de Carupa, Cundinamarca</span>
+          <span>Carmen de Carupa, Cundinamarca</span>
         </p>
       </div>
 
       <!-- Selector de Quincena Rápido -->
       <div class="col-lg-4 text-lg-end">
         <form action="panel.php" method="GET" class="d-inline-flex flex-column align-items-lg-end gap-1">
-          <label for="filtro-quincena" class="text-xs text-slate-300 font-semibold">Seleccionar Periodo Quincenal:</label>
-          <select id="filtro-quincena" class="form-select form-select-sm fw-bold border-0 shadow-sm rounded-lg" style="min-width: 260px;" onchange="const p = this.value.split('|'); location.href='panel.php?fechaInicio=' + p[0] + '&fechaFin=' + p[1];">
+          <label for="filtro-quincena" class="small fw-semibold" style="color: #E2ECE7;">Seleccionar Periodo Quincenal:</label>
+          <select id="filtro-quincena" class="form-select form-select-sm fw-bold border-0 shadow-sm rounded-3" style="min-width: 260px;" onchange="const p = this.value.split('|'); location.href='panel.php?fechaInicio=' + p[0] + '&fechaFin=' + p[1];">
             <?php foreach ($quincenasDisponibles as $q): ?>
               <?php $sel = ($q['fechaInicio'] === $fechaInicioSel && $q['fechaFin'] === $fechaFinSel) ? 'selected' : ''; ?>
               <option value="<?php echo e($q['fechaInicio'] . '|' . $q['fechaFin']); ?>" <?php echo $sel; ?>>
@@ -216,24 +216,24 @@ require_once __DIR__ . '/includes/header.php';
        ============================================================== -->
   <div class="row g-3 mb-4">
     <div class="col-12">
-      <h5 class="font-bold text-slate-900 mb-0 flex items-center gap-2">
-        <i data-lucide="calendar" class="text-emerald-800" style="width: 18px; height: 18px;"></i>
+      <h5 class="fw-bold mb-0 d-flex align-items-center gap-2" style="color: var(--brand-primary);">
+        <i data-lucide="calendar" style="width: 18px; height: 18px;"></i>
         <span>Entregas Registradas Hoy &ndash; <?php echo date('d/m/Y'); ?></span>
       </h5>
     </div>
 
     <!-- Turno AM -->
     <div class="col-md-4">
-      <div class="card border border-slate-200 shadow-sm rounded-xl p-3.5 h-100 bg-white" style="border-top: 3px solid #D97706 !important;">
-        <div class="flex items-center justify-between mb-2">
-          <span class="badge-shift-m">Turno AM (Mañana)</span>
-          <span class="text-xs text-slate-500 font-medium">5:30 AM &ndash; 7:30 AM</span>
+      <div class="card border shadow-sm rounded-4 p-3.5 h-100 bg-white" style="border-top: 3px solid var(--brand-accent) !important;">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="badge-shift-am">Turno AM</span>
+          <span class="small text-muted fw-semibold">Primer Turno</span>
         </div>
-        <div class="flex items-baseline gap-2 my-1">
-          <span class="text-3xl font-bold text-slate-900 font-mono"><?php echo number_format($litrosMananaHoy, 1, ',', '.'); ?></span>
-          <span class="text-xs font-semibold text-slate-500">Litros</span>
+        <div class="d-flex align-items-baseline gap-2 my-1">
+          <span class="fs-2 fw-bold text-dark font-mono"><?php echo number_format($litrosMananaHoy, 1, ',', '.'); ?></span>
+          <span class="small fw-semibold text-muted">Litros</span>
         </div>
-        <span class="text-xs text-slate-500 block">
+        <span class="small text-muted d-block">
           <?php echo ($litrosMananaHoy > 0) ? 'Registrado en tanque' : 'Pendiente de entrega'; ?>
         </span>
       </div>
@@ -241,16 +241,16 @@ require_once __DIR__ . '/includes/header.php';
 
     <!-- Turno PM -->
     <div class="col-md-4">
-      <div class="card border border-slate-200 shadow-sm rounded-xl p-3.5 h-100 bg-white" style="border-top: 3px solid #1E40AF !important;">
-        <div class="flex items-center justify-between mb-2">
-          <span class="badge-shift-t">Turno PM (Tarde)</span>
-          <span class="text-xs text-slate-500 font-medium">4:00 PM &ndash; 5:30 PM</span>
+      <div class="card border shadow-sm rounded-4 p-3.5 h-100 bg-white" style="border-top: 3px solid var(--accent-dusk) !important;">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="badge-shift-pm">Turno PM</span>
+          <span class="small text-muted fw-semibold">Segundo Turno</span>
         </div>
-        <div class="flex items-baseline gap-2 my-1">
-          <span class="text-3xl font-bold text-slate-900 font-mono"><?php echo number_format($litrosTardeHoy, 1, ',', '.'); ?></span>
-          <span class="text-xs font-semibold text-slate-500">Litros</span>
+        <div class="d-flex align-items-baseline gap-2 my-1">
+          <span class="fs-2 fw-bold text-dark font-mono"><?php echo number_format($litrosTardeHoy, 1, ',', '.'); ?></span>
+          <span class="small fw-semibold text-muted">Litros</span>
         </div>
-        <span class="text-xs text-slate-500 block">
+        <span class="small text-muted d-block">
           <?php echo ($litrosTardeHoy > 0) ? 'Registrado en tanque' : 'Pendiente de entrega'; ?>
         </span>
       </div>
@@ -258,18 +258,18 @@ require_once __DIR__ . '/includes/header.php';
 
     <!-- Total del Día -->
     <div class="col-md-4">
-      <div class="card border border-slate-200 shadow-sm rounded-xl p-3.5 h-100 bg-white" style="border-top: 3px solid #14532D !important;">
-        <div class="flex items-center justify-between mb-2">
-          <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-emerald-100 text-emerald-800">
+      <div class="card border shadow-sm rounded-4 p-3.5 h-100 bg-white" style="border-top: 3px solid var(--brand-secondary) !important;">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="badge rounded-pill px-2.5 py-1 fw-semibold" style="background-color: #DCFCE7; color: var(--brand-secondary);">
             Total Hoy
           </span>
-          <span class="text-xs text-emerald-700 font-semibold">Suma de Turnos</span>
+          <span class="small fw-semibold" style="color: var(--brand-secondary);">Suma AM + PM</span>
         </div>
-        <div class="flex items-baseline gap-2 my-1">
-          <span class="text-3xl font-bold text-emerald-800 font-mono"><?php echo number_format($totalHoy, 1, ',', '.'); ?></span>
-          <span class="text-xs font-semibold text-slate-500">Litros</span>
+        <div class="d-flex align-items-baseline gap-2 my-1">
+          <span class="fs-2 fw-bold font-mono" style="color: var(--brand-primary);"><?php echo number_format($totalHoy, 1, ',', '.'); ?></span>
+          <span class="small fw-semibold text-muted">Litros</span>
         </div>
-        <span class="text-xs text-slate-500 block">Cadena de frío continua a 4°C</span>
+        <span class="small text-muted d-block">Cadena de frío continua en tanque</span>
       </div>
     </div>
   </div>
@@ -313,15 +313,15 @@ require_once __DIR__ . '/includes/header.php';
 
     <!-- PAGO ESTIMADO EN COP -->
     <div class="col-lg-3 col-sm-6">
-      <div class="card border-0 shadow-sm rounded-xl p-3.5 text-white h-100" style="background: linear-gradient(135deg, var(--brand-primary, #0A2E1C) 0%, #14532D 100%);">
+      <div class="card border-0 shadow-sm rounded-xl p-3.5 text-white h-100" style="background: linear-gradient(135deg, var(--brand-primary-dark) 0%, var(--brand-primary) 100%);">
         <div class="flex items-center justify-between">
-          <span class="text-xs uppercase tracking-wider font-bold text-amber-400">Pago Estimado</span>
-          <i data-lucide="circle-dollar-sign" class="text-amber-400" style="width: 18px; height: 18px;"></i>
+          <span class="text-xs uppercase tracking-wider font-bold text-amber-300">Pago Estimado</span>
+          <i data-lucide="circle-dollar-sign" class="text-amber-300" style="width: 18px; height: 18px;"></i>
         </div>
         <div class="text-2xl font-bold text-white font-mono my-1">
           $<?php echo number_format($totalPagarEstimado, 0, ',', '.'); ?>
         </div>
-        <span class="text-xs text-slate-300">
+        <span class="text-xs text-slate-200">
           <?php echo $quincenaCerrada ? 'Neto a recibir liquidado' : 'Sujeto a pesajes restantes'; ?>
         </span>
       </div>
@@ -332,17 +332,17 @@ require_once __DIR__ . '/includes/header.php';
        GRÁFICA DE TENDENCIA DE ENTREGA (APEXCHARTS)
        ============================================================== -->
   <div class="card border border-slate-200 shadow-sm rounded-2xl p-4 bg-white mb-4">
-    <div class="flex justify-between items-center mb-3">
+    <div class="flex justify-between items-center mb-3 flex-wrap gap-2">
       <div>
         <h6 class="font-bold text-slate-900 mb-0 flex items-center gap-2">
-          <i data-lucide="trending-up" class="text-emerald-800" style="width: 18px; height: 18px;"></i>
+          <i data-lucide="trending-up" style="width: 18px; height: 18px; color: var(--brand-primary);"></i>
           <span>Curva de Entregas por Turno (AM vs PM)</span>
         </h6>
         <span class="text-xs text-slate-500">Evolución diaria de litros durante la quincena seleccionada</span>
       </div>
       <div class="flex items-center gap-3 text-xs font-semibold">
-        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span> Turno AM</span>
-        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-blue-600 inline-block"></span> Turno PM</span>
+        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full inline-block" style="background-color: #D97706;"></span> Turno AM</span>
+        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full inline-block" style="background-color: #1D4ED8;"></span> Turno PM</span>
       </div>
     </div>
     <div id="grafica-produccion" style="min-height: 280px;"></div>
@@ -355,7 +355,7 @@ require_once __DIR__ . '/includes/header.php';
     <div class="p-3.5 p-md-4 flex flex-wrap justify-between items-center gap-3 border-b border-slate-200 bg-slate-50">
       <div>
         <h5 class="font-bold text-slate-900 mb-0 flex items-center gap-2">
-          <i data-lucide="table" class="text-emerald-800" style="width: 18px; height: 18px;"></i>
+          <i data-lucide="table" style="width: 18px; height: 18px; color: var(--brand-primary);"></i>
           <span>Planilla Quincenal de Pesajes Día a Día</span>
         </h5>
         <span class="text-xs text-slate-500">
@@ -376,11 +376,11 @@ require_once __DIR__ . '/includes/header.php';
       <table id="tabla-ganadero-pesajes" class="table table-hover align-middle w-100">
         <thead class="table-light">
           <tr>
-            <th class="fw-bold" style="background-color: var(--brand-primary, #0A2E1C); color: #fff;">Fecha de Entrega</th>
-            <th class="fw-bold" style="background-color: var(--brand-primary, #0A2E1C); color: #fff;">Día</th>
-            <th class="text-center fw-bold" style="background-color: var(--brand-primary, #0A2E1C); color: #fff;">Turno AM</th>
-            <th class="text-center fw-bold" style="background-color: var(--brand-primary, #0A2E1C); color: #fff;">Turno PM</th>
-            <th class="text-end fw-bold" style="background-color: var(--brand-primary, #0A2E1C); color: #fff;">Total Diario</th>
+            <th class="fw-bold" style="background-color: var(--brand-primary); color: #fff;">Fecha de Entrega</th>
+            <th class="fw-bold" style="background-color: var(--brand-primary); color: #fff;">Día</th>
+            <th class="text-center fw-bold" style="background-color: var(--brand-primary); color: #fff;">Turno AM</th>
+            <th class="text-center fw-bold" style="background-color: var(--brand-primary); color: #fff;">Turno PM</th>
+            <th class="text-end fw-bold" style="background-color: var(--brand-primary); color: #fff;">Total Diario</th>
           </tr>
         </thead>
         <tbody>

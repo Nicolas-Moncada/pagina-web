@@ -308,35 +308,40 @@ require_once __DIR__ . '/includes/header.php';
 ?>
 
 <!-- BARRA DE PESTAÑAS PRINCIPALES (MÓDULOS DEL ADMINISTRADOR) -->
-<div class="tabbar-premium bg-white border-bottom py-2.5 shadow-xs">
+<div class="tabbar-premium bg-white border-bottom py-2.5">
   <div class="container-fluid px-3 px-md-4">
     <ul class="nav nav-pills gap-2 flex-wrap" id="pills-tab" role="tablist">
       <li class="nav-item">
-        <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'planilla') ? 'active text-white' : ''; ?> fw-bold" href="admin.php?tab=planilla&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>">
-          <i class="fa-solid fa-table me-1.5"></i> Planilla Matricial de Pesajes
+        <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'planilla') ? 'active text-white' : ''; ?>" href="admin.php?tab=planilla&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>">
+          <i data-lucide="table" style="width: 16px; height: 16px;"></i>
+          <span>Planilla Matricial de Pesajes</span>
         </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'ganaderos') ? 'active text-white' : ''; ?> fw-bold" href="admin.php?tab=ganaderos">
-          <i class="fa-solid fa-users me-1.5"></i> Gestión de Asociados (<?php echo count($listaTodosGanaderos); ?>)
+        <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'ganaderos') ? 'active text-white' : ''; ?>" href="admin.php?tab=ganaderos">
+          <i data-lucide="users" style="width: 16px; height: 16px;"></i>
+          <span>Gestión de Asociados (<?php echo count($listaTodosGanaderos); ?>)</span>
         </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'quincenas') ? 'active text-white' : ''; ?> fw-bold" href="admin.php?tab=quincenas&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>">
-          <i class="fa-solid fa-calendar-check me-1.5"></i> Precios y Quincenas
+        <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'quincenas') ? 'active text-white' : ''; ?>" href="admin.php?tab=quincenas&fechaInicio=<?php echo $fechaInicioSel; ?>&fechaFin=<?php echo $fechaFinSel; ?>">
+          <i data-lucide="calendar-check" style="width: 16px; height: 16px;"></i>
+          <span>Precios y Quincenas</span>
         </a>
       </li>
       <li class="nav-item">
-        <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'buzon') ? 'active text-white' : ''; ?> fw-bold position-relative" href="admin.php?tab=buzon">
-          <i class="fa-solid fa-envelope-open-text me-1.5"></i> Buzón F-PQRS
+        <a class="nav-link nav-link-custom <?php echo ($pestañaActiva === 'buzon') ? 'active text-white' : ''; ?> position-relative" href="admin.php?tab=buzon">
+          <i data-lucide="inbox" style="width: 16px; height: 16px;"></i>
+          <span>Buzón F-PQRS</span>
           <?php if (count($listaAlertas) > 0): ?>
             <span class="badge rounded-pill bg-danger ms-1"><?php echo count($listaAlertas); ?></span>
           <?php endif; ?>
         </a>
       </li>
       <li class="nav-item">
-        <button type="button" class="nav-link nav-link-custom fw-bold" onclick="abrirModalBitacora()">
-          <i class="fa-solid fa-clock-rotate-left me-1.5 text-warning"></i> Bitácora de Auditoría
+        <button type="button" class="nav-link nav-link-custom" onclick="abrirModalBitacora()">
+          <i data-lucide="history" style="width: 16px; height: 16px; color: var(--brand-accent);"></i>
+          <span>Bitácora de Auditoría</span>
         </button>
       </li>
     </ul>
@@ -350,25 +355,25 @@ require_once __DIR__ . '/includes/header.php';
        ==================================================================== -->
   <?php if ($pestañaActiva === 'planilla'): ?>
 
-    <!-- TARJETAS DE RESUMEN SUPERIORES (4 KPIS AVANZADOS ESTILO CENTRAL GANADERA) -->
+    <!-- TARJETAS DE RESUMEN SUPERIORES (4 KPIS EJECUTIVOS) -->
     <div class="row g-3 mb-4">
       <div class="col-md-3 col-6">
-        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100" style="border-top: 4px solid var(--primary-emerald) !important;">
-          <small class="text-uppercase fw-bold text-muted" style="font-size: 0.76rem; letter-spacing: 0.05em;">Acopio Hoy</small>
-          <div class="fs-2 fw-bold my-1 tabular-nums" id="kpi-litros-hoy" style="color: var(--primary-emerald);">
+        <div class="card border shadow-sm rounded-4 p-3 bg-white h-100" style="border-top: 4px solid var(--brand-primary) !important;">
+          <small class="text-uppercase fw-bold text-muted" style="font-size: 0.74rem; letter-spacing: 0.05em;">Acopio Hoy</small>
+          <div class="fs-2 fw-bold my-1 tabular-nums" id="kpi-litros-hoy" style="color: var(--brand-primary);">
             <?php echo number_format($litrosHoyTotal, 1, ',', '.'); ?> <span class="fs-6 fw-normal text-muted">L</span>
           </div>
-          <small class="text-muted d-block">
-            <span class="badge-shift-m py-0.5 px-2">Turno AM: <?php echo number_format($litrosHoyM, 1, ',', '.'); ?> L</span> &bull; 
-            <span class="badge-shift-t py-0.5 px-2">Turno PM: <?php echo number_format($litrosHoyT, 1, ',', '.'); ?> L</span>
+          <small class="text-muted d-flex flex-wrap align-items-center gap-1">
+            <span class="badge-shift-am py-0.5 px-2">AM: <?php echo number_format($litrosHoyM, 1, ',', '.'); ?> L</span>
+            <span class="badge-shift-pm py-0.5 px-2">PM: <?php echo number_format($litrosHoyT, 1, ',', '.'); ?> L</span>
           </small>
         </div>
       </div>
 
       <div class="col-md-3 col-6">
-        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100" style="border-top: 4px solid <?php echo $variacionAyer >= 0 ? 'var(--secondary-green)' : '#DC2626'; ?> !important;">
-          <small class="text-uppercase fw-bold text-muted" style="font-size: 0.76rem; letter-spacing: 0.05em;">Variación vs Ayer</small>
-          <div class="fs-2 fw-bold my-1 tabular-nums" style="color: <?php echo $variacionAyer >= 0 ? '#15803d' : '#b91c1c'; ?>;">
+        <div class="card border shadow-sm rounded-4 p-3 bg-white h-100" style="border-top: 4px solid <?php echo $variacionAyer >= 0 ? 'var(--brand-secondary)' : '#DC2626'; ?> !important;">
+          <small class="text-uppercase fw-bold text-muted" style="font-size: 0.74rem; letter-spacing: 0.05em;">Variación vs Ayer</small>
+          <div class="fs-2 fw-bold my-1 tabular-nums" style="color: <?php echo $variacionAyer >= 0 ? '#15803D' : '#B91C1C'; ?>;">
             <?php echo ($variacionAyer >= 0 ? '+' : '') . number_format($variacionAyer, 1, ',', '.'); ?>%
           </div>
           <small class="text-muted d-block">Ayer: <?php echo number_format($litrosAyerTotal, 1, ',', '.'); ?> L acopiados</small>
@@ -376,49 +381,49 @@ require_once __DIR__ . '/includes/header.php';
       </div>
 
       <div class="col-md-3 col-6">
-        <div class="card border-0 shadow-sm rounded-4 p-3 text-white h-100" style="background: linear-gradient(135deg, var(--primary-emerald) 0%, #166534 100%);">
+        <div class="card border-0 shadow-sm rounded-4 p-3 text-white h-100" style="background: linear-gradient(135deg, var(--brand-primary-dark) 0%, var(--brand-primary) 100%);">
           <div class="d-flex align-items-center justify-content-between">
-            <small class="text-uppercase fw-bold text-warning" style="font-size: 0.76rem; letter-spacing: 0.05em;">Total Quincena a Liquidar</small>
-            <i class="fa-solid fa-coins text-warning"></i>
+            <small class="text-uppercase fw-bold" style="font-size: 0.74rem; letter-spacing: 0.05em; color: #FCD34D;">Total Quincena a Liquidar</small>
+            <i data-lucide="circle-dollar-sign" style="width: 18px; height: 18px; color: #FCD34D;"></i>
           </div>
           <div class="fs-2 fw-bold my-1 tabular-nums text-white" id="kpi-liquidacion">
             <?php echo formatoMonedaCOP($totalLiquidacionGeneral); ?>
           </div>
-          <small class="text-light opacity-85 d-block">Tarifa: <?php echo $precioLitroActual ? formatoMonedaCOP($precioLitroActual) . ' / L' : 'Por fijar'; ?></small>
+          <small style="color: #CBD5E1;" class="d-block">Tarifa: <?php echo $precioLitroActual ? formatoMonedaCOP($precioLitroActual) . ' / L' : 'Por fijar'; ?></small>
         </div>
       </div>
 
       <div class="col-md-3 col-6">
-        <div class="card border-0 shadow-sm rounded-4 p-3 bg-white h-100" style="border-top: 4px solid #0284C7 !important;">
-          <small class="text-uppercase fw-bold text-muted" style="font-size: 0.76rem; letter-spacing: 0.05em;">Entregas de Hoy</small>
+        <div class="card border shadow-sm rounded-4 p-3 bg-white h-100" style="border-top: 4px solid var(--accent-teal) !important;">
+          <small class="text-uppercase fw-bold text-muted" style="font-size: 0.74rem; letter-spacing: 0.05em;">Entregas de Hoy</small>
           <div class="fs-2 fw-bold my-1 tabular-nums text-dark">
             <?php echo $ganaderosEntregaronHoy; ?> <small class="fs-6 text-muted fw-normal">/ <?php echo $totalGanaderosActivos; ?></small>
           </div>
-          <small class="text-muted d-block"><span class="text-success fw-bold"><?php echo $ganaderosEntregaronHoy; ?> entregaron</span> &bull; <span class="text-warning fw-bold"><?php echo $ganaderosPendientesHoy; ?> pendientes</span></small>
+          <small class="text-muted d-block"><span class="fw-bold" style="color: var(--brand-secondary);"><?php echo $ganaderosEntregaronHoy; ?> entregaron</span> &bull; <span class="fw-bold" style="color: var(--brand-accent-hover);"><?php echo $ganaderosPendientesHoy; ?> pendientes</span></small>
         </div>
       </div>
     </div>
 
     <!-- AVISO SI LA QUINCENA ESTÁ CERRADA -->
     <?php if ($quincenaEstaCerrada): ?>
-      <div class="alert alert-warning rounded-4 shadow-sm py-2 px-3 mb-4 d-flex align-items-center gap-2">
-        <i class="bi bi-lock-fill fs-4 text-warning"></i>
+      <div class="alert alert-warning rounded-4 shadow-sm py-2.5 px-3 mb-4 d-flex align-items-center gap-2">
+        <i data-lucide="lock" style="width: 20px; height: 20px; color: var(--brand-accent-hover);"></i>
         <div>
-          <strong>Quincena Cerrada y Liquidada:</strong> Esta quincena se encuentra en modo de <em>solo lectura</em>. No se permiten ediciones inline ni inserciones. Para editar pesajes, debes reabrirla en la pestaña <strong>Precios de Quincena</strong>.
+          <strong>Quincena Cerrada y Liquidada:</strong> Esta quincena se encuentra en modo de <em>solo lectura</em>. No se permiten ediciones inline ni inserciones. Para editar pesajes, debes reabrirla con tu contraseña de administrador.
         </div>
       </div>
     <?php endif; ?>
 
-    <!-- BARRA DE CONTROL DE LA PLANILLA (Selector, Anterior/Siguiente, Búsqueda, Exportar) -->
+    <!-- BARRA DE CONTROL DE LA PLANILLA -->
     <div class="card card-rural p-3 mb-3">
-      <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3">
+      <div class="d-flex flex-column flex-xl-row align-items-xl-center justify-content-between gap-3">
         <!-- Navegación de Quincenas -->
         <div class="d-flex flex-wrap align-items-center gap-2">
-          <a href="admin.php?tab=planilla&fechaInicio=<?php echo $qAnt['fechaInicio']; ?>&fechaFin=<?php echo $qAnt['fechaFin']; ?>" class="btn btn-touch btn-outline-secondary btn-sm rounded-pill" title="Quincena anterior">
-            <i class="bi bi-chevron-left"></i> Anterior
+          <a href="admin.php?tab=planilla&fechaInicio=<?php echo $qAnt['fechaInicio']; ?>&fechaFin=<?php echo $qAnt['fechaFin']; ?>" class="btn btn-outline-secondary btn-sm rounded-3 d-inline-flex align-items-center gap-1 fw-semibold" title="Quincena anterior">
+            <i data-lucide="chevron-left" style="width: 15px; height: 15px;"></i> Anterior
           </a>
 
-          <select class="form-select form-select-touch form-select-sm" style="min-width: 280px;" onchange="const p = this.value.split('|'); location.href='admin.php?tab=planilla&fechaInicio=' + p[0] + '&fechaFin=' + p[1];">
+          <select class="form-select form-select-sm fw-semibold" style="min-width: 260px; max-width: 310px;" onchange="const p = this.value.split('|'); location.href='admin.php?tab=planilla&fechaInicio=' + p[0] + '&fechaFin=' + p[1];">
             <?php foreach ($quincenasDisponibles as $q): ?>
               <?php $sel = ($q['fechaInicio'] === $fechaInicioSel && $q['fechaFin'] === $fechaFinSel) ? 'selected' : ''; ?>
               <option value="<?php echo e($q['fechaInicio'] . '|' . $q['fechaFin']); ?>" <?php echo $sel; ?>>
@@ -428,65 +433,62 @@ require_once __DIR__ . '/includes/header.php';
             <?php endforeach; ?>
           </select>
 
-          <a href="admin.php?tab=planilla&fechaInicio=<?php echo $qSig['fechaInicio']; ?>&fechaFin=<?php echo $qSig['fechaFin']; ?>" class="btn btn-touch btn-outline-secondary btn-sm rounded-pill" title="Quincena siguiente">
-            Siguiente <i class="bi bi-chevron-right"></i>
+          <a href="admin.php?tab=planilla&fechaInicio=<?php echo $qSig['fechaInicio']; ?>&fechaFin=<?php echo $qSig['fechaFin']; ?>" class="btn btn-outline-secondary btn-sm rounded-3 d-inline-flex align-items-center gap-1 fw-semibold" title="Quincena siguiente">
+            Siguiente <i data-lucide="chevron-right" style="width: 15px; height: 15px;"></i>
           </a>
 
-          <span class="badge <?php echo $quincenaEstaCerrada ? 'bg-secondary' : 'bg-primary'; ?> px-3 py-2 rounded-pill ms-lg-2">
+          <span class="badge px-3 py-2 rounded-pill" style="background-color: <?php echo $quincenaEstaCerrada ? '#64748B' : 'var(--brand-primary)'; ?>; color: #FFFFFF;">
             <?php echo $quincenaEstaCerrada ? 'Cerrada' : 'Abierta para edición'; ?>
           </span>
 
-          <!-- Botón de Cierre / Reapertura de Quincena -->
           <?php if ($quincenaEstaCerrada): ?>
-            <button type="button" class="btn btn-touch btn-warning btn-sm rounded-pill px-3 shadow-sm ms-lg-1" onclick="solicitarReaperturaQuincena()" title="Reabrir esta quincena con validación de clave">
-              <i class="bi bi-unlock-fill me-1"></i> Reabrir Quincena
+            <button type="button" class="btn btn-warning btn-sm rounded-3 px-3 shadow-sm fw-bold d-inline-flex align-items-center gap-1" onclick="solicitarReaperturaQuincena()" title="Reabrir esta quincena con validación de clave">
+              <i data-lucide="unlock" style="width: 14px; height: 14px;"></i> Reabrir Quincena
             </button>
           <?php else: ?>
-            <button type="button" class="btn btn-touch btn-outline-danger btn-sm rounded-pill px-3 shadow-sm ms-lg-1" onclick="solicitarCierreQuincena()" title="Cerrar y congelar edición inline de esta quincena">
-              <i class="bi bi-lock-fill me-1"></i> Cerrar Quincena
+            <button type="button" class="btn btn-outline-danger btn-sm rounded-3 px-3 fw-semibold d-inline-flex align-items-center gap-1" onclick="solicitarCierreQuincena()" title="Cerrar y congelar edición inline de esta quincena">
+              <i data-lucide="lock" style="width: 14px; height: 14px;"></i> Cerrar Quincena
             </button>
           <?php endif; ?>
         </div>
 
-        <!-- Buscador en tiempo real de ganaderos y exportación -->
+        <!-- Buscador en tiempo real y exportación -->
         <div class="d-flex flex-wrap align-items-center gap-2">
-          <div class="input-group input-group-sm" style="min-width: 220px;">
-            <span class="input-group-text bg-transparent border-2 text-primary">
-              <i class="bi bi-search"></i>
+          <div class="input-group input-group-sm" style="width: 230px;">
+            <span class="input-group-text bg-white border-end-0 text-muted">
+              <i data-lucide="search" style="width: 15px; height: 15px;"></i>
             </span>
-            <input type="text" id="filtro-matriz" class="form-control form-control-touch form-control-sm border-start-0" placeholder="Buscar ganadero o cédula...">
+            <input type="text" id="filtro-matriz" class="form-control form-control-sm border-start-0" placeholder="Buscar ganadero o cédula...">
           </div>
 
-          <div class="d-flex align-items-center gap-2">
-            <button type="button" id="btn-importar-excel" class="btn btn-touch btn-sm rounded-pill px-3 shadow-sm text-white fw-bold" style="background-color: var(--primary-emerald);" <?php echo $quincenaEstaCerrada ? 'disabled' : ''; ?> title="Importar pesajes desde Excel (.xlsx, .xls) o CSV">
-              <i class="fa-solid fa-file-arrow-up me-1"></i> Importar Excel
-            </button>
-            <input type="file" id="input-importar-excel" accept=".xlsx, .xls, .csv" class="d-none">
+          <button type="button" id="btn-importar-excel" class="btn btn-sm rounded-3 px-3 text-white fw-semibold d-inline-flex align-items-center gap-1.5" style="background-color: var(--brand-primary);" <?php echo $quincenaEstaCerrada ? 'disabled' : ''; ?> title="Importar pesajes desde Excel (.xlsx, .xls) o CSV">
+            <i data-lucide="upload" style="width: 14px; height: 14px;"></i> Importar Excel
+          </button>
+          <input type="file" id="input-importar-excel" accept=".xlsx, .xls, .csv" class="d-none">
 
-            <button type="button" id="btn-exportar-xlsx" class="btn btn-touch btn-sm rounded-pill px-3 shadow-sm fw-bold text-white" style="background-color: var(--accent-gold); border: none;" title="Descargar planilla completa en formato Excel (.xlsx)">
-              <i class="fa-solid fa-file-excel me-1"></i> Excel (.xlsx)
-            </button>
+          <button type="button" id="btn-exportar-xlsx" class="btn btn-sm rounded-3 px-3 fw-semibold text-white d-inline-flex align-items-center gap-1.5" style="background-color: var(--brand-accent); border: none;" title="Descargar planilla completa en formato Excel (.xlsx)">
+            <i data-lucide="file-spreadsheet" style="width: 14px; height: 14px;"></i> Excel (.xlsx)
+          </button>
 
-            <button type="button" id="btn-exportar-csv" class="btn btn-touch btn-outline-success btn-sm rounded-pill px-3 fw-bold" title="Descargar planilla en formato CSV">
-              <i class="fa-solid fa-file-csv me-1"></i> CSV
-            </button>
+          <button type="button" id="btn-exportar-csv" class="btn btn-outline-success btn-sm rounded-3 px-3 fw-semibold d-inline-flex align-items-center gap-1.5" title="Descargar planilla en formato CSV">
+            <i data-lucide="download" style="width: 14px; height: 14px;"></i> CSV
+          </button>
 
-            <button type="button" id="btn-bitacora" class="btn btn-touch btn-outline-secondary btn-sm rounded-pill px-3 fw-bold" onclick="abrirModalBitacora()" title="Consultar historial de auditoría y bitácora de cambios">
-              <i class="fa-solid fa-clock-rotate-left me-1 text-warning"></i> Bitácora
-            </button>
-          </div>
+          <button type="button" id="btn-bitacora" class="btn btn-outline-secondary btn-sm rounded-3 px-3 fw-semibold d-inline-flex align-items-center gap-1.5" onclick="abrirModalBitacora()" title="Consultar historial de auditoría y bitácora de cambios">
+            <i data-lucide="history" style="width: 14px; height: 14px; color: var(--brand-accent);"></i> Bitácora
+          </button>
         </div>
       </div>
 
       <!-- Leyenda de Uso -->
-      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 pt-2 mt-2 border-top border-secondary-subtle small text-muted">
-        <div>
-          <span class="me-3"><strong class="text-amber-700">Turno AM:</strong> Mañana</span>
-          <span class="me-3"><strong class="text-blue-700">Turno PM:</strong> Tarde</span>
-          <span class="me-3"><strong>Enter:</strong> Baja celda &bull; <strong>Tab / Flechas:</strong> Navega &bull; <strong>Esc:</strong> Cancela</span>
-          <span><strong>Pegar desde Excel:</strong> Selecciona una celda y presiona Ctrl + V para pegar en bloque</span>
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 pt-2 mt-2 border-top small text-muted">
+        <div class="d-flex flex-wrap gap-3">
+          <span><strong style="color: var(--shift-am-text);">Turno AM:</strong> Mañana</span>
+          <span><strong style="color: var(--shift-pm-text);">Turno PM:</strong> Tarde</span>
+          <span><strong>Enter:</strong> Baja celda &bull; <strong>Tab / Flechas:</strong> Navega &bull; <strong>Esc:</strong> Cancela</span>
+          <span><strong>Pegar desde Excel:</strong> Selecciona una celda y presiona Ctrl + V</span>
         </div>
-        <div id="contador-filas-visibles" class="fw-bold text-primary">
+        <div id="contador-filas-visibles" class="fw-bold" style="color: var(--brand-primary);">
           <?php echo $totalGanaderosActivos; ?> asociados visibles
         </div>
       </div>
@@ -508,7 +510,7 @@ require_once __DIR__ . '/includes/header.php';
                   $w = (int)(new DateTime($d['fecha']))->format('w');
                   $esFinSemana = ($w === 0 || $w === 6);
                 ?>
-                <th colspan="2" class="<?php echo $esHoy ? 'col-today' : ($esFinSemana ? 'col-weekend' : ''); ?> border-end border-success-subtle">
+                <th colspan="2" class="<?php echo $esHoy ? 'col-today' : ($esFinSemana ? 'col-weekend' : ''); ?>">
                   <div><?php echo e($d['etiqueta']); ?></div>
                   <?php if ($esHoy): ?>
                     <span class="badge bg-warning text-dark px-1.5 py-0 rounded-pill" style="font-size: 0.65rem;">HOY</span>
@@ -522,8 +524,8 @@ require_once __DIR__ . '/includes/header.php';
             <!-- Fila Nivel 2: Turnos -->
             <tr>
               <?php foreach ($diasQuincena as $d): ?>
-                <th class="py-1 px-1 bg-warning-subtle text-dark">AM</th>
-                <th class="py-1 px-1 bg-danger-subtle text-dark col-border-day">PM</th>
+                <th class="py-1 px-1" style="background-color: var(--shift-am-bg); color: var(--shift-am-text);">AM</th>
+                <th class="py-1 px-1 col-border-day" style="background-color: var(--shift-pm-bg); color: var(--shift-pm-text);">PM</th>
               <?php endforeach; ?>
             </tr>
           </thead>
@@ -531,7 +533,7 @@ require_once __DIR__ . '/includes/header.php';
             <?php if (empty($ganaderosPlanilla)): ?>
               <tr>
                 <td colspan="<?php echo (count($diasQuincena) * 2) + 2; ?>" class="text-center py-5 text-muted">
-                  <i class="bi bi-people display-4 d-block mb-2"></i>
+                  <i data-lucide="users" class="d-block mx-auto mb-2" style="width: 36px; height: 36px;"></i>
                   No hay ganaderos activos registrados en el sistema. Agrega asociados en la pestaña correspondiente.
                 </td>
               </tr>
@@ -546,12 +548,12 @@ require_once __DIR__ . '/includes/header.php';
                         <div class="fw-bold text-truncate" style="max-width: 170px;" title="<?php echo e($g['nombre']); ?>">
                           <?php echo e($g['nombre']); ?>
                         </div>
-                        <div class="text-muted font-monospace small">
+                        <div class="text-muted font-monospace small" style="font-size: 0.74rem;">
                           C.C. <?php echo e($g['cedula']); ?><?php if (!empty($g['finca'])) echo ' &bull; ' . e($g['finca']); ?>
                         </div>
                       </div>
-                      <button type="button" class="btn btn-sm btn-outline-success p-1 px-2 rounded-pill no-print flex-shrink-0" title="Generar Colilla de Liquidación" onclick="abrirColillaPago('<?php echo e($g['id']); ?>', '<?php echo e(addslashes($g['nombre'])); ?>', '<?php echo e($g['cedula']); ?>', '<?php echo e(addslashes($g['finca'] ?? 'Vereda Alizal')); ?>', <?php echo (float)$totG; ?>)">
-                        <i class="bi bi-receipt"></i>
+                      <button type="button" class="btn btn-sm btn-outline-success p-1 px-2 rounded-3 no-print flex-shrink-0" title="Generar Colilla de Liquidación" onclick="abrirColillaPago('<?php echo e($g['id']); ?>', '<?php echo e(addslashes($g['nombre'])); ?>', '<?php echo e($g['cedula']); ?>', '<?php echo e(addslashes($g['finca'] ?? 'Vereda Alizal')); ?>', <?php echo (float)$totG; ?>)">
+                        <i data-lucide="receipt" style="width: 14px; height: 14px;"></i>
                       </button>
                     </div>
                   </td>
@@ -628,18 +630,18 @@ require_once __DIR__ . '/includes/header.php';
 
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
       <div>
-        <h4 class="fw-bold text-success mb-1">
-          <i class="bi bi-people-fill me-2"></i> Gestión de Ganaderos Asociados
+        <h4 class="fw-bold mb-1 d-flex align-items-center gap-2" style="color: var(--brand-primary);">
+          <i data-lucide="users" style="width: 22px; height: 22px;"></i> Gestión de Ganaderos Asociados
         </h4>
         <p class="text-muted small mb-0">Afiliación, actualización de fincas, datos de contacto y estado de asociados.</p>
       </div>
 
       <button type="button" class="btn btn-touch btn-aso-primary shadow" data-bs-toggle="modal" data-bs-target="#modalNuevoGanadero">
-        <i class="bi bi-person-plus-fill me-1"></i> Agregar Nuevo Asociado
+        <i data-lucide="user-plus" style="width: 17px; height: 17px;"></i> Agregar Nuevo Asociado
       </button>
     </div>
 
-    <div class="card card-rural border-0 shadow overflow-hidden">
+    <div class="card card-rural border shadow overflow-hidden">
       <div class="card-body p-3 p-md-4">
         <div class="table-responsive">
           <table id="tabla-gestion-ganaderos" class="table table-rural table-hover align-middle w-100">
@@ -656,7 +658,7 @@ require_once __DIR__ . '/includes/header.php';
             <tbody>
               <?php foreach ($listaTodosGanaderos as $g): ?>
                 <tr>
-                  <td class="fw-bold text-success fs-6"><?php echo e($g['nombre']); ?></td>
+                  <td class="fw-bold fs-6" style="color: var(--brand-primary);"><?php echo e($g['nombre']); ?></td>
                   <td class="font-monospace fw-semibold"><?php echo e($g['cedula']); ?></td>
                   <td><?php echo e($g['telefono'] ?: 'No registrado'); ?></td>
                   <td><?php echo e($g['finca'] ?: 'Vereda Alizal'); ?></td>
@@ -669,15 +671,15 @@ require_once __DIR__ . '/includes/header.php';
                   </td>
                   <td class="text-center">
                     <div class="d-inline-flex gap-2">
-                      <button type="button" class="btn btn-sm btn-outline-success rounded-pill px-3 py-1" onclick="editarGanadero(<?php echo htmlspecialchars(json_encode($g), ENT_QUOTES, 'UTF-8'); ?>)">
-                        <i class="bi bi-pencil-fill me-1"></i> Editar
+                      <button type="button" class="btn btn-sm btn-outline-success rounded-3 px-2.5 py-1 d-inline-flex align-items-center gap-1" onclick="editarGanadero(<?php echo htmlspecialchars(json_encode($g), ENT_QUOTES, 'UTF-8'); ?>)">
+                        <i data-lucide="pencil" style="width: 14px; height: 14px;"></i> Editar
                       </button>
                       <form action="admin.php?tab=ganaderos" method="POST" onsubmit="return confirm('¿Reestablecer clave a temporal (123456) para este asociado?');" class="d-inline">
                         <?php echo campoCsrf(); ?>
                         <input type="hidden" name="accion" value="reset_clave_ganadero">
                         <input type="hidden" name="asociadoId" value="<?php echo e($g['id']); ?>">
-                        <button type="submit" class="btn btn-sm btn-outline-warning text-dark rounded-pill px-2 py-1" title="Reestablecer clave a 123456">
-                          <i class="bi bi-key-fill"></i>
+                        <button type="submit" class="btn btn-sm btn-outline-warning text-dark rounded-3 px-2 py-1" title="Reestablecer clave a 123456">
+                          <i data-lucide="key-round" style="width: 14px; height: 14px;"></i>
                         </button>
                       </form>
                     </div>
@@ -697,9 +699,9 @@ require_once __DIR__ . '/includes/header.php';
 
     <div class="row g-4 mb-4">
       <div class="col-lg-5">
-        <div class="card card-rural p-4 shadow-sm border-2 border-success-subtle">
-          <h5 class="fw-bold text-success mb-3">
-            <i class="bi bi-tag-fill me-1"></i> Fijar Precio y Estado de Quincena
+        <div class="card card-rural p-4 shadow-sm" style="border-top: 4px solid var(--brand-primary) !important;">
+          <h5 class="fw-bold mb-3 d-flex align-items-center gap-2" style="color: var(--brand-primary);">
+            <i data-lucide="tag" style="width: 18px; height: 18px;"></i> Fijar Precio y Estado de Quincena
           </h5>
 
           <form action="admin.php?tab=quincenas" method="POST">
@@ -718,7 +720,7 @@ require_once __DIR__ . '/includes/header.php';
 
             <div class="mb-3">
               <label for="precioLitro" class="form-label small fw-bold text-muted">Precio Oficial por Litro ($ COP) *</label>
-              <input type="number" step="1" name="precioLitro" id="precioLitro" class="form-control form-control-touch fw-extrabold fs-4 text-success" value="<?php echo $precioLitroActual ?: 2250; ?>" required placeholder="Ej: 2250">
+              <input type="number" step="1" name="precioLitro" id="precioLitro" class="form-control form-control-touch font-mono fw-bold fs-4" style="color: var(--brand-primary);" value="<?php echo $precioLitroActual ?: 2250; ?>" required placeholder="Ej: 2250">
               <small class="text-muted">Tarifa base para liquidación a los ganaderos.</small>
             </div>
 
@@ -728,7 +730,7 @@ require_once __DIR__ . '/includes/header.php';
             </div>
 
             <button type="submit" class="btn btn-touch btn-aso-primary w-100 shadow">
-              <i class="bi bi-check-circle-fill me-1"></i> Guardar Configuración
+              <i data-lucide="check-circle-2" style="width: 17px; height: 17px;"></i> Guardar Configuración
             </button>
           </form>
         </div>
@@ -736,8 +738,8 @@ require_once __DIR__ . '/includes/header.php';
 
       <div class="col-lg-7">
         <div class="card card-rural p-4 shadow-sm">
-          <h5 class="fw-bold text-success mb-3">
-            <i class="bi bi-clock-history me-1"></i> Historial de Periodos Quincenales
+          <h5 class="fw-bold mb-3 d-flex align-items-center gap-2" style="color: var(--brand-primary);">
+            <i data-lucide="history" style="width: 18px; height: 18px;"></i> Historial de Periodos Quincenales
           </h5>
 
           <div class="table-responsive">
@@ -757,7 +759,7 @@ require_once __DIR__ . '/includes/header.php';
                       <strong><?php echo formatoFechaEspanol($qd['fechaInicio']); ?></strong> al 
                       <strong><?php echo formatoFechaEspanol($qd['fechaFin']); ?></strong>
                     </td>
-                    <td class="text-end fw-bold text-success">
+                    <td class="text-end fw-bold font-mono" style="color: var(--brand-primary);">
                       <?php echo formatoMonedaCOP($qd['precioLitro']); ?>
                     </td>
                     <td class="text-center">
@@ -768,7 +770,7 @@ require_once __DIR__ . '/includes/header.php';
                       <?php endif; ?>
                     </td>
                     <td class="text-center">
-                      <a href="admin.php?tab=quincenas&fechaInicio=<?php echo $qd['fechaInicio']; ?>&fechaFin=<?php echo $qd['fechaFin']; ?>" class="btn btn-sm btn-outline-success rounded-pill px-3">
+                      <a href="admin.php?tab=quincenas&fechaInicio=<?php echo $qd['fechaInicio']; ?>&fechaFin=<?php echo $qd['fechaFin']; ?>" class="btn btn-sm btn-outline-success rounded-3 px-3">
                         Configurar
                       </a>
                     </td>
@@ -787,10 +789,10 @@ require_once __DIR__ . '/includes/header.php';
   <?php elseif ($pestañaActiva === 'buzon'): ?>
 
     <!-- Subsección Inconformidades Quincenales -->
-    <div class="card card-rural border-0 shadow mb-4 overflow-hidden">
-      <div class="card-header bg-warning text-dark p-3 d-flex justify-content-between align-items-center">
-        <h5 class="fw-bold mb-0">
-          <i class="bi bi-shield-exclamation me-2"></i> Inconformidades Quincenales Radicadas por Ganaderos
+    <div class="card card-rural border shadow mb-4 overflow-hidden">
+      <div class="card-header p-3 d-flex justify-content-between align-items-center" style="background-color: var(--accent-gold-soft); border-bottom: 1px solid var(--shift-am-border);">
+        <h5 class="fw-bold mb-0 d-flex align-items-center gap-2" style="color: var(--shift-am-text);">
+          <i data-lucide="alert-triangle" style="width: 20px; height: 20px;"></i> Inconformidades Quincenales Radicadas por Ganaderos
         </h5>
         <span class="badge bg-dark text-white rounded-pill px-3 py-1"><?php echo count($listaAlertas); ?> Reclamos</span>
       </div>
@@ -798,7 +800,7 @@ require_once __DIR__ . '/includes/header.php';
       <div class="card-body p-3 p-md-4">
         <?php if (empty($listaAlertas)): ?>
           <div class="text-center py-4 text-muted">
-            <i class="bi bi-check2-circle fs-1 text-success"></i>
+            <i data-lucide="check-circle-2" class="d-block mx-auto mb-2" style="width: 36px; height: 36px; color: var(--brand-secondary);"></i>
             <p class="mb-0 fw-bold mt-2">No hay inconformidades pendientes en el sistema.</p>
           </div>
         <?php else: ?>
@@ -830,7 +832,7 @@ require_once __DIR__ . '/includes/header.php';
                       <small class="text-muted font-monospace">C.C. <?php echo e($alt['ganaderoCedula']); ?></small>
                     </td>
                     <td class="small"><?php echo e($alt['fechaInicio']); ?> al <?php echo e($alt['fechaFin']); ?></td>
-                    <td class="text-end fw-bold text-success"><?php echo formatoLitros($alt['litrosAlMomento']); ?></td>
+                    <td class="text-end fw-bold font-mono" style="color: var(--brand-primary);"><?php echo formatoLitros($alt['litrosAlMomento']); ?></td>
                     <td class="small fst-italic" style="max-width: 250px;">
                       "<?php echo e($alt['mensaje']); ?>"
                     </td>
@@ -849,8 +851,8 @@ require_once __DIR__ . '/includes/header.php';
                       </span>
                     </td>
                     <td class="text-center">
-                      <button type="button" class="btn btn-sm btn-outline-primary rounded-pill px-3" onclick="abrirModalRespuestaReclamo('<?php echo e($alt['id']); ?>', '<?php echo e(addslashes($alt['ganaderoNombre'])); ?>', '<?php echo e($alt['estado']); ?>', '<?php echo e(addslashes($alt['mensaje'])); ?>', '<?php echo e(addslashes($alt['respuestaAdmin'] ?? '')); ?>')">
-                        <i class="bi bi-chat-left-dots-fill me-1"></i> Responder
+                      <button type="button" class="btn btn-sm btn-outline-primary rounded-3 px-3 d-inline-flex align-items-center gap-1" onclick="abrirModalRespuestaReclamo('<?php echo e($alt['id']); ?>', '<?php echo e(addslashes($alt['ganaderoNombre'])); ?>', '<?php echo e($alt['estado']); ?>', '<?php echo e(addslashes($alt['mensaje'])); ?>', '<?php echo e(addslashes($alt['respuestaAdmin'] ?? '')); ?>')">
+                        <i data-lucide="message-square" style="width: 14px; height: 14px;"></i> Responder
                       </button>
                     </td>
                   </tr>
@@ -863,10 +865,10 @@ require_once __DIR__ . '/includes/header.php';
     </div>
 
     <!-- Subsección Consultas de Contacto Web -->
-    <div class="card card-rural border-0 shadow overflow-hidden">
-      <div class="card-header bg-success text-white p-3">
-        <h5 class="fw-bold mb-0">
-          <i class="bi bi-envelope-open-fill me-2"></i> Mensajes Recibidos desde la Landing Web
+    <div class="card card-rural border shadow overflow-hidden">
+      <div class="card-header text-white p-3" style="background-color: var(--brand-primary);">
+        <h5 class="fw-bold mb-0 text-white d-flex align-items-center gap-2">
+          <i data-lucide="mail-open" style="width: 18px; height: 18px;"></i> Mensajes Recibidos desde la Landing Web
         </h5>
       </div>
       <div class="card-body p-3 p-md-4">
@@ -907,12 +909,12 @@ require_once __DIR__ . '/includes/header.php';
                           <?php echo campoCsrf(); ?>
                           <input type="hidden" name="accion" value="atender_consulta">
                           <input type="hidden" name="consultaId" value="<?php echo e($c['id']); ?>">
-                          <button type="submit" class="btn btn-sm btn-outline-success rounded-pill px-3">
+                          <button type="submit" class="btn btn-sm btn-outline-success rounded-3 px-3">
                             Marcar Atendida
                           </button>
                         </form>
                       <?php else: ?>
-                        <span class="text-muted small"><i class="bi bi-check-circle-fill text-success"></i> Lista</span>
+                        <span class="text-muted small d-inline-flex align-items-center gap-1"><i data-lucide="check-circle-2" style="width: 14px; height: 14px; color: var(--brand-secondary);"></i> Lista</span>
                       <?php endif; ?>
                     </td>
                   </tr>
@@ -932,9 +934,9 @@ require_once __DIR__ . '/includes/header.php';
 <div class="modal fade" id="modalNuevoGanadero" tabindex="-1" aria-labelledby="modalGanaderoLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content rounded-4 border-0 shadow-lg">
-      <div class="modal-header bg-success text-white p-4">
-        <h5 class="modal-title fw-bold" id="modalGanaderoLabel">
-          <i class="bi bi-person-plus-fill me-2"></i> Asociado Ganadero
+      <div class="modal-header text-white p-4" style="background-color: var(--brand-primary);">
+        <h5 class="modal-title fw-bold text-white d-flex align-items-center gap-2" id="modalGanaderoLabel">
+          <i data-lucide="user-plus" style="width: 18px; height: 18px;"></i> Asociado Ganadero
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
@@ -976,9 +978,9 @@ require_once __DIR__ . '/includes/header.php';
         </div>
 
         <div class="modal-footer p-3 bg-body-tertiary">
-          <button type="button" class="btn btn-touch btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-touch btn-aso-primary rounded-pill px-4">
-            <i class="bi bi-save-fill me-1"></i> Guardar Asociado
+          <button type="button" class="btn btn-touch btn-secondary rounded-3 px-4" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-touch btn-aso-primary rounded-3 px-4">
+            <i data-lucide="save" style="width: 16px; height: 16px;"></i> Guardar Asociado
           </button>
         </div>
       </form>
@@ -991,8 +993,8 @@ require_once __DIR__ . '/includes/header.php';
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content rounded-4 border-0 shadow-lg">
       <div class="modal-header bg-danger text-white p-4">
-        <h5 class="modal-title fw-bold" id="modalCierreLabel">
-          <i class="bi bi-lock-fill me-2"></i> Cerrar y Liquidar Quincena
+        <h5 class="modal-title fw-bold text-white d-flex align-items-center gap-2" id="modalCierreLabel">
+          <i data-lucide="lock" style="width: 18px; height: 18px;"></i> Cerrar y Liquidar Quincena
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
@@ -1007,9 +1009,9 @@ require_once __DIR__ . '/includes/header.php';
         </div>
       </div>
       <div class="modal-footer p-3 bg-body-tertiary">
-        <button type="button" class="btn btn-touch btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-touch btn-danger rounded-pill px-4" onclick="confirmarAccionQuincena('cerrar')">
-          <i class="bi bi-lock-fill me-1"></i> Confirmar Cierre
+        <button type="button" class="btn btn-touch btn-secondary rounded-3 px-4" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-touch btn-danger rounded-3 px-4" onclick="confirmarAccionQuincena('cerrar')">
+          <i data-lucide="lock" style="width: 16px; height: 16px;"></i> Confirmar Cierre
         </button>
       </div>
     </div>
@@ -1021,8 +1023,8 @@ require_once __DIR__ . '/includes/header.php';
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content rounded-4 border-0 shadow-lg">
       <div class="modal-header bg-warning text-dark p-4">
-        <h5 class="modal-title fw-bold" id="modalReaperturaLabel">
-          <i class="bi bi-unlock-fill me-2"></i> Reabrir Quincena para Edición
+        <h5 class="modal-title fw-bold d-flex align-items-center gap-2" id="modalReaperturaLabel">
+          <i data-lucide="unlock" style="width: 18px; height: 18px;"></i> Reabrir Quincena para Edición
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
@@ -1037,9 +1039,9 @@ require_once __DIR__ . '/includes/header.php';
         </div>
       </div>
       <div class="modal-footer p-3 bg-body-tertiary">
-        <button type="button" class="btn btn-touch btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-touch btn-warning text-dark rounded-pill px-4" onclick="confirmarAccionQuincena('reabrir')">
-          <i class="bi bi-unlock-fill me-1"></i> Confirmar Reapertura
+        <button type="button" class="btn btn-touch btn-secondary rounded-3 px-4" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-touch btn-warning text-dark rounded-3 px-4" onclick="confirmarAccionQuincena('reabrir')">
+          <i data-lucide="unlock" style="width: 16px; height: 16px;"></i> Confirmar Reapertura
         </button>
       </div>
     </div>
@@ -1050,9 +1052,9 @@ require_once __DIR__ . '/includes/header.php';
 <div class="modal fade" id="modalBitacoraAuditoria" tabindex="-1" aria-labelledby="modalBitacoraLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
     <div class="modal-content rounded-4 border-0 shadow-lg">
-      <div class="modal-header bg-dark text-white p-4">
-        <h5 class="modal-title fw-bold" id="modalBitacoraLabel">
-          <i class="bi bi-clock-history me-2"></i> Historial de Auditoría y Bitácora de Cambios
+      <div class="modal-header text-white p-4" style="background-color: var(--brand-primary-dark);">
+        <h5 class="modal-title fw-bold text-white d-flex align-items-center gap-2" id="modalBitacoraLabel">
+          <i data-lucide="history" style="width: 18px; height: 18px;"></i> Historial de Auditoría y Bitácora de Cambios
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
@@ -1060,7 +1062,7 @@ require_once __DIR__ . '/includes/header.php';
         <p class="small text-muted mb-3">Registro de modificaciones de pesajes, tarifas, cierres y accesos:</p>
         <div class="table-responsive">
           <table class="table table-hover table-striped align-middle small w-100" id="tabla-bitacora">
-            <thead class="table-dark">
+            <thead style="background-color: var(--brand-primary); color: #fff;">
               <tr>
                 <th>Fecha / Hora</th>
                 <th>Usuario</th>
@@ -1083,8 +1085,8 @@ require_once __DIR__ . '/includes/header.php';
         </div>
       </div>
       <div class="modal-footer p-3 bg-body-tertiary d-flex justify-content-between">
-        <small class="text-muted"><i class="bi bi-shield-lock-fill text-success me-1"></i> Trazabilidad Completa</small>
-        <button type="button" class="btn btn-touch btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cerrar</button>
+        <small class="text-muted d-inline-flex align-items-center gap-1"><i data-lucide="shield-check" style="width: 15px; height: 15px; color: var(--brand-secondary);"></i> Trazabilidad Completa</small>
+        <button type="button" class="btn btn-touch btn-secondary rounded-3 px-4" data-bs-dismiss="modal">Cerrar</button>
       </div>
     </div>
   </div>
@@ -1094,9 +1096,9 @@ require_once __DIR__ . '/includes/header.php';
 <div class="modal fade" id="modalColillaPago" tabindex="-1" aria-labelledby="modalColillaLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
     <div class="modal-content rounded-4 border-0 shadow-lg">
-      <div class="modal-header bg-success text-white p-4 no-print">
-        <h5 class="modal-title fw-bold" id="modalColillaLabel">
-          <i class="bi bi-receipt me-2"></i> Recibo de Liquidación Quincenal
+      <div class="modal-header text-white p-4 no-print" style="background-color: var(--brand-primary);">
+        <h5 class="modal-title fw-bold text-white d-flex align-items-center gap-2" id="modalColillaLabel">
+          <i data-lucide="receipt" style="width: 18px; height: 18px;"></i> Recibo de Liquidación Quincenal
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
@@ -1106,15 +1108,15 @@ require_once __DIR__ . '/includes/header.php';
           <!-- Membrete Oficial -->
           <div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-3">
             <div class="d-flex align-items-center gap-3">
-              <img src="assets/img/logo.png" alt="Logo" style="max-height: 55px; width: auto;" class="img-fluid">
+              <img src="assets/img/logo.webp" alt="Logo" style="max-height: 50px; width: auto;" class="img-fluid">
               <div>
-                <h5 class="fw-bold mb-0 text-success"><?php echo e(EMPRESA_SIGLA); ?></h5>
-                <small class="text-muted d-block"><?php echo e(EMPRESA_NOMBRE); ?></small>
+                <h5 class="fw-bold mb-0" style="color: var(--brand-primary);"><?php echo e(EMPRESA_SIGLA); ?></h5>
+                <small class="text-muted d-block" style="font-size: 0.72rem;"><?php echo e(EMPRESA_NOMBRE); ?></small>
                 <small class="fw-bold text-dark">NIT: <?php echo e(EMPRESA_NIT); ?> &bull; <?php echo e(EMPRESA_UBICACION); ?></small>
               </div>
             </div>
             <div class="text-end">
-              <span class="badge bg-success-subtle text-success fs-6 px-3 py-2 border border-success-subtle rounded-pill">
+              <span class="badge px-3 py-2 border rounded-pill" style="background-color: #E6F2EC; color: var(--brand-primary);">
                 Colilla de Liquidación
               </span>
               <small class="d-block text-muted mt-1">Fecha Emisión: <?php echo date('d/m/Y'); ?></small>
@@ -1122,7 +1124,7 @@ require_once __DIR__ . '/includes/header.php';
           </div>
 
           <!-- Datos del Ganadero y Periodo -->
-          <div class="row g-2 mb-3 p-3 rounded-3" style="background-color: var(--surface-2);">
+          <div class="row g-2 mb-3 p-3 rounded-3" style="background-color: var(--bg-canvas);">
             <div class="col-sm-6">
               <small class="text-muted d-block">Ganadero Asociado:</small>
               <strong class="fs-6 text-dark" id="colilla-nombre">-</strong>
@@ -1137,7 +1139,7 @@ require_once __DIR__ . '/includes/header.php';
             </div>
             <div class="col-sm-6 text-sm-end">
               <small class="text-muted d-block">Periodo Quincenal:</small>
-              <span class="fw-bold text-primary" id="colilla-periodo"><?php echo formatoFechaEspanol($fechaInicioSel); ?> al <?php echo formatoFechaEspanol($fechaFinSel); ?></span>
+              <span class="fw-bold" style="color: var(--brand-primary);" id="colilla-periodo"><?php echo formatoFechaEspanol($fechaInicioSel); ?> al <?php echo formatoFechaEspanol($fechaFinSel); ?></span>
             </div>
           </div>
 
@@ -1163,15 +1165,15 @@ require_once __DIR__ . '/includes/header.php';
           <div class="row g-2 p-3 bg-light rounded-3 border mb-4">
             <div class="col-4 text-center border-end">
               <small class="text-muted d-block text-uppercase fw-bold">Total Litros</small>
-              <strong class="fs-5 text-dark" id="colilla-total-litros">0,0 L</strong>
+              <strong class="fs-5 text-dark font-mono" id="colilla-total-litros">0,0 L</strong>
             </div>
             <div class="col-4 text-center border-end">
               <small class="text-muted d-block text-uppercase fw-bold">Precio por Litro</small>
-              <strong class="fs-5 text-dark" id="colilla-precio-litro"><?php echo $precioLitroActual ? formatoMonedaCOP($precioLitroActual) : '$ 0'; ?></strong>
+              <strong class="fs-5 text-dark font-mono" id="colilla-precio-litro"><?php echo $precioLitroActual ? formatoMonedaCOP($precioLitroActual) : '$ 0'; ?></strong>
             </div>
             <div class="col-4 text-center">
-              <small class="text-muted d-block text-uppercase fw-bold text-success">Neto a Liquidar</small>
-              <strong class="fs-4 text-success" id="colilla-total-neto">$ 0</strong>
+              <small class="text-muted d-block text-uppercase fw-bold" style="color: var(--brand-primary);">Neto a Liquidar</small>
+              <strong class="fs-4 font-mono" style="color: var(--brand-primary);" id="colilla-total-neto">$ 0</strong>
             </div>
           </div>
 
@@ -1193,9 +1195,9 @@ require_once __DIR__ . '/includes/header.php';
         </div>
       </div>
       <div class="modal-footer p-3 bg-body-tertiary no-print d-flex justify-content-between">
-        <button type="button" class="btn btn-touch btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cerrar</button>
-        <button type="button" class="btn btn-touch btn-success rounded-pill px-4" onclick="window.print()">
-          <i class="bi bi-printer-fill me-1"></i> Imprimir / Guardar como PDF
+        <button type="button" class="btn btn-touch btn-secondary rounded-3 px-4" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-touch btn-aso-primary rounded-3 px-4" onclick="window.print()">
+          <i data-lucide="printer" style="width: 16px; height: 16px;"></i> Imprimir / Guardar como PDF
         </button>
       </div>
     </div>
@@ -1206,9 +1208,9 @@ require_once __DIR__ . '/includes/header.php';
 <div class="modal fade" id="modalRespuestaReclamo" tabindex="-1" aria-labelledby="modalRespReclamoLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content rounded-4 border-0 shadow-lg">
-      <div class="modal-header bg-primary text-white p-4">
-        <h5 class="modal-title fw-bold" id="modalRespReclamoLabel">
-          <i class="bi bi-chat-left-dots-fill me-2"></i> Responder Inconformidad Quincenal
+      <div class="modal-header text-white p-4" style="background-color: var(--brand-primary);">
+        <h5 class="modal-title fw-bold text-white d-flex align-items-center gap-2" id="modalRespReclamoLabel">
+          <i data-lucide="message-square" style="width: 18px; height: 18px;"></i> Responder Inconformidad Quincenal
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
@@ -1236,9 +1238,9 @@ require_once __DIR__ . '/includes/header.php';
         </div>
       </div>
       <div class="modal-footer p-3 bg-body-tertiary">
-        <button type="button" class="btn btn-touch btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancelar</button>
-        <button type="button" class="btn btn-touch btn-primary rounded-pill px-4" onclick="guardarRespuestaReclamo()">
-          <i class="bi bi-send-fill me-1"></i> Guardar Respuesta
+        <button type="button" class="btn btn-touch btn-secondary rounded-3 px-4" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-touch btn-aso-primary rounded-3 px-4" onclick="guardarRespuestaReclamo()">
+          <i data-lucide="send" style="width: 16px; height: 16px;"></i> Guardar Respuesta
         </button>
       </div>
     </div>
@@ -1920,7 +1922,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // Helper para modal de editar ganadero
 function editarGanadero(g) {
-  document.getElementById('modalGanaderoLabel').innerHTML = '<i class="bi bi-pencil-fill me-2"></i> Editar Ganadero Asociado';
+  document.getElementById('modalGanaderoLabel').innerHTML = '<i data-lucide="pencil" style="width: 18px; height: 18px;"></i> Editar Ganadero Asociado';
+  if (typeof lucide !== 'undefined') lucide.createIcons({ attrs: { 'stroke-width': 1.5 } });
   document.getElementById('modal_asociado_id').value = g.id;
   document.getElementById('modal_cedula').value = g.cedula;
   document.getElementById('modal_nombre').value = g.nombre;

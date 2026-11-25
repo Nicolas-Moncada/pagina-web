@@ -23,6 +23,11 @@ tools/*.py
 scratch/
 test_*.py
 check_*.py
+inspect_*.py
+lh-resumen.js
+list_low_audits.py
+compress_hero.py
+resize_images.py
 lh.json
 .vscode/
 

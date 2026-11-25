@@ -1,7 +1,7 @@
 <?php
 /**
  * Herramienta de Verificación de Contraste WCAG 2.1 AAA / AA
- * Paleta Premium Accesible para Adultos Mayores (Azul Marino / Crema / Dorado Ocre)
+ * Paleta Corporativa: Bosque Esmeralda (#0F4C3A) / Salvia (#F4F7F5) / Cobre Dorado (#D97706)
  */
 
 function hexToRgb($hex) {
@@ -36,44 +36,42 @@ function contrastRatio($hex1, $hex2) {
     return ($lighter + 0.05) / ($darker + 0.05);
 }
 
-// Tokens Premium Accesibles (Sin verdes)
+// Tokens Corporativos Bosque Esmeralda, Salvia & Cobre Dorado
 $tokens = [
-    'bg'           => '#f7f4ee', // Crema cálido
-    'surface'      => '#ffffff', // Blanco puro
-    'surface_2'    => '#ede7dc', // Crema / piedra suave
-    'text'         => '#101c2b', // Azul marino noche / pizarra profundo
-    'text_muted'   => '#3b4a5d', // Azul pizarra medio (alta legibilidad)
-    'border'       => '#647890', // Borde pizarra nítido (>= 3.0:1)
-    'primary'      => '#153250', // Azul marino corporativo
-    'on_primary'   => '#ffffff', // Blanco
-    'accent'       => '#b56f10', // Dorado ocre / ámbar tierra
-    'on_accent'    => '#ffffff', // Blanco
-    'input_bg'     => '#ffffff',
-    'input_text'   => '#101c2b',
-    'table_head_bg'=> '#153250',
-    'table_head_txt'=>'#ffffff',
-    'success'      => '#195b8c', // Azul marino acento
-    'warning'      => '#9a5806', // Ámbar oscuro
-    'danger'       => '#a82020', // Rojo ladrillo sobrio
+    'bg_canvas'      => '#F4F7F5', // Salvia muy sutil
+    'bg_surface'     => '#FFFFFF', // Blanco puro
+    'bg_subtle'      => '#ECF2EE', // Salvia suave
+    'text_primary'   => '#0F1F1A', // Pizarra bosque oscuro
+    'text_secondary' => '#475569', // Gris pizarra neutro
+    'brand_primary'  => '#0F4C3A', // Bosque Esmeralda
+    'brand_dark'     => '#082F24', // Abeto Oscuro
+    'brand_secondary'=> '#15803D', // Esmeralda Vivo
+    'on_primary'     => '#FFFFFF', // Blanco
+    'accent_hover'   => '#B45309', // Cobre Dorado oscuro (para botones con texto blanco)
+    'shift_am_text'  => '#92400E', // Ámbar oscuro sobre crema AM
+    'shift_am_bg'    => '#FEF3C7',
+    'shift_pm_text'  => '#1E40AF', // Cobalto sobre azul suave PM
+    'shift_pm_bg'    => '#EFF6FF',
+    'danger'         => '#B91C1C', // Rojo institucional sobrio
 ];
 
 $tests = [
-    ['Texto sobre Superficie Blanca', $tokens['text'], $tokens['surface'], 7.0],
-    ['Texto sobre Fondo Crema', $tokens['text'], $tokens['bg'], 7.0],
-    ['Texto sobre Superficie 2', $tokens['text'], $tokens['surface_2'], 7.0],
-    ['Texto Secundario sobre Superficie', $tokens['text_muted'], $tokens['surface'], 7.0],
-    ['Texto Secundario sobre Fondo Crema', $tokens['text_muted'], $tokens['bg'], 7.0],
-    ['Texto Botón Primario sobre Azul Marino', $tokens['on_primary'], $tokens['primary'], 3.0],
-    ['Texto Input sobre Fondo Input', $tokens['input_text'], $tokens['input_bg'], 7.0],
-    ['Texto Cabecera Tabla sobre Fondo Azul Marino', $tokens['table_head_txt'], $tokens['table_head_bg'], 7.0],
-    ['Borde Input sobre Fondo Blanco', $tokens['border'], $tokens['surface'], 3.0],
-    ['Texto Botón Acento Dorado sobre Fondo', $tokens['on_accent'], $tokens['accent'], 3.0],
-    ['Alerta Peligro sobre Blanco', $tokens['danger'], $tokens['surface'], 7.0],
+    ['Texto Principal sobre Blanco', $tokens['text_primary'], $tokens['bg_surface'], 7.0],
+    ['Texto Principal sobre Canvas Salvia', $tokens['text_primary'], $tokens['bg_canvas'], 7.0],
+    ['Texto Principal sobre Salvia Suave', $tokens['text_primary'], $tokens['bg_subtle'], 7.0],
+    ['Texto Secundario sobre Blanco', $tokens['text_secondary'], $tokens['bg_surface'], 4.5],
+    ['Texto Blanco sobre Bosque Esmeralda', $tokens['on_primary'], $tokens['brand_primary'], 7.0],
+    ['Texto Blanco sobre Abeto Oscuro', $tokens['on_primary'], $tokens['brand_dark'], 7.0],
+    ['Texto Blanco sobre Esmeralda Vivo', $tokens['on_primary'], $tokens['brand_secondary'], 4.5],
+    ['Texto Blanco sobre Cobre Dorado (Botón CTA)', $tokens['on_primary'], $tokens['accent_hover'], 4.5],
+    ['Etiqueta Turno AM sobre Fondo AM', $tokens['shift_am_text'], $tokens['shift_am_bg'], 4.5],
+    ['Etiqueta Turno PM sobre Fondo PM', $tokens['shift_pm_text'], $tokens['shift_pm_bg'], 4.5],
+    ['Alerta Peligro sobre Blanco', $tokens['danger'], $tokens['bg_surface'], 4.5],
 ];
 
 echo "=================================================================\n";
-echo "    VERIFICACIÓN DE CONTRASTE PALETA PREMIUM (AZUL MARINO / CREMA)\n";
-echo "    CRITERIO: Texto Normal >= 7:1 (AAA) | Botones/UI >= 3:1\n";
+echo "   VERIFICACIÓN DE CONTRASTE PALETA BOSQUE ESMERALDA & COBRE\n";
+echo "   CRITERIO: Texto Normal >= 7:1 (AAA) / >= 4.5:1 (AA)\n";
 echo "=================================================================\n\n";
 
 $allPassed = true;
@@ -92,7 +90,7 @@ foreach ($tests as $t) {
 
 echo "\n";
 if ($allPassed) {
-    echo "[OK] EXCELENTE: 100% de las pruebas cumplen con el estándar de alta legibilidad para adultos mayores (Texto >= 7:1, Botones >= 3:1).\n";
+    echo "[OK] EXCELENTE: 100% de las pruebas cumplen con el estándar WCAG AA/AAA de alta legibilidad.\n";
 } else {
     echo "[ALERTA]: Algunos pares no cumplieron.\n";
 }

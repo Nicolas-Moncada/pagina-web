@@ -108,9 +108,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
         extend: {
           colors: {
             brand: {
-              primary: '#0A2E1C',
-              secondary: '#14532D',
-              canvas: '#F8FAFC',
+              primary: '#0F4C3A',
+              dark: '#082F24',
+              secondary: '#15803D',
+              accent: '#D97706',
+              canvas: '#F4F7F5',
               surface: '#FFFFFF'
             }
           }
@@ -120,17 +122,17 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') === 'POST') {
   </script>
 
   <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
 
   <!-- Estilos Globales Corporativos -->
   <link rel="stylesheet" href="assets/css/theme.css">
   <link rel="stylesheet" href="assets/css/styles.css">
 </head>
-<body class="bg-slate-50 flex items-center justify-center min-vh-100 p-3">
+<body class="d-flex align-items-center justify-content-center min-vh-100 p-3" style="background-color: var(--bg-canvas);">
 
-  <div class="card border border-slate-200 shadow-xl rounded-2xl overflow-hidden w-full" style="max-width: 500px;">
+  <div class="card border shadow-lg rounded-4 overflow-hidden w-100" style="max-width: 500px;">
     <!-- Cabecera Institucional -->
-    <div class="p-6 text-center text-white" style="background-color: var(--brand-primary, #0A2E1C);">
+    <div class="p-4 text-center text-white" style="background: linear-gradient(135deg, var(--brand-primary-dark) 0%, var(--brand-primary) 100%);">
       <div class="rounded-full mx-auto flex items-center justify-center mb-3 bg-white/10 text-amber-400 border border-white/20" style="width: 52px; height: 52px;">
         <i data-lucide="key" style="width: 24px; height: 24px;"></i>
       </div>
